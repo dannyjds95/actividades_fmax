@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertDiv = document.getElementById('alert');
     const btnSubmit = loginForm ? loginForm.querySelector('button[type="submit"]') : null;
 
-    // URL completa de Vercel para permitir peticiones desde Live Server y GitHub Pages
     const API_URL = 'https://actividades-fmax-9ysb.vercel.app/api/login'; 
 
     if (loginForm) {

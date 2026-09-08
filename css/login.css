@@ -5,13 +5,6 @@
     font-family: 'Segoe UI', sans-serif;
 }
 
-body {
-    background: #f0f2f5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
 
 .login-card {
     background: #ffffff;
@@ -93,6 +86,7 @@ button:hover {
     display: none;
 }
 
+
 body {
     display: flex;
     flex-direction: column; /* Apila el formulario y el footer verticalmente */
@@ -117,4 +111,16 @@ footer {
     color: #666666;
     font-size: 0.9rem;
     width: 100%;
+}
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 1.2rem;
+}
+
+.login-logo {
+    max-width: 100px; /* Ajusta este valor según las proporciones de tu logo */
+    height: auto;
+    display: block;
+    margin: 0 auto;
 }
