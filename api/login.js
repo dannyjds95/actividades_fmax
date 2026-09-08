@@ -5,7 +5,7 @@ const dbConfig = {
     port: 4000,
     user: '2ji5HdpY4sfmZMo.root',
     password: 'tQPdtsQdqHSASOp6',
-    database: 'sys',
+    database: 'actividades2',
     ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: false }
 };
 
