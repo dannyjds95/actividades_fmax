@@ -1,0 +1,9 @@
+{
+  "name": "actividades-fmax",
+  "version": "1.0.0",
+  "description": "Sistema de gestión de actividades",
+  "main": "index.html",
+  "dependencies": {
+    "mysql2": "^3.9.0"
+  }
+}
