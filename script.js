@@ -3,10 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertDiv = document.getElementById('alert');
     const btnSubmit = loginForm ? loginForm.querySelector('button[type="submit"]') : null;
 
-    // Detecta automáticamente si está corriendo en GitHub Pages o en Vercel/Local
-    const API_URL = window.location.hostname.includes('github.io')
-        ? 'https://actividades-fmax-9ysb.vercel.app/api/login'
-        : '/api/login'; 
+    // URL completa de Vercel para permitir peticiones desde Live Server y GitHub Pages
+    const API_URL = 'https://actividades-fmax-9ysb.vercel.app/api/login'; 
 
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
@@ -45,10 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.ok && data.status === 'success') {
                     showAlert(data.message || '¡Inicio de sesión exitoso!', 'alert-success');
 
-                    // Guardar datos de la sesión en localStorage
                     localStorage.setItem('usuario_sesion', JSON.stringify(data.user));
 
-                    // Redirigir a la vista de actividades tras 1 segundo
                     setTimeout(() => {
                         window.location.href = 'html/actividades.html';
                     }, 1000);
