@@ -92,3 +92,29 @@ button:hover {
 .hidden {
     display: none;
 }
+
+body {
+    display: flex;
+    flex-direction: column; /* Apila el formulario y el footer verticalmente */
+    min-height: 100vh;      /* Asegura que ocupe toda la altura de la pantalla */
+    margin: 0;
+    background-color: #f4f6f9;
+}
+
+/* Centra la tarjeta de login en el espacio sobrante */
+.login-wrapper {
+    flex: 1; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+}
+
+/* Pie de página alineado en el fondo */
+footer {
+    text-align: center;
+    padding: 1rem;
+    color: #666666;
+    font-size: 0.9rem;
+    width: 100%;
+}

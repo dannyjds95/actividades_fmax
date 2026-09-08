@@ -1,34 +1,40 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Actividades Fmax</title>
+    <title>Inicio - Actividades Fmax</title>
     <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
+    <main class="login-wrapper">
+        <div class="login-card">
+            <h2>Iniciar Sesión</h2>
+            <p>Actividades FMAX</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="user_usuario">Usuario</label>
+                    <input type="text" id="user_usuario" required placeholder="Ingrese su usuario">
+                </div>
 
-    <div class="login-card">
-        <h2>Iniciar Sesión</h2>
-        <p>Actividades FMAX</p>
+                <div class="form-group">
+                    <label for="user_password">Contraseña</label>
+                    <input type="password" id="user_password" required placeholder="Ingrese su contraseña">
+                </div>
 
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="user_usuario">Usuario</label>
-                <input type="text" id="user_usuario" required placeholder="Ingrese su usuario">
-            </div>
+                <button type="submit">Ingresar</button>
+            </form>
+            <div id="alert" class="alert hidden"></div>
+        </div>
 
-            <div class="form-group">
-                <label for="user_password">Contraseña</label>
-                <input type="password" id="user_password" required placeholder="Ingrese su contraseña">
-            </div>
+        <script src="script.js"></script>
 
-            <button type="submit">Ingresar</button>
-        </form>
-
-        <div id="alert" class="alert hidden"></div>
-    </div>
-
-    <script src="script.js"></script>
+    </main>
+    <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted);">
+        <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
+    </footer>
 </body>
 </html>
