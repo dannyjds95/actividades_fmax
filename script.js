@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('usuario_sesion', JSON.stringify(data.user));
 
                     setTimeout(() => {
-                        window.location.href = 'html/actividades.html';
+                        window.location.href = 'html/dashboard.html';
                     }, 1000);
                 } else {
                     showAlert(data.message || 'Error al iniciar sesión.', 'alert-error');

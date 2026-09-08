@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - FMAX</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <h1>Panel Principal FMAX</h1>
+        <div class="user-info">
+            <span id="userName">Cargando usuario...</span>
+            <button id="btnLogout" class="btn-danger">Cerrar Sesión</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="welcome-card">
+            <h2>¡Hola, <span id="welcomeUser">Usuario</span>!</h2>
+            <p>Bienvenido al sistema de administración.</p>
+        </section>
+
+        <section class="dashboard-grid">
+            <div class="card">
+                <h3>Gestión de Actividades</h3>
+                <p>Visualiza y administra las actividades registradas.</p>
+                <a href="actividades.html" class="btn-primary">Ver Actividades</a>
+            </div>
+
+            <div class="card">
+                <h3>Registrar Actividad</h3>
+                <p>Ingresa una nueva actividad al sistema.</p>
+                <a href="actividad-propia.html" class="btn-primary">+ Nueva Actividad</a>
+            </div>
+        </section>
+    </main>
+    <script src="../js/auth.js"></script>
+    <script src="../js/dashboard.js"></script>
+</body>
+</html>
