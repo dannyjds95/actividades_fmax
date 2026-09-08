@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // CONFIGURACIÓN DE LA URL DE LA API:
     // Si estás desplegando en GitHub Pages, pon tu URL de Vercel aquí (ejemplo: 'https://actividades-fmax.vercel.app/api/login')
     // Si ejecutas todo dentro de Vercel o localmente con Node/Express, déjalo como '/api/login'
-    const API_URL = '/api/login'; 
+    const API_URL = 'https://actividades-fmax-9ysb.vercel.app/api'; 
 
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
