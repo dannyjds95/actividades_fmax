@@ -3,10 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertDiv = document.getElementById('alert');
     const btnSubmit = loginForm ? loginForm.querySelector('button[type="submit"]') : null;
 
-    // CONFIGURACIÓN DE LA URL DE LA API:
-    // Si estás desplegando en GitHub Pages, pon tu URL de Vercel aquí (ejemplo: 'https://actividades-fmax.vercel.app/api/login')
-    // Si ejecutas todo dentro de Vercel o localmente con Node/Express, déjalo como '/api/login'
-    const API_URL = 'https://actividades-fmax-9ysb.vercel.app/api'; 
+    // Detecta automáticamente si está corriendo en GitHub Pages o en Vercel/Local
+    const API_URL = window.location.hostname.includes('github.io')
+        ? 'https://actividades-fmax-9ysb.vercel.app/api/login'
+        : '/api/login'; 
 
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Ocultar alertas y bloquear el botón mientras procesa
             hideAlert();
             if (btnSubmit) {
                 btnSubmit.disabled = true;
@@ -36,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ user_usuario, user_password })
                 });
 
-                // Validar que la respuesta contenga JSON válido antes de transformarlo
                 let data;
                 try {
                     data = await response.json();
@@ -62,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error de autenticación:', err);
                 showAlert(err.message || 'Error de conexión con la API.', 'alert-error');
             } finally {
-                // Restaurar el botón tras completar la solicitud
                 if (btnSubmit) {
                     btnSubmit.disabled = false;
                     btnSubmit.textContent = 'Ingresar';
