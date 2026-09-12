@@ -1,6 +1,7 @@
 const mysql = require('mysql2/promise');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
+    // Configuración de cabeceras CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -9,6 +10,7 @@ export default async function handler(req, res) {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     );
 
+    // Responder inmediatamente a peticiones preflight (OPTIONS)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -17,7 +19,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Método no permitido' });
     }
 
-    const { user_usuario, user_password } = req.body;
+    const { user_usuario, user_password } = req.body || {};
 
     if (!user_usuario || !user_password) {
         return res.status(400).json({ message: 'Usuario y contraseña son requeridos' });
@@ -25,9 +27,9 @@ export default async function handler(req, res) {
 
     let connection;
     try {
+        // Conexión a TiDB Cloud
         connection = await mysql.createConnection(process.env.DATABASE_URL);
 
-        // Traemos todas las columnas existentes sin forzar nombres en SQL
         const [rows] = await connection.execute(
             `SELECT * FROM usuarios WHERE user_usuario = ? AND user_password = ? AND user_estado = 1`,
             [user_usuario, user_password]
@@ -39,7 +41,7 @@ export default async function handler(req, res) {
 
         const rawUser = rows[0];
 
-        // Mapeo seguro con valores por defecto si el campo no existe en la tabla
+        // Mapeo seguro para el perfil del usuario
         const user = {
             id: rawUser.user_id,
             nombre: rawUser.user_nombre,
@@ -65,12 +67,12 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error('Error en login:', error);
+        console.error('Error en la base de datos:', error);
         return res.status(500).json({ 
             status: 'error', 
-            message: error.message || 'Error interno del servidor' 
+            message: error.message || 'Error al conectar con la base de datos' 
         });
     } finally {
         if (connection) await connection.end();
     }
-}
+};
