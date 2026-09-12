@@ -22,7 +22,6 @@ module.exports = async (req, res) => {
             return res.status(400).json({ status: 'error', message: 'Usuario y contraseña requeridos' });
         }
 
-        // Conexión incluyendo SSL obligatorio para DBs en la nube
         connection = await mysql.createConnection({
             host: 'gateway01.us-east-1.prod.aws.tidbcloud.com',
             port: 4000,
@@ -32,8 +31,12 @@ module.exports = async (req, res) => {
             ssl: { rejectUnauthorized: false }
         });
 
+        // Consulta uniendo la tabla usuarios con empresa para obtener emp_razon
         const [rows] = await connection.execute(
-            'SELECT * FROM usuarios WHERE user_usuario = ? AND user_password = ? AND user_estado = 1',
+            `SELECT u.*, e.emp_razon 
+             FROM usuarios u 
+             LEFT JOIN empresa e ON u.id_empresa = e.emp_id 
+             WHERE u.user_usuario = ? AND u.user_password = ? AND u.user_estado = 1`,
             [user_usuario, user_password]
         );
 
@@ -48,7 +51,7 @@ module.exports = async (req, res) => {
             nombre: rawUser.user_nombre,
             user_usuario: rawUser.user_usuario,
             cargo: rawUser.user_cargo,
-            empresa: rawUser.id_empresa || 'No especificada',
+            empresa: rawUser.emp_razon || 'No especificada', // <-- Muestra la razón social en lugar del ID
             cedula: rawUser.user_ci || 'Sin registro',
             telefono: rawUser.user_telefono || 'Sin registro',
             direccion: rawUser.user_direccion || 'Sin registro',
