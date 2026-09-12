@@ -1,7 +1,6 @@
 const mysql = require('mysql2/promise');
 
 export default async function handler(req, res) {
-    // Permite conexiones desde cualquier origen (Live Server, GitHub Pages, Vercel)
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -10,7 +9,6 @@ export default async function handler(req, res) {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     );
 
-    // Responde exitosamente a la verificación previa que hace el navegador (preflight request)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -29,25 +27,9 @@ export default async function handler(req, res) {
     try {
         connection = await mysql.createConnection(process.env.DATABASE_URL);
 
+        // Traemos todas las columnas existentes sin forzar nombres en SQL
         const [rows] = await connection.execute(
-            `SELECT 
-                user_id AS id,
-                user_nombre AS nombre,
-                user_usuario,
-                user_cargo AS cargo,
-                id_empresa AS empresa,
-                user_ci AS cedula,
-                user_telefono AS telefono,
-                user_direccion AS direccion,
-                user_sector AS sector,
-                valor_act,
-                valor_visita,
-                valor_pred,
-                valor_ac,
-                valor_exc,
-                excedente
-            FROM usuarios 
-            WHERE user_usuario = ? AND user_password = ? AND user_estado = 1`,
+            `SELECT * FROM usuarios WHERE user_usuario = ? AND user_password = ? AND user_estado = 1`,
             [user_usuario, user_password]
         );
 
@@ -55,7 +37,26 @@ export default async function handler(req, res) {
             return res.status(401).json({ status: 'error', message: 'Usuario o contraseña incorrectos' });
         }
 
-        const user = rows[0];
+        const rawUser = rows[0];
+
+        // Mapeo seguro con valores por defecto si el campo no existe en la tabla
+        const user = {
+            id: rawUser.user_id,
+            nombre: rawUser.user_nombre,
+            user_usuario: rawUser.user_usuario,
+            cargo: rawUser.user_cargo,
+            empresa: rawUser.id_empresa || 'No especificada',
+            cedula: rawUser.user_ci || 'Sin registro',
+            telefono: rawUser.user_telefono || 'Sin registro',
+            direccion: rawUser.user_direccion || 'Sin registro',
+            sector: rawUser.user_sector || 'Sin registro',
+            valor_act: rawUser.valor_act || 0,
+            valor_visita: rawUser.valor_visita || 0,
+            valor_pred: rawUser.valor_pred || 0,
+            valor_ac: rawUser.valor_ac || 0,
+            valor_exc: rawUser.valor_exc || 0,
+            excedente: rawUser.excedente || 'No especificado'
+        };
 
         return res.status(200).json({
             status: 'success',
@@ -65,7 +66,10 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('Error en login:', error);
-        return res.status(500).json({ status: 'error', message: 'Error interno del servidor' });
+        return res.status(500).json({ 
+            status: 'error', 
+            message: error.message || 'Error interno del servidor' 
+        });
     } finally {
         if (connection) await connection.end();
     }
