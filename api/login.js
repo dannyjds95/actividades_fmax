@@ -24,7 +24,11 @@ module.exports = async (req, res) => {
 
         // Conexión incluyendo SSL obligatorio para DBs en la nube
         connection = await mysql.createConnection({
-            uri: process.env.DATABASE_URL,
+            host: 'gateway01.us-east-1.prod.aws.tidbcloud.com',
+            port: 4000,
+            user: '2ji5HdpY4sfmZMo.root',
+            password: 'tQPdtsQdqHSASOp6',
+            database: 'actividades2',
             ssl: { rejectUnauthorized: false }
         });
 
