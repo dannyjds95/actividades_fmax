@@ -5,49 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Perfil - Actividades FMAX</title>
     <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/Formularios.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h2>Editar Información de Usuario</h2>
+
+    <div class="edit-profile-container">
+        <!-- Cabecera -->
+        <div class="page-header">
+            <a href="perfil.html" class="back-link">&larr; Volver al Perfil</a>
+            <p class="page-subtitle">Modifica los datos personales y asignación de tarifas del usuario.</p>
+        </div>
+
+        <!-- Mensaje de Alerta -->
         <div id="alert" class="alert hidden"></div>
 
         <form id="editForm">
-            <h3>Datos Personales</h3>
-            <label>Nombre:</label>
-            <input type="text" id="nombre" required>
+            <!-- Sección 1: Datos Personales -->
+            <div class="form-section">
+                <div class="section-header">
+                    <span class="section-icon">👤</span>
+                    <h3>Datos Personales</h3>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="nombre">Nombre Completo</label>
+                        <input type="text" id="nombre" placeholder="Ej. Daniel Cuñez" required>
+                    </div>
 
-            <label>Cédula:</label>
-            <input type="text" id="cedula" required>
+                    <div class="form-group">
+                        <label for="cedula">Cédula de Identidad</label>
+                        <input type="text" id="cedula" placeholder="Ej. 1712345678" required>
+                    </div>
 
-            <label>Teléfono:</label>
-            <input type="text" id="telefono">
+                    <div class="form-group">
+                        <label for="telefono">Teléfono</label>
+                        <input type="text" id="telefono" placeholder="Ej. 0998877665">
+                    </div>
 
-            <label>Dirección:</label>
-            <input type="text" id="direccion">
+                    <div class="form-group full-width">
+                        <label for="direccion">Dirección</label>
+                        <input type="text" id="direccion" placeholder="Ej. Av. Principal 123">
+                    </div>
+                </div>
+            </div>
 
-            <h3>Valores y Tarifas</h3>
-            <label>Valor Actividad:</label>
-            <input type="number" step="0.01" id="valor_act">
+            <!-- Sección 2: Valores y Tarifas -->
+            <div class="form-section">
+                <div class="section-header">
+                    <span class="section-icon">💵</span>
+                    <h3>Valores y Tarifas</h3>
+                </div>
 
-            <label>Valor Visita:</label>
-            <input type="number" step="0.01" id="valor_visita">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="valor_act">Valor Actividad</label>
+                        <div class="input-prefix-wrapper">
+                            <span class="input-prefix">$</span>
+                            <input type="number" step="0.01" id="valor_act" placeholder="0.00">
+                        </div>
+                    </div>
 
-            <label>Valor Punto de Red:</label>
-            <input type="number" step="0.01" id="valor_pred">
+                    <div class="form-group">
+                        <label for="valor_visita">Valor Visita</label>
+                        <div class="input-prefix-wrapper">
+                            <span class="input-prefix">$</span>
+                            <input type="number" step="0.01" id="valor_visita" placeholder="0.00">
+                        </div>
+                    </div>
 
-            <label>Valor Instalación AC:</label>
-            <input type="number" step="0.01" id="valor_ac">
+                    <div class="form-group">
+                        <label for="valor_pred">Valor Punto de Red</label>
+                        <div class="input-prefix-wrapper">
+                            <span class="input-prefix">$</span>
+                            <input type="number" step="0.01" id="valor_pred" placeholder="0.00">
+                        </div>
+                    </div>
 
-            <label>Valor Excedente:</label>
-            <input type="number" step="0.01" id="valor_exc">
+                    <div class="form-group">
+                        <label for="valor_ac">Valor Instalación AC</label>
+                        <div class="input-prefix-wrapper">
+                            <span class="input-prefix">$</span>
+                            <input type="number" step="0.01" id="valor_ac" placeholder="0.00">
+                        </div>
+                    </div>
 
-            <div style="margin-top: 20px;">
-                <button type="submit" class="btn-primary">Guardar Cambios</button>
-                <a href="perfil.html" class="btn-secondary">Cancelar</a>
+                    <div class="form-group full-width">
+                        <label for="valor_exc">Valor Excedente</label>
+                        <div class="input-prefix-wrapper">
+                            <span class="input-prefix">$</span>
+                            <input type="number" step="0.01" id="valor_exc" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="form-actions">
+                <a href="perfil.html" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
             </div>
         </form>
     </div>
-
+    <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted);">
+        <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
+    </footer>
     <script src="../js/editar-perfil.js"></script>
+    <script src="../js/layout.js"></script>
 </body>
 </html>

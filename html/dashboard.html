@@ -1,57 +1,96 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Actividades - FMAX</title>
+    <link rel="icon" type="image/png" href="../image/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
-
+    <link rel="stylesheet" href="../css/layout.css">
 </head>
-
 <body>
-    <header class="navbar">
-        <h1>Actividades FMAX</h1>
-        <div class="user-menu-container">
-            <button id="userMenuBtn" class="user-menu-btn">
-                <span id="userName">Perfil</span>
-                <span class="arrow">▼</span>
-            </button>
 
-            <div id="userDropdown" class="dropdown-menu hidden">
-                <a href="perfil.html" class="dropdown-item">Mi perfil</a>
-                <a href="cambiar-password.html" class="dropdown-item">Cambiar contraseña</a>
-                <hr class="dropdown-divider">
-                <button id="btnLogout" class="dropdown-item btn-logout">Cerrar sesión</button>
-            </div>
-        </div>
-    </header>
+    <!-- Capa Oscura de Fondo para Dispositivos Móviles -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-    <main class="container">
-        <section class="welcome-card">
-            <h2>¡Hola, <span id="welcomeUser">Usuario</span>!</h2>
-            <p>Bienvenido al sistema de administración.</p>
-        </section>
-
-        <section class="dashboard-grid">
-            <div class="card">
-                <h3>Gestión de Actividades</h3>
-                <p>Visualiza y administra las actividades registradas.</p>
-                <a href="actividades.html" class="btn-primary">Ver Actividades</a>
+    <div class="app-layout">
+        <!-- MENÚ LATERAL (SIDEBAR) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;" onerror="this.style.display='none'">
+                <h2 id="userName">FMAX</h2>
             </div>
 
-            <div class="card">
-                <h3>Registrar Actividad</h3>
-                <p>Ingresa una nueva actividad al sistema.</p>
-                <a href="actividad-propia.html" class="btn-primary">+ Nueva Actividad</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item active">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="actividades.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Actividades</span>
+                </a>
+                <a href="perfil.html" class="nav-item">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Mi Perfil</span>
+                </a>
+                <a href="configuracion.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Configuración</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button type="button" id="btnLogout" class="nav-item btn-logout-sidebar">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-label">Cerrar Sesión</span>
+                </button>
             </div>
-        </section>
-    </main>
-    <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted);">
-        <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
-    </footer>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL -->
+        <main class="main-content">
+            <!-- ENCABEZADO SUPERIOR (TOPBAR) -->
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Abrir menú">
+                        ☰
+                    </button>
+                </div>
+
+            </header>
+
+            <!-- CUERPO DE LA PÁGINA -->
+            <div class="content-body">
+                <section class="welcome-card" style="margin-bottom: 1.5rem;">
+                    <h2>¡Hola, <span id="welcomeUser">Usuario</span>!</h2>
+                    <p>Bienvenido al sistema de administración.</p>
+                </section>
+
+                <section class="dashboard-grid">
+                    <div class="card">
+                        <h3>Gestión de Actividades</h3>
+                        <p>Visualiza y administra las actividades registradas.</p>
+                        <a href="actividades.html" class="btn-primary">Ver Actividades</a>
+                    </div>
+
+                    <div class="card">
+                        <h3>Registrar Actividad</h3>
+                        <p>Ingresa una nueva actividad al sistema.</p>
+                        <a href="actividad-propia.html" class="btn-primary">+ Nueva Actividad</a>
+                    </div>
+                </section>
+            </div>
+
+            <!-- PIE DE PÁGINA -->
+            <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); margin-top: auto;">
+                <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
+            </footer>
+        </main>
+    </div>
+
     <script src="../js/auth.js"></script>
     <script src="../js/dashboard.js"></script>
+    <script src="../js/layout.js"></script>
 </body>
-
 </html>

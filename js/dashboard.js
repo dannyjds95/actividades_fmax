@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userNameEl = document.getElementById('userName');
     const welcomeUserEl = document.getElementById('welcomeUser');
 
-    if (userNameEl) userNameEl.textContent = `${usuario.nombre} (${usuario.cargo})`;
+    if (userNameEl) userNameEl.textContent = `${usuario.nombre}`;
     if (welcomeUserEl) welcomeUserEl.textContent = usuario.nombre;
 
     // Control del botón cerrar sesión

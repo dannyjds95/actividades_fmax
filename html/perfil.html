@@ -3,111 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Perfil - FMAX</title>
+    <title>Mi Perfil</title>
     <link rel="icon" type="image/png" href="../image/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/layout.css">
 </head>
 <body>
-    <header class="navbar">
-        <h1>FMAX - Mi Perfil</h1>
-        <div class="user-menu-container">
-            <button id="userMenuBtn" class="user-menu-btn">
-                <span id="userName">Perfil</span>
-                <span class="arrow">▼</span>
-            </button>
-            
-            <div id="userDropdown" class="dropdown-menu hidden">
-                <a href="perfil.html" class="dropdown-item">Mi perfil</a>
-                <a href="cambiar-password.html" class="dropdown-item">Cambiar contraseña</a>
-                <hr class="dropdown-divider">
-                <button id="btnLogout" class="dropdown-item btn-logout">Cerrar sesión</button>
-            </div>
-        </div>
-    </header>
-
-    <main class="container">
-        <div class="card" style="background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md); max-width: 850px; margin: 0 auto;">
-            <h2 class="mb-2 text-center" style="color: var(--primary-color);">Perfil de Usuario</h2>
-
-            <!-- SECCIÓN 1: DATOS PERSONALES -->
-            <h3 style="color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.4rem; margin-top: 1rem;" class="mb-2">
-                Datos Personales
-            </h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
-                <div class="form-group">
-                    <label>Nombre</label>
-                    <p id="profileNombre" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Usuario</label>
-                    <p id="profileUsuario" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Cargo</label>
-                    <p id="profileCargo" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Empresa</label>
-                    <p id="profileEmpresa" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Cédula</label>
-                    <p id="profileCedula" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Teléfono</label>
-                    <p id="profileTelefono" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Dirección</label>
-                    <p id="profileDireccion" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Sector</label>
-                    <p id="profileSector" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
-                </div>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="app-layout">
+        <!-- MENÚ LATERAL (SIDEBAR) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;" onerror="this.style.display='none'">
+                <h2 id="userName">FMAX</h2>
             </div>
 
-            <!-- SECCIÓN 2: VALORES DE ACTIVIDADES -->
-            <h3 style="color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.4rem; margin-top: 2rem;" class="mb-2">
-                Valores de Actividades
-            </h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
-                <div class="form-group">
-                    <label>Valor Actividad</label>
-                    <p id="profileValorAct" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="actividades.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Actividades</span>
+                </a>
+                <a href="perfil.html" class="nav-item active">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Mi Perfil</span>
+                </a>
+                <a href="configuracion.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Configuración</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+        <button type="button" id="btnLogout" class="nav-item btn-logout-sidebar">
+            <span class="nav-icon">🚪</span>
+            <span class="nav-label">Cerrar Sesión</span>
+        </button>
+    </div>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL -->
+        <main class="main-content">
+            <!-- ENCABEZADO SUPERIOR -->
+            <header class="topbar">
+                <!-- Botón de colapso / menú móvil -->
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Toggle Sidebar">
+                    ☰
+                </button>
+            </div>
+
+                <div class="user-menu-container">
+                    <button type="button" id="userMenuBtn" class="user-menu-btn">
+                        <span id="userName">Perfil</span>
+                        <span class="arrow">▼</span>
+                    </button>
+                    
+                    <div id="userDropdown" class="dropdown-menu hidden">
+                        <a href="perfil.html" class="dropdown-item">Mi perfil</a>
+                        <a href="editar-perfil.html" class="dropdown-item">Editar Información</a>
+                        <a href="cambiar-password.html" class="dropdown-item">Cambiar contraseña</a>
+                        <hr class="dropdown-divider">
+                        <button type="button" id="btnLogout" class="dropdown-item btn-logout">Cerrar sesión</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Valor Visita</label>
-                    <p id="profileValorVisita" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Valor Punto de Red</label>
-                    <p id="profileValorPred" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Valor Instalación AC</label>
-                    <p id="profileValorAc" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Valor Excedente</label>
-                    <p id="profileValorExc" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
-                </div>
-                <div class="form-group">
-                    <label>Excedente Desde</label>
-                    <p id="profileExcedente" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+            </header>
+
+            <!-- CUERPO DE LA PÁGINA (TARJETA DE PERFIL) -->
+            <div class="content-body">
+                <div class="card" style="background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md); max-width: 850px; margin: 0 auto;">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
+                        <h2 style="color: var(--primary-color); margin: 0;">Perfil de Usuario</h2>
+                        <a href="editar-perfil.html" class="btn btn-primary" style="text-decoration: none;">✏️ Editar Información</a>
+                    </div>
+
+                    <!-- SECCIÓN 1: DATOS PERSONALES -->
+                    <h3 style="color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.4rem; margin-top: 1rem;" class="mb-2">
+                        Datos Personales
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <p id="profileNombre" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Usuario</label>
+                            <p id="profileUsuario" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Cargo</label>
+                            <p id="profileCargo" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Empresa</label>
+                            <p id="profileEmpresa" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Cédula</label>
+                            <p id="profileCedula" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <p id="profileTelefono" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Dirección</label>
+                            <p id="profileDireccion" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Sector</label>
+                            <p id="profileSector" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 2: VALORES DE ACTIVIDADES -->
+                    <h3 style="color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.4rem; margin-top: 2rem;" class="mb-2">
+                        Valores de Actividades
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                        <div class="form-group">
+                            <label>Valor Actividad</label>
+                            <p id="profileValorAct" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Visita</label>
+                            <p id="profileValorVisita" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Punto de Red</label>
+                            <p id="profileValorPred" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Instalación AC</label>
+                            <p id="profileValorAc" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Excedente</label>
+                            <p id="profileValorExc" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Excedente Desde</label>
+                            <p id="profileExcedente" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            <div class="mt-2" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
-                <a href="dashboard.html" class="btn btn-secondary">← Dashboard</a>
-                <a href="editar-perfil.html" class="btn-primary">Editar Información</a>
-                <a href="cambiar-password.html" class="btn btn-primary">Cambiar Contraseña</a>
-            </div>
-        </div>
-    </main>
+            <!-- PIE DE PÁGINA -->
+            <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); margin-top: auto;">
+                <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
+            </footer>
+        </main>
+    </div>
 
     <script src="../js/auth.js"></script>
     <script src="../js/perfil.js"></script>
+    <script src="../js/layout.js"></script>
 </body>
 </html>
