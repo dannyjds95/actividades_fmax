@@ -14,7 +14,7 @@
    -------------------------------------------------------------------------- */
 .sidebar {
     width: 250px;
-    background-color: #ebe5e5; /* Color del menu */
+    background-color: #EDEDED; /* Color del menu */
     color: #000000;
     display: flex;
     flex-direction: column;
@@ -132,7 +132,7 @@
 }
 
 .toggle-sidebar-btn:hover {
-    background-color: #e0bc19;
+    background-color: #b9b9b8;
 }
 
 /* Transición suave para la barra lateral */
@@ -202,7 +202,7 @@
 .sidebar-footer {
     margin-top: auto;
     padding: 16px 12px;
-    border-top: 1px solid rgba(226, 232, 240, 0.15);
+    border-top: 1px solid rgba(142, 224, 65, 0.15);
 }
 
 /* Estilo del botón de salida */
@@ -211,14 +211,14 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    color: #ef4444; /* Rojo para advertir acción destructiva */
+    color: #000000; /* Rojo para advertir acción destructiva */
     font-family: inherit;
     font-size: 0.95rem;
 }
 
 .btn-logout-sidebar:hover {
-    background-color: rgba(239, 68, 68, 0.1) !important;
-    color: #dc2626 !important;
+    background-color: rgb(180, 149, 151) !important;
+    color: #f32323 !important;
 }
 
 /* Mantiene el icono visible si la barra se colapsa en escritorio */
