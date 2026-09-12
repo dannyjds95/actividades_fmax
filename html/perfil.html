@@ -26,34 +26,87 @@
     </header>
 
     <main class="container">
-        <div class="card" style="background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md); max-width: 550px; margin: 0 auto;">
-            <h2 class="mb-2 text-center" style="color: var(--primary-color);">Información del Usuario</h2>
-            
-            <div class="profile-details">
+        <div class="card" style="background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md); max-width: 850px; margin: 0 auto;">
+            <h2 class="mb-2 text-center" style="color: var(--primary-color);">Perfil de Usuario</h2>
+
+            <!-- SECCIÓN 1: DATOS PERSONALES -->
+            <h3 style="color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.4rem; margin-top: 1rem;" class="mb-2">
+                Datos Personales
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
                 <div class="form-group">
                     <label>Nombre Completo</label>
-                    <p id="profileNombre" style="padding: 0.6rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--text-color);">-</p>
+                    <p id="profileNombre" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
                 </div>
-
                 <div class="form-group">
                     <label>Usuario</label>
-                    <p id="profileUsuario" style="padding: 0.6rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--text-color);">-</p>
+                    <p id="profileUsuario" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
                 </div>
-
                 <div class="form-group">
                     <label>Cargo / Rol</label>
-                    <p id="profileCargo" style="padding: 0.6rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--text-color);">-</p>
+                    <p id="profileCargo" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Empresa</label>
+                    <p id="profileEmpresa" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Cédula</label>
+                    <p id="profileCedula" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <p id="profileTelefono" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Dirección</label>
+                    <p id="profileDireccion" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Sector</label>
+                    <p id="profileSector" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
                 </div>
             </div>
 
-            <div class="mt-2" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <!-- SECCIÓN 2: VALORES DE ACTIVIDADES -->
+            <h3 style="color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.4rem; margin-top: 2rem;" class="mb-2">
+                Valores de Actividades
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                    <label>Valor Actividad</label>
+                    <p id="profileValorAct" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Valor Visita</label>
+                    <p id="profileValorVisita" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Valor Punto de Red</label>
+                    <p id="profileValorPred" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Valor Instalación AC</label>
+                    <p id="profileValorAc" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Valor Excedente</label>
+                    <p id="profileValorExc" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--success-color);">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Excedente Desde</label>
+                    <p id="profileExcedente" style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">-</p>
+                </div>
+            </div>
+
+            <div class="mt-2" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
                 <a href="dashboard.html" class="btn btn-secondary">← Dashboard</a>
                 <a href="cambiar-password.html" class="btn btn-primary">Cambiar Contraseña</a>
             </div>
         </div>
     </main>
 
-    <script src="../js/auth.js"></script>
-    <script src="../js/perfil.js"></script>
+    <script src="../api/auth.js"></script>
+    <script src="../api/perfil.js"></script>
 </body>
 </html>
