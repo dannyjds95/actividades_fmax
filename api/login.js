@@ -1,11 +1,10 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
-    // Configuración CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -23,10 +22,14 @@ module.exports = async (req, res) => {
             return res.status(400).json({ status: 'error', message: 'Usuario y contraseña requeridos' });
         }
 
-        connection = await mysql.createConnection(process.env.DATABASE_URL);
+        // Conexión incluyendo SSL obligatorio para DBs en la nube
+        connection = await mysql.createConnection({
+            uri: process.env.DATABASE_URL,
+            ssl: { rejectUnauthorized: false }
+        });
 
         const [rows] = await connection.execute(
-            `SELECT * FROM usuarios WHERE user_usuario = ? AND user_password = ? AND user_estado = 1`,
+            'SELECT * FROM usuarios WHERE user_usuario = ? AND user_password = ? AND user_estado = 1',
             [user_usuario, user_password]
         );
 
@@ -54,11 +57,11 @@ module.exports = async (req, res) => {
             excedente: rawUser.excedente || 'No especificado'
         };
 
-        return res.status(200).json({ status: 'success', message: 'Login exitoso', user });
+        return res.status(200).json({ status: 'success', message: 'Inicio de sesión exitoso', user });
 
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ status: 'error', message: error.message });
+        console.error('Error DB:', error);
+        return res.status(500).json({ status: 'error', message: error.message || 'Error en el servidor' });
     } finally {
         if (connection) await connection.end();
     }
