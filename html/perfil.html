@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - FMAX</title>
+    <link rel="icon" type="image/png" href="../image/logo.png">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <h1>FMAX - Mi Perfil</h1>
+        <div class="user-menu-container">
+            <button id="userMenuBtn" class="user-menu-btn">
+                <span id="userName">Perfil</span>
+                <span class="arrow">▼</span>
+            </button>
+            
+            <div id="userDropdown" class="dropdown-menu hidden">
+                <a href="perfil.html" class="dropdown-item">Mi perfil</a>
+                <a href="cambiar-password.html" class="dropdown-item">Cambiar contraseña</a>
+                <hr class="dropdown-divider">
+                <button id="btnLogout" class="dropdown-item btn-logout">Cerrar sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card" style="background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md); max-width: 550px; margin: 0 auto;">
+            <h2 class="mb-2 text-center" style="color: var(--primary-color);">Información del Usuario</h2>
+            
+            <div class="profile-details">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <p id="profileNombre" style="padding: 0.6rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--text-color);">-</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Usuario</label>
+                    <p id="profileUsuario" style="padding: 0.6rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--text-color);">-</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Cargo / Rol</label>
+                    <p id="profileCargo" style="padding: 0.6rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--text-color);">-</p>
+                </div>
+            </div>
+
+            <div class="mt-2" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="dashboard.html" class="btn btn-secondary">← Dashboard</a>
+                <a href="cambiar-password.html" class="btn btn-primary">Cambiar Contraseña</a>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/perfil.js"></script>
+</body>
+</html>

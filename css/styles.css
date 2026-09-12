@@ -85,7 +85,86 @@ a:hover {
 }
 
 /* ==========================================
-   4. BOTONES REUTILIZABLES
+   4. MENÚ DESPLEGABLE DE PERFIL
+   ========================================== */
+.user-menu-container {
+    position: relative;
+}
+
+.user-menu-btn {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition);
+}
+
+.user-menu-btn:hover {
+    background-color: var(--bg-color);
+}
+
+.arrow {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: 115%;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    width: 200px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dropdown-item {
+    padding: 0.75rem 1rem;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+    background: none;
+    border: none;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-color);
+    color: var(--primary-color);
+}
+
+.dropdown-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 0;
+}
+
+.btn-logout {
+    color: var(--danger-color);
+    font-weight: 600;
+}
+
+.btn-logout:hover {
+    background-color: var(--danger-bg);
+    color: var(--danger-color);
+}
+
+/* ==========================================
+   5. BOTONES REUTILIZABLES
    ========================================== */
 .btn, .btn-primary, .btn-secondary, .btn-danger {
     display: inline-block;
@@ -129,7 +208,7 @@ button:disabled, .btn:disabled {
 }
 
 /* ==========================================
-   5. FORMULARIOS E INPUTS
+   6. FORMULARIOS E INPUTS
    ========================================== */
 .form-group {
     margin-bottom: 1.2rem;
@@ -170,7 +249,7 @@ textarea:focus {
 }
 
 /* ==========================================
-   6. ALERTAS Y NOTIFICACIONES
+   7. ALERTAS Y NOTIFICACIONES
    ========================================== */
 .alert {
     padding: 0.8rem 1rem;
@@ -197,7 +276,7 @@ textarea:focus {
 }
 
 /* ==========================================
-   7. TABLAS DE DATOS
+   8. TABLAS DE DATOS
    ========================================== */
 .table-container {
     background-color: var(--card-bg);
@@ -229,7 +308,7 @@ tr:hover {
 }
 
 /* ==========================================
-   8. CLASES UTILITARIAS
+   9. CLASES UTILITARIAS Y RESPONSIVE
    ========================================== */
 .text-center { text-align: center; }
 .text-right { text-align: right; }
@@ -237,3 +316,13 @@ tr:hover {
 .mt-2 { margin-top: 1rem; }
 .mb-1 { margin-bottom: 0.5rem; }
 .mb-2 { margin-bottom: 1rem; }
+
+@media (max-width: 600px) {
+    .navbar {
+        padding: 0.8rem 1rem;
+    }
+    .container {
+        margin: 1rem auto;
+        padding: 0 1rem;
+    }
+}

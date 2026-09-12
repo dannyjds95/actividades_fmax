@@ -1,31 +1,42 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Validar si el usuario tiene sesión activa
+    // 1. Verificar sesión activa
     const sessionData = localStorage.getItem('usuario_sesion');
-    
     if (!sessionData) {
-        // Redirige al login si no existe la sesión
         window.location.href = '../index.html';
         return;
     }
 
     const usuario = JSON.parse(sessionData);
 
-    // 2. Mostrar nombre de usuario en la barra de navegación si existe el contenedor
+    // 2. Colocar nombre de usuario en el botón de perfil
     const userNameEl = document.getElementById('userName');
     if (userNameEl) {
-        userNameEl.textContent = `${usuario.nombre || 'Usuario'} (${usuario.cargo || 'Sin Cargo'})`;
+        userNameEl.textContent = usuario.nombre || 'Perfil';
     }
 
-    // 3. Dar funcionalidad al botón Cerrar Sesión
+    // 3. Control del menú desplegable
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    const userDropdown = document.getElementById('userDropdown');
+
+    if (userMenuBtn && userDropdown) {
+        // Abrir / Cerrar al hacer clic en el botón
+        userMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('hidden');
+        });
+
+        // Cerrar menú al hacer clic fuera de él
+        document.addEventListener('click', () => {
+            userDropdown.classList.add('hidden');
+        });
+    }
+
+    // 4. Funcionalidad de Cerrar Sesión
     const btnLogout = document.getElementById('btnLogout');
     if (btnLogout) {
         btnLogout.addEventListener('click', (e) => {
             e.preventDefault();
-
-            // Eliminar token/datos de sesión
             localStorage.removeItem('usuario_sesion');
-
-            // Redirigir a la pantalla de login principal
             window.location.href = '../index.html';
         });
     }
