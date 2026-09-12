@@ -4,7 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSubmit = editForm ? editForm.querySelector('button[type="submit"]') : null;
 
     // URL completa hacia la API desplegada en Vercel
-    const API_URL = 'https://actividades-fmax-9ysb.vercel.app/api/actualizar-perfil';
+const API_URL = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')
+    ? 'https://actividades-fmax-9ysb.vercel.app/api/actualizar-perfil'
+    : '/api/actualizar-perfil';
 
     // Obtener la sesión actual guardada
     const userSession = JSON.parse(localStorage.getItem('usuario_sesion'));
