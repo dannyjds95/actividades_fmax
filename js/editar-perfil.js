@@ -3,10 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertDiv = document.getElementById('alert');
     const btnSubmit = editForm ? editForm.querySelector('button[type="submit"]') : null;
 
-    // URL completa hacia la API desplegada en Vercel
-const API_URL = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')
-    ? 'https://actividades-fmax-9ysb.vercel.app/api/actualizar-perfil'
-    : '/api/actualizar-perfil';
+    // URL dinámica: Si estás en Vercel usa la ruta relativa; de lo contrario (GitHub Pages o local), usa la URL completa de Vercel
+    const BASE_VERCEL_URL = 'https://actividades-fmax-9ysb.vercel.app'; // Cambia por tu URL activa de Vercel si difiere
+    const API_URL = window.location.hostname.includes('vercel.app')
+        ? '/api/actualizar-perfil'
+        : `${BASE_VERCEL_URL}/api/actualizar-perfil`;
 
     // Obtener la sesión actual guardada
     const userSession = JSON.parse(localStorage.getItem('usuario_sesion'));
@@ -64,7 +65,7 @@ const API_URL = (window.location.hostname === '127.0.0.1' || window.location.hos
                     throw new Error('Respuesta no válida del servidor.');
                 }
 
-                if (response.ok && data.status === 'success') {
+                if (response.ok && (data.status === 'success' || data.success)) {
                     // Actualizar localStorage
                     Object.assign(userSession, {
                         nombre: updatedData.nombre,
@@ -85,7 +86,7 @@ const API_URL = (window.location.hostname === '127.0.0.1' || window.location.hos
                         window.location.href = 'perfil.html';
                     }, 1200);
                 } else {
-                    showAlert(data.message || 'Error al actualizar la información.', 'alert-error');
+                    showAlert(data.message || data.error || 'Error al actualizar la información.', 'alert-error');
                 }
 
             } catch (err) {
