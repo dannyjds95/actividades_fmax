@@ -45,16 +45,22 @@ module.exports = async (req, res) => {
             console.error('Error Q1:', e1.message);
         }
 
-        // 2. Detalle de Actividades por Tipo
-        try {
-            const [q2] = await connection.execute(
-                `SELECT COALESCE(act_tipo, 'GENERAL') AS tipo, COUNT(*) AS registros, COALESCE(SUM(act_valor), 0) AS monto FROM actividad_detalle ${whereClause} GROUP BY act_tipo ORDER BY monto DESC`,
-                params
-            );
-            actividadesData = q2;
-        } catch (e2) {
-            console.error('Error Q2:', e2.message);
-        }
+// 2. Detalle de Actividades por Tipo (Suma de act_cantidad)
+try {
+    const [q2] = await connection.execute(
+        `SELECT 
+            COALESCE(act_tipo, 'GENERAL') AS tipo, 
+            COALESCE(SUM(act_cantidad), 0) AS cantidad, 
+            COALESCE(SUM(act_valor), 0) AS monto 
+         FROM actividad_detalle ${whereClause} 
+         GROUP BY act_tipo 
+         ORDER BY monto DESC`,
+        params
+    );
+    actividadesData = q2;
+} catch (e2) {
+    console.error('Error Q2:', e2.message);
+}
 
         // 3. Últimos 10 Registros (Lectura completa flexible para evitar fallos de columnas)
         try {
