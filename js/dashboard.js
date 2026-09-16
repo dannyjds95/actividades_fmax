@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await cargarPeriodos();
 });
 
-// Función para determinar el estilo de las pastillas (badges)
+// Identificador visual de badges
 function getBadgeClass(tipo) {
     const t = String(tipo || '').toUpperCase();
     if (t.includes('INSTALAC')) return 'badge-instalacion';
@@ -108,63 +108,87 @@ function getBadgeClass(tipo) {
     return 'badge-default';
 }
 
-// Cargar las 3 secciones inferiores
+// Carga e inyección de datos dinámicos
 async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
     try {
-        const res = await fetch(`${BASE_URL}/api/obtener-ultimos-registros?inicio=${fechaInicio}&fin=${fechaFin}`);
+        let url = `${BASE_URL}/api/obtener-ultimos-registros`;
+        if (fechaInicio && fechaFin) {
+            url += `?inicio=${fechaInicio}&fin=${fechaFin}`;
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
 
         if (data.status === 'success') {
             // 1. Resumen Cuadrilla
-            document.getElementById('lbl_cuadrilla_trabajos').textContent = `${data.cuadrilla.total_trabajos} trabajos`;
-            document.getElementById('lbl_cuadrilla_monto').textContent = `$${parseFloat(data.cuadrilla.total_monto || 0).toFixed(2)}`;
+            const trabajos = data.cuadrilla?.total_trabajos || 0;
+            const monto = parseFloat(data.cuadrilla?.total_monto || 0).toFixed(2);
+            document.getElementById('lbl_cuadrilla_trabajos').textContent = `${trabajos} trabajos`;
+            document.getElementById('lbl_cuadrilla_monto').textContent = `$${monto}`;
 
             // 2. Detalle de Actividades
             const cntActividades = document.getElementById('cnt_detalle_actividades');
-            cntActividades.innerHTML = '';
-            data.actividades.forEach(act => {
-                const badgeCls = getBadgeClass(act.tipo);
-                cntActividades.innerHTML += `
+            if (data.actividades && data.actividades.length > 0) {
+                cntActividades.innerHTML = data.actividades.map(act => `
                     <div class="activity-item">
                         <div>
-                            <span class="badge-tipo ${badgeCls}">${act.tipo || 'OTRO'}</span>
+                            <span class="badge-tipo ${getBadgeClass(act.tipo)}">${act.tipo}</span>
                             <div class="item-subtitle" style="margin-top:4px;">${act.registros} registros</div>
                         </div>
                         <span class="activity-amount-blue">$${parseFloat(act.monto || 0).toFixed(2)}</span>
                     </div>
-                `;
-            });
+                `).join('');
+            } else {
+                cntActividades.innerHTML = '<p style="color:#94a3b8; font-size:13px; text-align:center; padding:12px;">Sin actividades en este período</p>';
+            }
 
             // 3. Tabla Últimos 10 Registros
             const tblBody = document.getElementById('tbl_ultimos_registros');
-            tblBody.innerHTML = '';
-            data.ultimos.forEach(reg => {
-                const badgeCls = getBadgeClass(reg.tipo);
-                const fechaFormateada = String(reg.fecha).split('T')[0];
-                tblBody.innerHTML += `
-                    <tr>
-                        <td>${fechaFormateada}</td>
-                        <td class="td-cuadrilla">${reg.cuadrilla}</td>
-                        <td>${reg.cliente || '-'}</td>
-                        <td><span class="badge-tipo ${badgeCls}">${reg.tipo}</span></td>
-                        <td>${reg.forma}</td>
-                        <td class="td-monto">$${parseFloat(reg.monto || 0).toFixed(2)}</td>
-                    </tr>
-                `;
-            });
+            if (data.ultimos && data.ultimos.length > 0) {
+                tblBody.innerHTML = data.ultimos.map(reg => {
+                    const fechaFormateada = reg.fecha ? String(reg.fecha).split('T')[0] : '-';
+                    return `
+                        <tr>
+                            <td>${fechaFormateada}</td>
+                            <td class="td-cuadrilla">${reg.cuadrilla}</td>
+                            <td>${reg.cliente}</td>
+                            <td><span class="badge-tipo ${getBadgeClass(reg.tipo)}">${reg.tipo}</span></td>
+                            <td>${reg.forma}</td>
+                            <td class="td-monto">$${parseFloat(reg.monto || 0).toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                tblBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:20px;">No se encontraron registros</td></tr>';
+            }
         }
     } catch (err) {
         console.error('Error al cargar datos secundarios:', err);
     }
 }
 
-// Dentro del evento 'change' del select_periodo, llama también a esta función:
-selectPeriodo.addEventListener('change', (e) => {
-    const selectedOption = e.target.options[e.target.selectedIndex];
-    if (selectedOption && selectedOption.value) {
-        const inicio = selectedOption.dataset.inicio;
-        const fin = selectedOption.dataset.fin;
-        cargarMetricas(inicio, fin);
-        cargarSeccionesSecundarias(inicio, fin);
-    }
+// Ejecutar al cargar la página por primera vez
+document.addEventListener('DOMContentLoaded', () => {
+    const selectPeriodo = document.getElementById('select_periodo');
+    
+    // Escuchar cambios en el selector de períodos
+    selectPeriodo.addEventListener('change', (e) => {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (selectedOption && selectedOption.dataset.inicio) {
+            const inicio = selectedOption.dataset.inicio;
+            const fin = selectedOption.dataset.fin;
+            cargarMetricas(inicio, fin);
+            cargarSeccionesSecundarias(inicio, fin);
+        }
+    });
+
+    // Llamada inicial por defecto si ya existe una opción seleccionada
+    setTimeout(() => {
+        const initialOption = selectPeriodo.options[selectPeriodo.selectedIndex];
+        if (initialOption && initialOption.dataset.inicio) {
+            cargarSeccionesSecundarias(initialOption.dataset.inicio, initialOption.dataset.fin);
+        } else {
+            cargarSeccionesSecundarias(); // Carga general sin filtros
+        }
+    }, 300);
 });

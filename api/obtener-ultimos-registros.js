@@ -23,36 +23,38 @@ module.exports = async (req, res) => {
 
         let whereClause = '';
         let params = [];
-        if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined') {
+
+        if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null' && fin !== 'null') {
             whereClause = ' WHERE act_fecha BETWEEN ? AND ?';
             params = [inicio, fin];
         }
 
-        // 1. Resumen por Cuadrilla (PROPIA)
+        // 1. Resumen por Cuadrilla
         const [cuadrillaRows] = await connection.execute(
-            `SELECT COALESCE(SUM(act_cantidad), 0) AS total_trabajos, COALESCE(SUM(act_valor), 0) AS total_monto FROM actividad_detalle ${whereClause}`,
+            `SELECT COUNT(*) AS total_trabajos, COALESCE(SUM(act_valor), 0) AS total_monto FROM actividad_detalle ${whereClause}`,
             params
         );
 
         // 2. Desglose por Tipo de Actividad
         const [tiposRows] = await connection.execute(
-            `SELECT act_tipo AS tipo, COUNT(*) AS registros, COALESCE(SUM(act_valor), 0) AS monto FROM actividad_detalle ${whereClause} GROUP BY act_tipo ORDER BY monto DESC`,
+            `SELECT COALESCE(act_tipo, 'SIN TIPO') AS tipo, COUNT(*) AS registros, COALESCE(SUM(act_valor), 0) AS monto FROM actividad_detalle ${whereClause} GROUP BY act_tipo ORDER BY monto DESC`,
             params
         );
 
         // 3. Últimos 10 Registros
         const [ultimosRows] = await connection.execute(
-            `SELECT act_fecha AS fecha, COALESCE(act_cuadrilla, 'PROPIA') AS cuadrilla, act_cliente AS cliente, act_tipo AS tipo, COALESCE(act_forma, 'NORMAL') AS forma, act_valor AS monto FROM actividad_detalle ${whereClause} ORDER BY act_fecha DESC, id DESC LIMIT 10`,
+            `SELECT act_fecha AS fecha, COALESCE(act_cuadrilla, 'PROPIA') AS cuadrilla, COALESCE(act_cliente, 'N/A') AS cliente, COALESCE(act_tipo, 'GENERAL') AS tipo, COALESCE(act_forma, 'NORMAL') AS forma, COALESCE(act_valor, 0) AS monto FROM actividad_detalle ${whereClause} ORDER BY act_fecha DESC, id DESC LIMIT 10`,
             params
         );
 
         return res.status(200).json({
             status: 'success',
-            cuadrilla: cuadrillaRows[0],
-            actividades: tiposRows,
-            ultimos: ultimosRows
+            cuadrilla: cuadrillaRows[0] || { total_trabajos: 0, total_monto: 0 },
+            actividades: tiposRows || [],
+            ultimos: ultimosRows || []
         });
     } catch (err) {
+        console.error('Error en API:', err);
         return res.status(500).json({ status: 'error', message: err.message });
     } finally {
         if (connection) await connection.end();
