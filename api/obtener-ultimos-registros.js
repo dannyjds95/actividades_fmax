@@ -1,69 +1,92 @@
-async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
+const mysql = require('mysql2/promise');
+
+module.exports = async (req, res) => {
+    // Encabezados obligatorios para JSON y CORS
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Content-Type');
+
+    if (req.method === 'OPTIONS') return res.status(200).end();
+
+    const { inicio, fin } = req.query;
+
+    let connection;
     try {
-        let url = `${BASE_URL}/api/obtener-ultimos-registros`;
-        if (fechaInicio && fechaFin) {
-            url += `?inicio=${fechaInicio}&fin=${fechaFin}`;
+        connection = await mysql.createConnection({
+            host: process.env.DB_HOST || 'gateway01.us-east-1.prod.aws.tidbcloud.com',
+            port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 4000,
+            user: process.env.DB_USER || '2ji5HdpY4sfmZMo.root',
+            password: process.env.DB_PASSWORD || 'tQPdtsQdqHSASOp6',
+            database: process.env.DB_NAME || 'actividades2',
+            ssl: { rejectUnauthorized: false }
+        });
+
+        let whereClause = '';
+        let params = [];
+
+        if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
+            whereClause = ' WHERE act_fecha BETWEEN ? AND ?';
+            params = [inicio, fin];
         }
 
-        console.log('Consultando API secundaria:', url);
-        const res = await fetch(url);
-        const data = await res.json();
-        console.log('Respuesta recibida del backend:', data);
+        let cuadrillaData = { total_trabajos: 0, total_monto: 0 };
+        let actividadesData = [];
+        let ultimosData = [];
 
-        if (data.status === 'success') {
-            // 1. Resumen Cuadrilla
-            const trabajos = data.cuadrilla?.total_trabajos || 0;
-            const monto = parseFloat(data.cuadrilla?.total_monto || 0).toFixed(2);
-            
-            const elTrabajos = document.getElementById('lbl_cuadrilla_trabajos');
-            const elMonto = document.getElementById('lbl_cuadrilla_monto');
-            
-            if (elTrabajos) elTrabajos.textContent = `${trabajos} trabajos`;
-            if (elMonto) elMonto.textContent = `$${monto}`;
-
-            // 2. Detalle de Actividades
-            const cntActividades = document.getElementById('cnt_detalle_actividades');
-            if (cntActividades) {
-                if (data.actividades && data.actividades.length > 0) {
-                    cntActividades.innerHTML = data.actividades.map(act => `
-                        <div class="activity-item">
-                            <div>
-                                <span class="badge-tipo ${getBadgeClass(act.tipo)}">${act.tipo}</span>
-                                <div class="item-subtitle" style="margin-top:4px;">${act.registros} registros</div>
-                            </div>
-                            <span class="activity-amount-blue">$${parseFloat(act.monto || 0).toFixed(2)}</span>
-                        </div>
-                    `).join('');
-                } else {
-                    cntActividades.innerHTML = '<p style="color:#94a3b8; font-size:13px; text-align:center; padding:12px;">Sin actividades en este período</p>';
-                }
-            }
-
-            // 3. Tabla Últimos 10 Registros
-            const tblBody = document.getElementById('tbl_ultimos_registros');
-            if (tblBody) {
-                if (data.ultimos && data.ultimos.length > 0) {
-                    tblBody.innerHTML = data.ultimos.map(reg => {
-                        const fechaFormateada = reg.fecha ? String(reg.fecha).split('T')[0] : '-';
-                        return `
-                            <tr>
-                                <td>${fechaFormateada}</td>
-                                <td class="td-cuadrilla">${reg.cuadrilla}</td>
-                                <td>${reg.cliente}</td>
-                                <td><span class="badge-tipo ${getBadgeClass(reg.tipo)}">${reg.tipo}</span></td>
-                                <td>${reg.forma}</td>
-                                <td class="td-monto">$${parseFloat(reg.monto || 0).toFixed(2)}</td>
-                            </tr>
-                        `;
-                    }).join('');
-                } else {
-                    tblBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:20px;">No se encontraron registros en este período</td></tr>';
-                }
-            }
-        } else {
-            console.error('El backend retornó un error:', data.message);
+        // Consulta 1: Resumen Cuadrilla
+        try {
+            const [q1] = await connection.execute(
+                `SELECT COUNT(*) AS total_trabajos, COALESCE(SUM(act_valor), 0) AS total_monto FROM actividad_detalle ${whereClause}`,
+                params
+            );
+            if (q1.length > 0) cuadrillaData = q1[0];
+        } catch (e1) {
+            console.error('Error en Consulta 1:', e1.message);
         }
+
+        // Consulta 2: Detalle por Tipo
+        try {
+            const [q2] = await connection.execute(
+                `SELECT COALESCE(act_tipo, 'GENERAL') AS tipo, COUNT(*) AS registros, COALESCE(SUM(act_valor), 0) AS monto FROM actividad_detalle ${whereClause} GROUP BY act_tipo ORDER BY monto DESC`,
+                params
+            );
+            actividadesData = q2;
+        } catch (e2) {
+            console.error('Error en Consulta 2:', e2.message);
+        }
+
+        // Consulta 3: Últimos 10 Registros
+        try {
+            const [q3] = await connection.execute(
+                `SELECT act_fecha AS fecha, COALESCE(act_cuadrilla, 'PROPIA') AS cuadrilla, COALESCE(act_cliente, 'N/A') AS cliente, COALESCE(act_tipo, 'GENERAL') AS tipo, COALESCE(act_forma, 'NORMAL') AS forma, COALESCE(act_valor, 0) AS monto FROM actividad_detalle ${whereClause} ORDER BY act_fecha DESC LIMIT 10`,
+                params
+            );
+            ultimosData = q3;
+        } catch (e3) {
+            console.error('Error en Consulta 3:', e3.message);
+        }
+
+        return res.status(200).json({
+            status: 'success',
+            cuadrilla: cuadrillaData,
+            actividades: actividadesData,
+            ultimos: ultimosData
+        });
+
     } catch (err) {
-        console.error('Error de red al consultar secciones secundarias:', err);
+        console.error('Fallo de conexión o servidor:', err.message);
+        return res.status(200).json({
+            status: 'error',
+            message: err.message,
+            cuadrilla: { total_trabajos: 0, total_monto: 0 },
+            actividades: [],
+            ultimos: []
+        });
+    } finally {
+        if (connection) {
+            try { await connection.end(); } catch (e) {}
+        }
     }
-}
+};

@@ -44,7 +44,6 @@ async function cargarMetricas(fechaInicio, fechaFin) {
     }
 }
 
-// Cargar secciones secundarias (Resumen cuadrilla, actividades y últimos 10 registros)
 async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
     try {
         let url = `${BASE_URL}/api/obtener-ultimos-registros`;
@@ -53,6 +52,14 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
         }
 
         const res = await fetch(url);
+        
+        // Si el servidor falla antes de responder en JSON
+        if (!res.ok) {
+            const errorHtml = await res.text();
+            console.error('Respuesta no válida del servidor:', res.status, errorHtml);
+            return;
+        }
+
         const data = await res.json();
 
         if (data.status === 'success') {
@@ -107,7 +114,7 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
             }
         }
     } catch (err) {
-        console.error('Error al cargar datos secundarios:', err);
+        console.error('Error al procesar datos secundarios:', err);
     }
 }
 
