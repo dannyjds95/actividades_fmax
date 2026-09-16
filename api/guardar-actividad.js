@@ -35,7 +35,10 @@ module.exports = async (req, res) => {
             return res.status(400).json({ status: 'error', message: 'Falta ID de usuario' });
         }
 
-        const cuadIdNum = isNaN(parseInt(cuad_id)) ? 0 : parseInt(cuad_id);
+// Validar e ingresar el cuad_id del usuario
+const cuadIdNum = (cuad_id !== undefined && cuad_id !== null && !isNaN(parseInt(cuad_id))) 
+    ? parseInt(cuad_id) 
+    : null;
 
         connection = await mysql.createConnection({
             host: process.env.DB_HOST || 'gateway01.us-east-1.prod.aws.tidbcloud.com',

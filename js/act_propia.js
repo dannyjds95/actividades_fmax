@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             user_id: userIdInput.value,                                  // Campo 2
             act_cliente: document.getElementById('act_cliente').value,  // Campo 3
             act_fecha: actFechaInput.value,                             // Campo 4
-            cuad_id: "ACTIVIDAD PROPIA",                                 // Campo 5
+            cuad_id: userSession.cuad_id,                                // <---
             act_sector: document.getElementById('act_sector').value,    // Campo 6
             act_tipo: actTipoSelect.value,                               // Campo 7
             act_forma: actFormaSelect.value,                             // Campo 8
