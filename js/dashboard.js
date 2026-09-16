@@ -25,13 +25,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
 document.addEventListener('DOMContentLoaded', async () => {
     const selectPeriodo = document.getElementById('select_periodo');
 
-    // URL base dinámica según el entorno
     const BASE_URL = window.location.hostname.includes('vercel.app')
         ? ''
         : 'https://actividades-fmax-9ysb.vercel.app';
+
+    // Función auxiliar para formatear fechas a YYYY-MM-DD
+    const formatFecha = (fechaStr) => {
+        if (!fechaStr) return '';
+        return String(fechaStr).split('T')[0];
+    };
 
     // 1. Cargar Períodos en el Select
     async function cargarPeriodos() {
@@ -39,24 +45,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             const res = await fetch(`${BASE_URL}/api/obtener-periodos`);
             const data = await res.json();
             
-            if (data.status === 'success') {
+            if (data.status === 'success' && data.periodos.length > 0) {
                 selectPeriodo.innerHTML = '<option value="">Seleccione un período...</option>';
+                
                 data.periodos.forEach(p => {
                     const option = document.createElement('option');
-                    // Soporta diferentes nombres de columna (id_periodo / peri_id, etc.)
-                    const id = p.id_periodo || p.peri_id || p.id;
-                    const nombre = p.nombre_periodo || p.peri_nombre || `Período ${id}`;
-                    const inicio = p.fecha_inicio || p.peri_fecha_inicio;
-                    const fin = p.fecha_fin || p.peri_fecha_fin;
+                    const id = p.id;
+                    const inicio = formatFecha(p.fecha_inicio);
+                    const fin = formatFecha(p.fecha_final); // Nombre exacto de la columna en BD
 
                     option.value = id;
-                    option.textContent = `${nombre} (${inicio} a ${fin})`;
+                    option.textContent = `Período ${id} (${inicio} a ${fin})`;
                     option.dataset.inicio = inicio;
                     option.dataset.fin = fin;
                     selectPeriodo.appendChild(option);
                 });
-            } else {
-                console.error('Error del servidor:', data.message);
             }
         } catch (err) {
             console.error('Error cargando períodos:', err);
@@ -65,6 +68,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. Cargar Métricas Filtradas por Período
     async function cargarMetricas(fechaInicio, fechaFin) {
+        if (!fechaInicio || !fechaFin || fechaFin === 'undefined') return;
+
         try {
             const res = await fetch(`${BASE_URL}/api/obtener-dashboard-metricas?inicio=${fechaInicio}&fin=${fechaFin}`);
             const data = await res.json();
@@ -83,10 +88,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Escuchar cambios de selección
+    // Evento al seleccionar un período
     selectPeriodo.addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
-        if (selectedOption.value) {
+        if (selectedOption && selectedOption.value) {
             cargarMetricas(selectedOption.dataset.inicio, selectedOption.dataset.fin);
         }
     });
