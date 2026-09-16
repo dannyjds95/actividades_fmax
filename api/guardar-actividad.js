@@ -35,11 +35,6 @@ module.exports = async (req, res) => {
             return res.status(400).json({ status: 'error', message: 'Falta ID de usuario' });
         }
 
-// Validar e ingresar el cuad_id del usuario
-const cuadIdNum = (cuad_id !== undefined && cuad_id !== null && !isNaN(parseInt(cuad_id))) 
-    ? parseInt(cuad_id) 
-    : null;
-
         connection = await mysql.createConnection({
             host: process.env.DB_HOST || 'gateway01.us-east-1.prod.aws.tidbcloud.com',
             port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 4000,
@@ -49,6 +44,20 @@ const cuadIdNum = (cuad_id !== undefined && cuad_id !== null && !isNaN(parseInt(
             ssl: { rejectUnauthorized: false }
         });
 
+        // 1. Obtener cuad_id directamente desde la tabla usuarios
+        const [userRows] = await connection.execute(
+            'SELECT cuad_id FROM usuarios WHERE user_id = ?',
+            [user_id]
+        );
+
+        let finalCuadId = null;
+        if (userRows.length > 0 && userRows[0].cuad_id !== null) {
+            finalCuadId = userRows[0].cuad_id;
+        } else if (cuad_id !== undefined && cuad_id !== null && !isNaN(parseInt(cuad_id))) {
+            finalCuadId = parseInt(cuad_id);
+        }
+
+        // 2. Insertar la actividad asegurando el valor de cuad_id
         const query = `
             INSERT INTO actividad_detalle (
                 user_id, act_cliente, act_fecha, cuad_id, act_sector,
@@ -60,7 +69,7 @@ const cuadIdNum = (cuad_id !== undefined && cuad_id !== null && !isNaN(parseInt(
         `;
 
         const values = [
-            user_id, act_cliente || '', act_fecha, cuadIdNum, act_sector || '',
+            user_id, act_cliente || '', act_fecha, finalCuadId, act_sector || '',
             act_tipo || '', act_forma || '', act_cantidad || 1, act_valor || 0,
             act_fibra || 0, act_pred || 0, act_pred_valor || 0, act_ac || 0,
             act_ac_valor || 0, act_excedente || 0, act_excedente_valor || 0,

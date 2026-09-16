@@ -16,35 +16,27 @@
         </div>
 
         <form id="actividadForm">
-            <!-- Fila 1: Usuario, Cliente, Fecha -->
-            <div class="form-grid-3">
-                <div class="form-group">
-                    <label for="user_nombre">Usuario *</label>
-                    <input type="text" id="user_nombre" readonly class="input-readonly">
-                    <input type="hidden" id="user_id" name="user_id"> <!-- Campo 2 -->
-                </div>
+            <!-- Campos Ocultos (Se envían al backend pero no se muestran) -->
+            <input type="hidden" id="user_id" name="user_id">
+            <input type="hidden" id="tipo_registro" name="tipo_registro" value="ACTIVIDAD PROPIA">
 
+            <!-- Fila 1: Cliente, Fecha, Sector, Tipo -->
+            <div class="form-grid-2">
                 <div class="form-group">
-                    <label for="act_cliente">Nombre del Cliente *</label>
-                    <input type="text" id="act_cliente" name="act_cliente" placeholder="Ej: Juan Pérez" required> <!-- Campo 3 -->
+                    <label for="act_cliente">Nombre del Cliente</label>
+                    <input type="text" id="act_cliente" name="act_cliente" placeholder="Ej: Juan Pérez (Opcional)">
                 </div>
 
                 <div class="form-group">
                     <label for="act_fecha">Fecha *</label>
-                    <input type="date" id="act_fecha" name="act_fecha" required> <!-- Campo 4 -->
+                    <input type="date" id="act_fecha" name="act_fecha" required>
                 </div>
             </div>
 
-            <!-- Fila 2: Tipo de Registro (Oculto/Fijo), Sector, Tipo Actividad -->
-            <div class="form-grid-3">
-                <div class="form-group">
-                    <label for="tipo_registro">Origen Actividad</label>
-                    <input type="text" id="tipo_registro" value="ACTIVIDAD PROPIA" readonly class="input-readonly"> <!-- Campo 5 -->
-                </div>
-
+            <div class="form-grid-2">
                 <div class="form-group">
                     <label for="act_sector">Sector *</label>
-                    <select id="act_sector" name="act_sector" required> <!-- Campo 6 -->
+                    <select id="act_sector" name="act_sector" required>
                         <option value="">Seleccione Sector</option>
                         <option value="NORTE">NORTE</option>
                         <option value="CENTRO">CENTRO</option>
@@ -55,7 +47,7 @@
 
                 <div class="form-group">
                     <label for="act_tipo">Tipo de Actividad *</label>
-                    <select id="act_tipo" name="act_tipo" required> <!-- Campo 7 -->
+                    <select id="act_tipo" name="act_tipo" required>
                         <option value="">Seleccione Tipo de actividad</option>
                         <option value="INSTALACION">INSTALACION</option>
                         <option value="TRASLADO">TRASLADO</option>
@@ -64,22 +56,21 @@
                 </div>
             </div>
 
-            <!-- Fila 3: Forma, Cantidad Fibra -->
+            <!-- Fila 2: Forma, Cantidad Fibra -->
             <div class="form-grid-2">
                 <div class="form-group">
                     <label for="act_forma">Forma de Actividad *</label>
-                    <select id="act_forma" name="act_forma" required></select> <!-- Campo 8 -->
+                    <select id="act_forma" name="act_forma" required></select>
                 </div>
 
                 <div class="form-group">
                     <label for="act_fibra">Cantidad Fibra (metros)</label>
-                    <input type="number" id="act_fibra" name="act_fibra" value="0" min="0"> <!-- Campo 11 -->
+                    <input type="number" id="act_fibra" name="act_fibra" value="0" min="0">
                 </div>
             </div>
 
-            <!-- Fila 4: Opciones Radio (Puntos Red y Equipos AC) -->
+            <!-- Fila 3: Opciones Radio (Puntos Red y Equipos AC) -->
             <div class="form-grid-2 form-inline-radios">
-                <!-- Campo 12: Puntos de Red -->
                 <div class="form-group radio-box">
                     <label>¿Instaló puntos de red?</label>
                     <div class="radio-options">
@@ -95,7 +86,6 @@
                     </div>
                 </div>
 
-                <!-- Campo 14: Equipos AC -->
                 <div class="form-group radio-box">
                     <label>¿Instaló Equipos AC?</label>
                     <div class="radio-options">
@@ -112,11 +102,11 @@
                 </div>
             </div>
 
-            <!-- Campo 19 y 20: Detalle y Cobro de Valores -->
+            <!-- Fila 4: Detalle y Cobro de Valores -->
             <div class="form-grid-2">
                 <div class="form-group">
                     <label for="act_detalle">Comentario / Detalle</label>
-                    <textarea id="act_detalle" name="act_detalle" rows="2" placeholder="Observaciones adicionales..."></textarea> <!-- Campo 19 -->
+                    <textarea id="act_detalle" name="act_detalle" rows="2" placeholder="Observaciones adicionales..."></textarea>
                 </div>
 
                 <div class="form-group radio-box">
@@ -124,17 +114,17 @@
                     <div class="radio-options">
                         <label><input type="radio" name="has_cobro" value="NO" checked> NO</label>
                         <label><input type="radio" name="has_cobro" value="SI"> SI</label>
-                        <input type="number" step="0.01" id="act_valores_cobrados" class="input-small hidden" placeholder="$ 0.00" value="0"> <!-- Campo 20 -->
+                        <input type="number" step="0.01" id="act_valores_cobrados" class="input-small hidden" placeholder="$ 0.00" value="0">
                     </div>
                 </div>
             </div>
 
-            <!-- Tarjeta Resumen de Cálculos Automáticos (Campos 9, 10, 13, 15, 16, 17, 18) -->
+            <!-- Tarjeta Resumen de Cálculos Automáticos -->
             <div class="summary-card">
                 <div class="summary-grid">
                     <div>
                         <span class="summary-label">CANTIDAD</span>
-                        <strong id="lbl_cantidad">1</strong>
+                        <strong id="lbl_cantidad">0</strong>
                     </div>
                     <div>
                         <span class="summary-label">VALOR ACTIVIDAD</span>
@@ -175,5 +165,19 @@
     <script src="../js/auth.js"></script>
     <script src="../js/perfil.js"></script>
     <script src="../js/layout.js"></script>
+
+    <!-- Script para auto-asignar Fecha Actual -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fechaInput = document.getElementById('act_fecha');
+            if (fechaInput && !fechaInput.value) {
+                const hoy = new Date();
+                const year = hoy.getFullYear();
+                const month = String(hoy.getMonth() + 1).padStart(2, '0');
+                const day = String(hoy.getDate()).padStart(2, '0');
+                fechaInput.value = `${year}-${month}-${day}`;
+            }
+        });
+    </script>
 </body>
 </html>
