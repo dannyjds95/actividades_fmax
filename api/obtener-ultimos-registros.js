@@ -1,7 +1,6 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
-    // Encabezados obligatorios para JSON y CORS
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -35,7 +34,7 @@ module.exports = async (req, res) => {
         let actividadesData = [];
         let ultimosData = [];
 
-        // Consulta 1: Resumen Cuadrilla
+        // 1. Resumen por Cuadrilla
         try {
             const [q1] = await connection.execute(
                 `SELECT COUNT(*) AS total_trabajos, COALESCE(SUM(act_valor), 0) AS total_monto FROM actividad_detalle ${whereClause}`,
@@ -43,10 +42,10 @@ module.exports = async (req, res) => {
             );
             if (q1.length > 0) cuadrillaData = q1[0];
         } catch (e1) {
-            console.error('Error en Consulta 1:', e1.message);
+            console.error('Error Q1:', e1.message);
         }
 
-        // Consulta 2: Detalle por Tipo
+        // 2. Detalle de Actividades por Tipo
         try {
             const [q2] = await connection.execute(
                 `SELECT COALESCE(act_tipo, 'GENERAL') AS tipo, COUNT(*) AS registros, COALESCE(SUM(act_valor), 0) AS monto FROM actividad_detalle ${whereClause} GROUP BY act_tipo ORDER BY monto DESC`,
@@ -54,18 +53,26 @@ module.exports = async (req, res) => {
             );
             actividadesData = q2;
         } catch (e2) {
-            console.error('Error en Consulta 2:', e2.message);
+            console.error('Error Q2:', e2.message);
         }
 
-        // Consulta 3: Últimos 10 Registros
+        // 3. Últimos 10 Registros (Lectura completa flexible para evitar fallos de columnas)
         try {
             const [q3] = await connection.execute(
-                `SELECT act_fecha AS fecha, COALESCE(act_cuadrilla, 'PROPIA') AS cuadrilla, COALESCE(act_cliente, 'N/A') AS cliente, COALESCE(act_tipo, 'GENERAL') AS tipo, COALESCE(act_forma, 'NORMAL') AS forma, COALESCE(act_valor, 0) AS monto FROM actividad_detalle ${whereClause} ORDER BY act_fecha DESC LIMIT 10`,
+                `SELECT * FROM actividad_detalle ${whereClause} ORDER BY act_fecha DESC LIMIT 10`,
                 params
             );
-            ultimosData = q3;
+
+            ultimosData = q3.map(row => ({
+                fecha: row.act_fecha || row.fecha || '',
+                cuadrilla: row.act_cuadrilla || row.cuadrilla || 'PROPIA',
+                cliente: row.act_cliente || row.cliente || row.nombre_cliente || row.nom_cliente || 'N/A',
+                tipo: row.act_tipo || row.tipo || 'GENERAL',
+                forma: row.act_forma || row.forma || row.forma_pago || 'NORMAL',
+                monto: row.act_valor || row.valor || row.monto || 0
+            }));
         } catch (e3) {
-            console.error('Error en Consulta 3:', e3.message);
+            console.error('Error Q3:', e3.message);
         }
 
         return res.status(200).json({
@@ -76,14 +83,8 @@ module.exports = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Fallo de conexión o servidor:', err.message);
-        return res.status(200).json({
-            status: 'error',
-            message: err.message,
-            cuadrilla: { total_trabajos: 0, total_monto: 0 },
-            actividades: [],
-            ultimos: []
-        });
+        console.error('Fallo general:', err.message);
+        return res.status(500).json({ status: 'error', message: err.message });
     } finally {
         if (connection) {
             try { await connection.end(); } catch (e) {}
