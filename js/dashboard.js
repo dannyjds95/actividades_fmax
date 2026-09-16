@@ -28,22 +28,35 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', async () => {
     const selectPeriodo = document.getElementById('select_periodo');
 
+    // URL base dinámica según el entorno
+    const BASE_URL = window.location.hostname.includes('vercel.app')
+        ? ''
+        : 'https://actividades-fmax-9ysb.vercel.app';
+
     // 1. Cargar Períodos en el Select
     async function cargarPeriodos() {
         try {
-            const res = await fetch('/api/obtener-periodos');
+            const res = await fetch(`${BASE_URL}/api/obtener-periodos`);
             const data = await res.json();
             
             if (data.status === 'success') {
-                selectPeriodo.innerHTML = '<option value="">Seleccione un período</option>';
+                selectPeriodo.innerHTML = '<option value="">Seleccione un período...</option>';
                 data.periodos.forEach(p => {
                     const option = document.createElement('option');
-                    option.value = p.id_periodo;
-                    option.textContent = `${p.nombre_periodo} (${p.fecha_inicio} a ${p.fecha_fin})`;
-                    option.dataset.inicio = p.fecha_inicio;
-                    option.dataset.fin = p.fecha_fin;
+                    // Soporta diferentes nombres de columna (id_periodo / peri_id, etc.)
+                    const id = p.id_periodo || p.peri_id || p.id;
+                    const nombre = p.nombre_periodo || p.peri_nombre || `Período ${id}`;
+                    const inicio = p.fecha_inicio || p.peri_fecha_inicio;
+                    const fin = p.fecha_fin || p.peri_fecha_fin;
+
+                    option.value = id;
+                    option.textContent = `${nombre} (${inicio} a ${fin})`;
+                    option.dataset.inicio = inicio;
+                    option.dataset.fin = fin;
                     selectPeriodo.appendChild(option);
                 });
+            } else {
+                console.error('Error del servidor:', data.message);
             }
         } catch (err) {
             console.error('Error cargando períodos:', err);
@@ -51,30 +64,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // 2. Cargar Métricas Filtradas por Período
-    async function cargarMétricas(fechaInicio, fechaFin) {
+    async function cargarMetricas(fechaInicio, fechaFin) {
         try {
-            const res = await fetch(`/api/obtener-dashboard-metricas?inicio=${fechaInicio}&fin=${fechaFin}`);
+            const res = await fetch(`${BASE_URL}/api/obtener-dashboard-metricas?inicio=${fechaInicio}&fin=${fechaFin}`);
             const data = await res.json();
 
             if (data.status === 'success') {
                 const m = data.metricas;
-                document.getElementById('lbl_monto_facturado').textContent = `$${parseFloat(m.monto_facturado).toFixed(2)}`;
-                document.getElementById('lbl_total_actividades').textContent = m.total_actividades;
-                document.getElementById('lbl_registros_guardados').textContent = m.registros_guardados;
-                document.getElementById('lbl_excedente_fibra').textContent = `${m.excedente_m} m`;
-                document.getElementById('lbl_excedente_valor').textContent = `$${parseFloat(m.excedente_valor).toFixed(2)}`;
-                document.getElementById('lbl_puntos_red_ac').textContent = `${m.puntos_red} Pts / ${m.equipos_ac} AC`;
+                document.getElementById('lbl_monto_facturado').textContent = `$${parseFloat(m.monto_facturado || 0).toFixed(2)}`;
+                document.getElementById('lbl_total_actividades').textContent = m.total_actividades || 0;
+                document.getElementById('lbl_registros_guardados').textContent = m.registros_guardados || 0;
+                document.getElementById('lbl_excedente_fibra').textContent = `${m.excedente_m || 0} m`;
+                document.getElementById('lbl_excedente_valor').textContent = `$${parseFloat(m.excedente_valor || 0).toFixed(2)}`;
+                document.getElementById('lbl_puntos_red_ac').textContent = `${m.puntos_red || 0} Pts / ${m.equipos_ac || 0} AC`;
             }
         } catch (err) {
             console.error('Error cargando métricas:', err);
         }
     }
 
-    // Listener para actualizar al cambiar de período
+    // Escuchar cambios de selección
     selectPeriodo.addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
         if (selectedOption.value) {
-            cargarMétricas(selectedOption.dataset.inicio, selectedOption.dataset.fin);
+            cargarMetricas(selectedOption.dataset.inicio, selectedOption.dataset.fin);
         }
     });
 
