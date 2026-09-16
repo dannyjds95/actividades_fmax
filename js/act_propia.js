@@ -40,20 +40,23 @@ document.addEventListener('DOMContentLoaded', () => {
     actFechaInput.value = new Date().toISOString().split('T')[0];
 
     // 2. Manejo Dinámico de Campo 8 (Forma condicionado por Campo 7)
-    function updateFormaOptions() {
-        const tipo = actTipoSelect.value;
-        actFormaSelect.innerHTML = '';
+function updateFormaOptions() {
+    const tipo = actTipoSelect.value;
+    actFormaSelect.innerHTML = '';
 
-        if (tipo === 'INSTALACION' || tipo === 'TRASLADO') {
-            actFormaSelect.add(new Option('NORMAL', 'NORMAL'));
-            actFormaSelect.add(new Option('DOBLE', 'DOBLE'));
-        } else if (tipo === 'VISITA') {
-            actFormaSelect.add(new Option('CAMBIO CONECTOR', 'CAMBIO CONECTOR'));
-            actFormaSelect.add(new Option('RECABLEADO NORMAL', 'RECABLEADO NORMAL'));
-            actFormaSelect.add(new Option('RECABLEADO DOBLE', 'RECABLEADO DOBLE'));
-        }
-        calculateAll();
+    if (tipo === 'INSTALACION' || tipo === 'TRASLADO') {
+        actFormaSelect.add(new Option('NORMAL', 'NORMAL'));
+        actFormaSelect.add(new Option('DOBLE', 'DOBLE'));
+    } else if (tipo === 'VISITA') {
+        actFormaSelect.add(new Option('CAMBIO CONECTOR', 'CAMBIO CONECTOR'));
+        actFormaSelect.add(new Option('RECABLEADO NORMAL', 'RECABLEADO NORMAL'));
+        actFormaSelect.add(new Option('RECABLEADO DOBLE', 'RECABLEADO DOBLE'));
+    } else {
+        // Opción predeterminada si no hay tipo seleccionado
+        actFormaSelect.add(new Option('Seleccione Forma', ''));
     }
+    calculateAll();
+}
 
     // 3. Mostrar/Ocultar Selects de Puntos de Red, Equipos AC y Cobro
     radiosPred.forEach(radio => radio.addEventListener('change', (e) => {
@@ -72,50 +75,57 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isSi) inputValoresCobrados.value = 0;
     }));
 
-    // 4. Lógica de Cálculo en Tiempo Real
-    function calculateAll() {
-        // Campo 9: Cantidad (1 si es NORMAL/CAMBIO CONECTOR, 2 si es DOBLE)
-        const forma = actFormaSelect.value;
-        const actCantidad = (forma === 'DOBLE' || forma === 'RECABLEADO DOBLE') ? 2 : 1;
-        lblCantidad.textContent = actCantidad;
+ // Lógica de Cálculo
+function calculateAll() {
+    const tipo = actTipoSelect.value;
+    const forma = actFormaSelect.value;
 
-        // Campo 10: Valor Actividad (Tarifa del usuario * Campo 9)
-        const tarifaBase = (actTipoSelect.value === 'VISITA') 
+    let actCantidad = 0;
+    let tarifaBase = 0;
+
+    // Si se selecciona un tipo válido, calculamos tarifa y cantidad
+    if (tipo !== '' && forma !== '') {
+        actCantidad = (forma === 'DOBLE' || forma === 'RECABLEADO DOBLE') ? 2 : 1;
+        tarifaBase = (tipo === 'VISITA') 
             ? (parseFloat(userSession.valor_visita) || 0) 
             : (parseFloat(userSession.valor_act) || 0);
-        const actValor = tarifaBase * actCantidad;
-        lblValorAct.textContent = `$${actValor.toFixed(2)}`;
-
-        // Campo 12 y 13: Puntos de Red y su Valor
-        const hasPred = document.querySelector('input[name="has_pred"]:checked').value === 'SI';
-        const actPredQty = hasPred ? parseInt(selectPredQty.value) : 0;
-        const actPredValor = actPredQty * (parseFloat(userSession.valor_pred) || 0);
-        lblValorPred.textContent = `$${actPredValor.toFixed(2)}`;
-
-        // Campo 14 y 15: Equipos AC y su Valor
-        const hasAc = document.querySelector('input[name="has_ac"]:checked').value === 'SI';
-        const actAcQty = hasAc ? parseInt(selectAcQty.value) : 0;
-        const actAcValor = actAcQty * (parseFloat(userSession.valor_ac) || 0);
-        lblValorAc.textContent = `$${actAcValor.toFixed(2)}`;
-
-        // Campo 16 y 17: Excedente de Fibra (> 350m) y su Valor
-        const fibra = parseInt(actFibraInput.value) || 0;
-        const actExcedenteM = fibra > 350 ? (fibra - 350) : 0;
-        const actExcedenteValor = actExcedenteM * (parseFloat(userSession.valor_exc) || 0);
-        
-        lblExcedenteM.textContent = actExcedenteM;
-        lblValorExc.textContent = `$${actExcedenteValor.toFixed(2)}`;
-
-        // Campo 18: Total Actividad (Suma de 10 + 13 + 15 + 17)
-        const actTotal = actValor + actPredValor + actAcValor + actExcedenteValor;
-        lblTotal.textContent = `$${actTotal.toFixed(2)}`;
-
-        return {
-            actCantidad, actValor, actPredQty, actPredValor, 
-            actAcQty, actAcValor, actExcedenteM, actExcedenteValor, actTotal
-        };
     }
 
+    lblCantidad.textContent = actCantidad;
+
+    // Valor Actividad
+    const actValor = tarifaBase * actCantidad;
+    lblValorAct.textContent = `$${actValor.toFixed(2)}`;
+
+    // Puntos de Red
+    const hasPred = document.querySelector('input[name="has_pred"]:checked')?.value === 'SI';
+    const actPredQty = hasPred ? parseInt(selectPredQty.value) : 0;
+    const actPredValor = actPredQty * (parseFloat(userSession.valor_pred) || 0);
+    lblValorPred.textContent = `$${actPredValor.toFixed(2)}`;
+
+    // Equipos AC
+    const hasAc = document.querySelector('input[name="has_ac"]:checked')?.value === 'SI';
+    const actAcQty = hasAc ? parseInt(selectAcQty.value) : 0;
+    const actAcValor = actAcQty * (parseFloat(userSession.valor_ac) || 0);
+    lblValorAc.textContent = `$${actAcValor.toFixed(2)}`;
+
+    // Excedente de Fibra
+    const fibra = parseInt(actFibraInput.value) || 0;
+    const actExcedenteM = fibra > 350 ? (fibra - 350) : 0;
+    const actExcedenteValor = actExcedenteM * (parseFloat(userSession.valor_exc) || 0);
+    
+    lblExcedenteM.textContent = actExcedenteM;
+    lblValorExc.textContent = `$${actExcedenteValor.toFixed(2)}`;
+
+    // Total General
+    const actTotal = actValor + actPredValor + actAcValor + actExcedenteValor;
+    lblTotal.textContent = `$${actTotal.toFixed(2)}`;
+
+    return {
+        actCantidad, actValor, actPredQty, actPredValor, 
+        actAcQty, actAcValor, actExcedenteM, actExcedenteValor, actTotal
+    };
+}
     // Escuchadores de Eventos
     actTipoSelect.addEventListener('change', updateFormaOptions);
     actFormaSelect.addEventListener('change', calculateAll);
