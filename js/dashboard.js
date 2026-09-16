@@ -44,10 +44,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const res = await fetch(`${BASE_URL}/api/obtener-periodos`);
             const data = await res.json();
-            
+
             if (data.status === 'success' && data.periodos.length > 0) {
                 selectPeriodo.innerHTML = '<option value="">Seleccione un período...</option>';
-                
+
                 data.periodos.forEach(p => {
                     const option = document.createElement('option');
                     const id = p.id;
@@ -97,4 +97,74 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     await cargarPeriodos();
+});
+
+// Función para determinar el estilo de las pastillas (badges)
+function getBadgeClass(tipo) {
+    const t = String(tipo || '').toUpperCase();
+    if (t.includes('INSTALAC')) return 'badge-instalacion';
+    if (t.includes('VISITA')) return 'badge-visita';
+    if (t.includes('TRASLADO')) return 'badge-traslado';
+    return 'badge-default';
+}
+
+// Cargar las 3 secciones inferiores
+async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
+    try {
+        const res = await fetch(`${BASE_URL}/api/obtener-ultimos-registros?inicio=${fechaInicio}&fin=${fechaFin}`);
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            // 1. Resumen Cuadrilla
+            document.getElementById('lbl_cuadrilla_trabajos').textContent = `${data.cuadrilla.total_trabajos} trabajos`;
+            document.getElementById('lbl_cuadrilla_monto').textContent = `$${parseFloat(data.cuadrilla.total_monto || 0).toFixed(2)}`;
+
+            // 2. Detalle de Actividades
+            const cntActividades = document.getElementById('cnt_detalle_actividades');
+            cntActividades.innerHTML = '';
+            data.actividades.forEach(act => {
+                const badgeCls = getBadgeClass(act.tipo);
+                cntActividades.innerHTML += `
+                    <div class="activity-item">
+                        <div>
+                            <span class="badge-tipo ${badgeCls}">${act.tipo || 'OTRO'}</span>
+                            <div class="item-subtitle" style="margin-top:4px;">${act.registros} registros</div>
+                        </div>
+                        <span class="activity-amount-blue">$${parseFloat(act.monto || 0).toFixed(2)}</span>
+                    </div>
+                `;
+            });
+
+            // 3. Tabla Últimos 10 Registros
+            const tblBody = document.getElementById('tbl_ultimos_registros');
+            tblBody.innerHTML = '';
+            data.ultimos.forEach(reg => {
+                const badgeCls = getBadgeClass(reg.tipo);
+                const fechaFormateada = String(reg.fecha).split('T')[0];
+                tblBody.innerHTML += `
+                    <tr>
+                        <td>${fechaFormateada}</td>
+                        <td class="td-cuadrilla">${reg.cuadrilla}</td>
+                        <td>${reg.cliente || '-'}</td>
+                        <td><span class="badge-tipo ${badgeCls}">${reg.tipo}</span></td>
+                        <td>${reg.forma}</td>
+                        <td class="td-monto">$${parseFloat(reg.monto || 0).toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+    } catch (err) {
+        console.error('Error al cargar datos secundarios:', err);
+    }
+}
+
+// Dentro del evento 'change' del select_periodo, llama también a esta función:
+selectPeriodo.addEventListener('change', (e) => {
+    const selectedOption = e.target.options[e.target.selectedIndex];
+    if (selectedOption && selectedOption.value) {
+        const inicio = selectedOption.dataset.inicio;
+        const fin = selectedOption.dataset.fin;
+        cargarMetricas(inicio, fin);
+        cargarSeccionesSecundarias(inicio, fin);
+    }
 });

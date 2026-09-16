@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,9 @@
     <link rel="icon" type="image/png" href="../image/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
 </head>
+
 <body>
 
     <!-- Capa Oscura de Fondo para Dispositivos Móviles -->
@@ -17,7 +20,8 @@
         <!-- MENÚ LATERAL (SIDEBAR) -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;" onerror="this.style.display='none'">
+                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;"
+                    onerror="this.style.display='none'">
                 <h2 id="userName">FMAX</h2>
             </div>
 
@@ -59,57 +63,111 @@
                 </div>
             </header>
 
-            <!-- CUERPO DE LA PÁGINA -->
-            <div class="content-body">
-                <section class="welcome-card" style="margin-bottom: 1.5rem;">
-                    <h2>¡Hola, <span id="welcomeUser">Usuario</span>!</h2>
-                    <p>Bienvenido al sistema de administración.</p>
-                    
-                    <!-- Botón de Acceso a Registrar Actividad -->
-                    <a href="act_propia.html" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px; margin-top: 1rem; padding: 10px 20px; background-color: #1d4ed8; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600; transition: background-color 0.2s;">
-                        <span>📋</span> Registrar Actividad Propia
-                    </a>
-                </section>
+
+            <div class="dashboard-wrapper">
+                <!-- Barra Superior: Filtro y Acción -->
+                <div class="dashboard-topbar">
+                    <div class="filter-group">
+                        <label for="select_periodo">Período de Facturación</label>
+                        <select id="select_periodo" class="custom-select">
+                            <option value="">Seleccione un período...</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="location.href='act_propia.html'">
+                        📄 Registrar Actividad Propia
+                    </button>
+                </div>
+
+                <div class="metrics-grid">
+                    <!-- Tarjeta 1: Monto Facturado -->
+                    <div class="metric-card">
+                        <div class="card-icon">💵</div>
+                        <div class="card-info">
+                            <span class="card-label">MONTO FACTURADO</span>
+                            <h2 class="card-value" id="lbl_monto_facturado">$0.00</h2>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta 2: Total Actividades -->
+                    <div class="metric-card">
+                        <div class="card-info text-center">
+                            <span class="card-label">TOTAL ACTIVIDADES</span>
+                            <h2 class="card-value-large" id="lbl_total_actividades">0</h2>
+                            <span class="card-sublabel">
+                                <span id="lbl_registros_guardados">0</span> REGISTROS GUARDADOS
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta 3: Excedente Fibra -->
+                    <div class="metric-card">
+                        <div class="card-icon">🧵</div>
+                        <div class="card-info">
+                            <span class="card-label">EXCEDENTE FIBRA</span>
+                            <h2 class="card-value" id="lbl_excedente_fibra">0 m</h2>
+                            <span class="card-subtext" id="lbl_excedente_valor">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta 4: Puntos Red y Equipos AC -->
+                    <div class="metric-card">
+                        <div class="card-icon">🔌</div>
+                        <div class="card-info">
+                            <span class="card-label">PUNTOS RED Y EQUIPOS AC</span>
+                            <h2 class="card-value" id="lbl_puntos_red_ac">0 Pts / 0 AC</h2>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="dashboard-container">
-    <!-- Filtro Superior de Período -->
-    <div class="periodo-filter-box">
-        <label for="select_periodo"><strong>Período:</strong></label>
-        <select id="select_periodo" class="select-periodo">
-            <option value="">Seleccione un período...</option>
-        </select>
+
+            <!-- Secciones de Resumen y Detalles -->
+<div class="dashboard-secondary-grid">
+    <!-- Card: Resumen por Cuadrilla -->
+    <div class="info-card">
+        <h3 class="card-section-title">Resumen por Cuadrilla</h3>
+        <div class="cuadrilla-item">
+            <div>
+                <strong class="item-title">PROPIA</strong>
+                <span class="item-subtitle" id="lbl_cuadrilla_trabajos">0 trabajos</span>
+            </div>
+            <span class="item-amount-green" id="lbl_cuadrilla_monto">$0.00</span>
+        </div>
     </div>
 
-    <!-- Tarjetas de Resumen -->
-    <div class="metrics-grid">
-        <div class="metric-card">
-            <span class="card-title">Monto Facturado</span>
-            <h2 id="lbl_monto_facturado">$0.00</h2>
-        </div>
-
-        <div class="metric-card">
-            <span class="card-title">Total Actividades</span>
-            <h2 id="lbl_total_actividades">0</h2>
-        </div>
-
-        <div class="metric-card">
-            <span class="card-title">Registros Guardados</span>
-            <h2 id="lbl_registros_guardados">0</h2>
-        </div>
-
-        <div class="metric-card">
-            <span class="card-title">Excedente Fibra</span>
-            <h2 id="lbl_excedente_fibra">0 m</h2>
-            <small id="lbl_excedente_valor">$0.00</small>
-        </div>
-
-        <div class="metric-card">
-            <span class="card-title">Puntos Red y Equipos AC</span>
-            <h2 id="lbl_puntos_red_ac">0 Pts / 0 AC</h2>
+    <!-- Card: Detalle de Actividades -->
+    <div class="info-card">
+        <h3 class="card-section-title">Detalle de Actividades</h3>
+        <div class="activity-list" id="cnt_detalle_actividades">
+            <!-- Se carga dinámicamente -->
         </div>
     </div>
 </div>
+
+<!-- Card: Tabla Últimos Registros -->
+<div class="table-card">
+    <div class="table-header-bar">
+        <h3>Últimos Registros <a href="#" class="link-see-all">Ver todos &rarr;</a></h3>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>FECHA</th>
+                    <th>CUADRILLA</th>
+                    <th>CLIENTE</th>
+                    <th>TIPO</th>
+                    <th>FORMA</th>
+                    <th>MONTO</th>
+                </tr>
+            </thead>
+            <tbody id="tbl_ultimos_registros">
+                <!-- Se carga dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
 
             <!-- PIE DE PÁGINA -->
             <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); margin-top: auto;">
@@ -121,7 +179,7 @@
     <script src="../js/auth.js"></script>
     <script src="../js/dashboard.js"></script>
     <script src="../js/layout.js"></script>
-    
+
 </body>
 
 </html>
