@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Actividades - FMAX</title>
+    <title>Actividades</title>
     <link rel="icon" type="image/png" href="../image/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/layout.css">
@@ -74,7 +74,7 @@
                         </select>
                     </div>
                     <button class="btn-primary" onclick="location.href='act_propia.html'">
-                        📄 Registrar Actividad Propia
+                        📄 Registrar Actividad
                     </button>
                 </div>
 
@@ -83,7 +83,7 @@
                     <div class="metric-card">
                         <div class="card-icon">💵</div>
                         <div class="card-info">
-                            <span class="card-label">MONTO FACTURADO</span>
+                            <span class="card-label">MONTO A FACTURAR</span>
                             <h2 class="card-value" id="lbl_monto_facturado">$0.00</h2>
                         </div>
                     </div>
@@ -94,7 +94,7 @@
                             <span class="card-label">TOTAL ACTIVIDADES</span>
                             <h2 class="card-value-large" id="lbl_total_actividades">0</h2>
                             <span class="card-sublabel">
-                                <span id="lbl_registros_guardados">0</span> REGISTROS GUARDADOS
+                                <span id="lbl_registros_guardados">0</span> REGISTROS
                             </span>
                         </div>
                     </div>
@@ -103,7 +103,7 @@
                     <div class="metric-card">
                         <div class="card-icon">🧵</div>
                         <div class="card-info">
-                            <span class="card-label">EXCEDENTE FIBRA</span>
+                            <span class="card-label">EXCEDENTE DE FIBRA</span>
                             <h2 class="card-value" id="lbl_excedente_fibra">0 m</h2>
                             <span class="card-subtext" id="lbl_excedente_valor">$0.00</span>
                         </div>
@@ -113,47 +113,47 @@
                     <div class="metric-card">
                         <div class="card-icon">🔌</div>
                         <div class="card-info">
-                            <span class="card-label">PUNTOS RED Y EQUIPOS AC</span>
-                            <h2 class="card-value" id="lbl_puntos_red_ac">0 Pts / 0 AC</h2>
+                            <span class="card-label">P. RED / AC</span>
+                            <h2 class="card-value" id="lbl_puntos_red_ac">0 / 0 </h2>
                         </div>
                     </div>
                 </div>
             </div>
 
 
-<!-- Se quita la cuadrilla y se centra la tarjeta de actividades -->
-<div class="section-centered-container">
-    <div class="card-dashboard">
-        <h3 class="card-title">Detalle de Actividades</h3>
-        <div id="cnt_detalle_actividades">
-            <!-- Se llena dinámicamente desde JavaScript -->
-        </div>
-    </div>
-</div>
+            <!-- Se quita la cuadrilla y se centra la tarjeta de actividades -->
+            <div class="section-centered-container">
+                <div class="card-dashboard">
+                    <h3 class="card-title">Detalle de Actividades</h3>
+                    <div id="cnt_detalle_actividades">
+                        <!-- Se llena dinámicamente desde JavaScript -->
+                    </div>
+                </div>
+            </div>
 
-<!-- Card: Tabla Últimos Registros -->
-<div class="table-card">
-    <div class="table-header-bar">
-        <h3>Últimos Registros <a href="#" class="link-see-all">Ver todos &rarr;</a></h3>
-    </div>
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>FECHA</th>
-                    <th>CUADRILLA</th>
-                    <th>CLIENTE</th>
-                    <th>TIPO</th>
-                    <th>FORMA</th>
-                    <th>MONTO</th>
-                </tr>
-            </thead>
-            <tbody id="tbl_ultimos_registros">
-                <!-- Se carga dinámicamente -->
-            </tbody>
-        </table>
-    </div>
-</div>
+            <!-- Card: Tabla Últimos Registros -->
+            <div class="table-card">
+                <div class="table-header-bar">
+                    <h3>Últimos Registros <a href="#" class="link-see-all">Ver todos &rarr;</a></h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>FECHA</th>
+                                <th>CUADRILLA</th>
+                                <th>CLIENTE</th>
+                                <th>TIPO</th>
+                                <th>FORMA</th>
+                                <th>MONTO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl_ultimos_registros">
+                            <!-- Se carga dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
 
             <!-- PIE DE PÁGINA -->

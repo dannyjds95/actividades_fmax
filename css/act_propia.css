@@ -214,3 +214,25 @@ button {
 .btn-submit:hover {
     background: var(--primary-hover);
 }
+
+.total-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* Modifica el tamaño del texto "TOTAL ACTIVIDAD" */
+.total-box span {
+    font-size: 14px; 
+}
+
+/* Modifica el tamaño del monto ($0.00) usando su ID */
+#lbl_total {
+    font-size: 50px; 
+}
+
+.summary-container {
+    display: none;
+}

@@ -37,7 +37,7 @@ async function cargarMetricas(fechaInicio, fechaFin) {
             document.getElementById('lbl_registros_guardados').textContent = m.registros_guardados || 0;
             document.getElementById('lbl_excedente_fibra').textContent = `${m.excedente_m || 0} m`;
             document.getElementById('lbl_excedente_valor').textContent = `$${parseFloat(m.excedente_valor || 0).toFixed(2)}`;
-            document.getElementById('lbl_puntos_red_ac').textContent = `${m.puntos_red || 0} Pts / ${m.equipos_ac || 0} AC`;
+            document.getElementById('lbl_puntos_red_ac').textContent = `${m.puntos_red || 0}    / ${m.equipos_ac || 0} `;
         }
     } catch (err) {
         console.error('Error cargando métricas:', err);
@@ -52,7 +52,7 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
         }
 
         const res = await fetch(url);
-        
+
         // Si el servidor falla antes de responder en JSON
         if (!res.ok) {
             const errorHtml = await res.text();
@@ -66,22 +66,22 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
             // 1. Resumen Cuadrilla
             const trabajos = data.cuadrilla?.total_trabajos || 0;
             const monto = parseFloat(data.cuadrilla?.total_monto || 0).toFixed(2);
-            
+
             const elTrabajos = document.getElementById('lbl_cuadrilla_trabajos');
             const elMonto = document.getElementById('lbl_cuadrilla_monto');
-            
+
             if (elTrabajos) elTrabajos.textContent = `${trabajos} trabajos`;
             if (elMonto) elMonto.textContent = `$${monto}`;
 
-// 2. Detalle de Actividades
-const cntActividades = document.getElementById('cnt_detalle_actividades');
-if (cntActividades) {
-    if (data.actividades && data.actividades.length > 0) {
-        cntActividades.innerHTML = data.actividades.map(act => {
-            // Lee 'cantidad', si no existe busca 'registros', si no asigna 0
-            const totalCantidad = act.cantidad !== undefined ? act.cantidad : (act.registros !== undefined ? act.registros : 0);
+            // 2. Detalle de Actividades
+            const cntActividades = document.getElementById('cnt_detalle_actividades');
+            if (cntActividades) {
+                if (data.actividades && data.actividades.length > 0) {
+                    cntActividades.innerHTML = data.actividades.map(act => {
+                        // Lee 'cantidad', si no existe busca 'registros', si no asigna 0
+                        const totalCantidad = act.cantidad !== undefined ? act.cantidad : (act.registros !== undefined ? act.registros : 0);
 
-            return `
+                        return `
                 <div class="activity-item">
                     <div>
                         <span class="badge-tipo ${getBadgeClass(act.tipo)}">${act.tipo}</span>
@@ -90,11 +90,11 @@ if (cntActividades) {
                     <span class="activity-amount-blue">$${parseFloat(act.monto || 0).toFixed(2)}</span>
                 </div>
             `;
-        }).join('');
-    } else {
-        cntActividades.innerHTML = '<p style="color:#94a3b8; font-size:13px; text-align:center; padding:12px;">Sin actividades en este período</p>';
-    }
-}
+                    }).join('');
+                } else {
+                    cntActividades.innerHTML = '<p style="color:#94a3b8; font-size:13px; text-align:center; padding:12px;">Sin actividades en este período</p>';
+                }
+            }
             // 3. Tabla Últimos 10 Registros
             const tblBody = document.getElementById('tbl_ultimos_registros');
             if (tblBody) {
