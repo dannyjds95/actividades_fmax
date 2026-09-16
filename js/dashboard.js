@@ -138,7 +138,7 @@ async function cargarPeriodos(selectPeriodo) {
                 const fin = formatFecha(p.fecha_final);
 
                 option.value = id;
-                option.textContent = `Fecha (${inicio} a ${fin})`;
+                option.textContent = `${inicio} a ${fin}`;
                 option.dataset.inicio = inicio;
                 option.dataset.fin = fin;
                 selectPeriodo.appendChild(option);
