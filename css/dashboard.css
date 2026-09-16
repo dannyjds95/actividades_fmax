@@ -343,3 +343,19 @@
         grid-template-columns: 1fr;
     }
 }
+
+.section-centered-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 20px 0;
+}
+
+.section-centered-container .card-dashboard {
+    width: 100%;
+    max-width: 600px; /* Ajusta el ancho según prefieras (ej. 600px o 700px) */
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
