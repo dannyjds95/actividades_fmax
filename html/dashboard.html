@@ -72,6 +72,45 @@
                 </section>
             </div>
 
+            <div class="dashboard-container">
+    <!-- Filtro Superior de Período -->
+    <div class="periodo-filter-box">
+        <label for="select_periodo"><strong>Período:</strong></label>
+        <select id="select_periodo" class="select-periodo">
+            <option value="">Seleccione un período...</option>
+        </select>
+    </div>
+
+    <!-- Tarjetas de Resumen -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <span class="card-title">Monto Facturado</span>
+            <h2 id="lbl_monto_facturado">$0.00</h2>
+        </div>
+
+        <div class="metric-card">
+            <span class="card-title">Total Actividades</span>
+            <h2 id="lbl_total_actividades">0</h2>
+        </div>
+
+        <div class="metric-card">
+            <span class="card-title">Registros Guardados</span>
+            <h2 id="lbl_registros_guardados">0</h2>
+        </div>
+
+        <div class="metric-card">
+            <span class="card-title">Excedente Fibra</span>
+            <h2 id="lbl_excedente_fibra">0 m</h2>
+            <small id="lbl_excedente_valor">$0.00</small>
+        </div>
+
+        <div class="metric-card">
+            <span class="card-title">Puntos Red y Equipos AC</span>
+            <h2 id="lbl_puntos_red_ac">0 Pts / 0 AC</h2>
+        </div>
+    </div>
+</div>
+
             <!-- PIE DE PÁGINA -->
             <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); margin-top: auto;">
                 <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
