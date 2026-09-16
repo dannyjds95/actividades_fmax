@@ -74,23 +74,22 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
             if (elMonto) elMonto.textContent = `$${monto}`;
 
             // 2. Detalle de Actividades
-            const cntActividades = document.getElementById('cnt_detalle_actividades');
-            if (cntActividades) {
-                if (data.actividades && data.actividades.length > 0) {
-                    cntActividades.innerHTML = data.actividades.map(act => `
-                        <div class="activity-item">
-                            <div>
-                                <span class="badge-tipo ${getBadgeClass(act.tipo)}">${act.tipo}</span>
-                                <div class="item-subtitle" style="margin-top:4px;">${act.registros} registros</div>
-                            </div>
-                            <span class="activity-amount-blue">$${parseFloat(act.monto || 0).toFixed(2)}</span>
-                        </div>
-                    `).join('');
-                } else {
-                    cntActividades.innerHTML = '<p style="color:#94a3b8; font-size:13px; text-align:center; padding:12px;">Sin actividades en este período</p>';
-                }
-            }
-
+const cntActividades = document.getElementById('cnt_detalle_actividades');
+if (cntActividades) {
+    if (data.actividades && data.actividades.length > 0) {
+        cntActividades.innerHTML = data.actividades.map(act => `
+            <div class="activity-item">
+                <div>
+                    <span class="badge-tipo ${getBadgeClass(act.tipo)}">${act.tipo}</span>
+                    <div class="item-subtitle" style="margin-top:4px;">${act.cantidad} cantidad</div>
+                </div>
+                <span class="activity-amount-blue">$${parseFloat(act.monto || 0).toFixed(2)}</span>
+            </div>
+        `).join('');
+    } else {
+        cntActividades.innerHTML = '<p style="color:#94a3b8; font-size:13px; text-align:center; padding:12px;">Sin actividades en este período</p>';
+    }
+}
             // 3. Tabla Últimos 10 Registros
             const tblBody = document.getElementById('tbl_ultimos_registros');
             if (tblBody) {
