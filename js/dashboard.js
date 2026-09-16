@@ -73,19 +73,24 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
             if (elTrabajos) elTrabajos.textContent = `${trabajos} trabajos`;
             if (elMonto) elMonto.textContent = `$${monto}`;
 
-            // 2. Detalle de Actividades
+// 2. Detalle de Actividades
 const cntActividades = document.getElementById('cnt_detalle_actividades');
 if (cntActividades) {
     if (data.actividades && data.actividades.length > 0) {
-        cntActividades.innerHTML = data.actividades.map(act => `
-            <div class="activity-item">
-                <div>
-                    <span class="badge-tipo ${getBadgeClass(act.tipo)}">${act.tipo}</span>
-                    <div class="item-subtitle" style="margin-top:4px;">${act.cantidad} cantidad</div>
+        cntActividades.innerHTML = data.actividades.map(act => {
+            // Lee 'cantidad', si no existe busca 'registros', si no asigna 0
+            const totalCantidad = act.cantidad !== undefined ? act.cantidad : (act.registros !== undefined ? act.registros : 0);
+
+            return `
+                <div class="activity-item">
+                    <div>
+                        <span class="badge-tipo ${getBadgeClass(act.tipo)}">${act.tipo}</span>
+                        <div class="item-subtitle" style="margin-top:4px;">${totalCantidad} cantidad</div>
+                    </div>
+                    <span class="activity-amount-blue">$${parseFloat(act.monto || 0).toFixed(2)}</span>
                 </div>
-                <span class="activity-amount-blue">$${parseFloat(act.monto || 0).toFixed(2)}</span>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     } else {
         cntActividades.innerHTML = '<p style="color:#94a3b8; font-size:13px; text-align:center; padding:12px;">Sin actividades en este período</p>';
     }

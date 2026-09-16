@@ -45,12 +45,13 @@ module.exports = async (req, res) => {
             console.error('Error Q1:', e1.message);
         }
 
-// 2. Detalle de Actividades por Tipo (Suma de act_cantidad)
+// 2. Detalle de Actividades por Tipo
 try {
     const [q2] = await connection.execute(
         `SELECT 
             COALESCE(act_tipo, 'GENERAL') AS tipo, 
-            COALESCE(SUM(act_cantidad), 0) AS cantidad, 
+            COALESCE(SUM(act_cantidad), 0) AS cantidad,
+            COUNT(*) AS registros,
             COALESCE(SUM(act_valor), 0) AS monto 
          FROM actividad_detalle ${whereClause} 
          GROUP BY act_tipo 
