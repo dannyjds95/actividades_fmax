@@ -104,7 +104,6 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
                         return `
                             <tr>
                                 <td>${fechaFormateada}</td>
-                                <td class="td-cuadrilla">${reg.cuadrilla}</td>
                                 <td>${reg.cliente}</td>
                                 <td><span class="badge-tipo ${getBadgeClass(reg.tipo)}">${reg.tipo}</span></td>
                                 <td>${reg.forma}</td>
