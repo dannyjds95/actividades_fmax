@@ -224,14 +224,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Cargar y completar el formulario con la información del registro seleccionada
-// Cargar y popular el formulario con recálculo automático y activación de radios SI/NO
+// Cargar y popular el formulario de edición de forma segura
 async function cargarDatosParaEditar(id) {
     try {
-        // 1. Encabezado del formulario
         const tituloHeader = document.querySelector('h1, h2, h3, .title');
         if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
 
-        // 2. Petición a la API
         const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
         if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
 
@@ -244,112 +242,69 @@ async function cargarDatosParaEditar(id) {
             return;
         }
 
-        console.log('📦 Registro recuperado de la BD:', item);
-
-        // Helper para asignar valor y forzar recálculo
-        const setValAndTrigger = (selector, val) => {
-            const el = typeof selector === 'string' 
-                ? (document.getElementById(selector) || document.querySelector(selector)) 
-                : selector;
-            if (el) {
-                el.value = (val !== null && val !== undefined) ? val : '';
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-                el.dispatchEvent(new Event('change', { bubbles: true }));
+        // Helper seguro para asignar valores exclusivamente por ID o selector específico
+        const setVal = (selectors, val) => {
+            if (val === null || val === undefined) return;
+            const list = Array.isArray(selectors) ? selectors : [selectors];
+            for (let s of list) {
+                const el = document.getElementById(s) || document.querySelector(s);
+                if (el) {
+                    el.value = val;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    break;
+                }
             }
-            return el;
         };
 
-        // 3. Llenar campos principales
-        setValAndTrigger('act_id', item.act_id || item.id);
-        setValAndTrigger('act_fecha', item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
-        setValAndTrigger('act_cliente', item.act_cliente);
-        setValAndTrigger('act_sector', item.act_sector);
-        setValAndTrigger('act_tipo', item.act_tipo);
+        // 1. Asignar Datos Principales del Formulario
+        setVal(['act_id', 'id'], item.act_id || item.id);
+        setVal(['act_fecha', 'fecha'], item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
+        setVal(['act_cliente', 'cliente', 'nombre_cliente'], item.act_cliente);
+        setVal(['act_sector', 'sector'], item.act_sector);
+        setVal(['act_tipo', 'tipo'], item.act_tipo);
 
-        // Cargar Forma de Actividad
+        // Asignar Forma de Actividad
         setTimeout(() => {
-            const selectForma = document.getElementById('act_forma') || document.querySelector('select[name="act_forma"]') || document.querySelectorAll('select')[1];
-            if (selectForma && item.act_forma) {
-                const valBuscado = String(item.act_forma).trim().toUpperCase();
-                const opcion = Array.from(selectForma.options).find(
-                    opt => opt.value.trim().toUpperCase() === valBuscado || opt.text.trim().toUpperCase() === valBuscado
-                );
-                selectForma.value = opcion ? opcion.value : item.act_forma;
-                selectForma.dispatchEvent(new Event('change', { bubbles: true }));
-            }
+            setVal(['act_forma', 'forma'], item.act_forma);
         }, 50);
 
-        setValAndTrigger('act_fibra', item.act_fibra || 0);
-        setValAndTrigger('act_detalle', item.act_detalle || '');
+        setVal(['act_fibra', 'fibra'], item.act_fibra || 0);
+        setVal(['act_detalle', 'detalle', 'comentario'], item.act_detalle || '');
 
-        // 4. Extraer valores numéricos de Puntos de Red, AC y Cobro
-        const valPtRed = parseFloat(item.act_pred || item.act_pt_red || item.act_puntos_red || 0);
-        const valAC = parseFloat(item.act_ac || item.cant_ac || 0);
-        const valCobro = parseFloat(item.act_valores_cobrados || item.act_cobro || item.valores_cobrados || 0);
+        // 2. Extraer Valores Numéricos
+        const valPtRed = parseFloat(item.act_pred || item.act_pt_red || 0);
+        const valAC = parseFloat(item.act_ac || 0);
+        const valCobro = parseFloat(item.act_valores_cobrados || 0);
 
-        // 5. Función universal para activar los Radio "SI" y llenar los inputs desplegados
-        const activarSeccionRadio = (palabraClaveTexto, valorNumerico, idsInputsPosibles) => {
-            if (valorNumerico <= 0 || isNaN(valorNumerico)) return;
-
-            // a. Localizar el contenedor donde está la pregunta
-            const contenedores = Array.from(document.querySelectorAll('div, .form-group, .card, .field-group'));
-            const tarjetaPregunta = contenedores.find(c => c.textContent && c.textContent.toLowerCase().includes(palabraClaveTexto.toLowerCase()));
-
-            let radioSi = null;
-
-            if (tarjetaPregunta) {
-                radioSi = tarjetaPregunta.querySelector('input[type="radio"][value="SI"], input[type="radio"][value="si"], input[type="radio"][value="1"]');
+        // 3. Activar Secciones SI/NO y cargar sus selects/inputs específicos
+        const manejarRadioYSeleccion = (radioName, tieneValor, valor, inputSelectors) => {
+            const targetVal = tieneValor ? 'SI' : 'NO';
+            const radio = document.querySelector(`input[name="${radioName}"][value="${targetVal}"], input[name="${radioName}"][value="${targetVal.toLowerCase()}"]`);
+            
+            if (radio) {
+                radio.checked = true;
+                radio.click();
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
-            // b. Si no se halló por texto, buscar en todos los radios "SI" de la página
-            if (!radioSi) {
-                const radiosSi = Array.from(document.querySelectorAll('input[type="radio"][value="SI"], input[type="radio"][value="si"], input[type="radio"][value="1"]'));
-                radioSi = radiosSi.find(r => 
-                    r.name.toLowerCase().includes(palabraClaveTexto) || 
-                    r.id.toLowerCase().includes(palabraClaveTexto)
-                );
+            if (tieneValor) {
+                setTimeout(() => {
+                    setVal(inputSelectors, valor);
+                }, 80);
             }
-
-            // c. Marcar "SI" y disparar click
-            if (radioSi) {
-                radioSi.checked = true;
-                radioSi.click();
-                radioSi.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-
-            // d. Escribir el valor en la caja de texto correspondiente
-            setTimeout(() => {
-                let inputLlenado = false;
-                for (let idOrName of idsInputsPosibles) {
-                    const el = document.getElementById(idOrName) || document.querySelector(`input[name="${idOrName}"]`);
-                    if (el) {
-                        setValAndTrigger(el, valorNumerico);
-                        inputLlenado = true;
-                        break;
-                    }
-                }
-
-                // Fallback: si no encontró por ID, busca el primer input de texto/número visible dentro de la tarjeta
-                if (!inputLlenado && tarjetaPregunta) {
-                    const inputSecundario = tarjetaPregunta.querySelector('input[type="number"], input[type="text"]');
-                    if (inputSecundario) {
-                        setValAndTrigger(inputSecundario, valorNumerico);
-                    }
-                }
-            }, 100);
         };
 
-        // 6. Ejecutar activación de Puntos de Red, AC y Valores Cobrados
-        activarSeccionRadio('puntos', valPtRed, ['act_pred', 'act_pt_red', 'cant_pred', 'puntos_red', 'pred']);
-        activarSeccionRadio('ac', valAC, ['act_ac', 'cant_ac', 'equipos_ac', 'ac']);
-        activarSeccionRadio('cobr', valCobro, ['act_valores_cobrados', 'valores_cobrados', 'val_cobrado', 'cobro']);
+        manejarRadioYSeleccion('radio_pred', valPtRed > 0, valPtRed, ['act_pred', 'cant_pred', 'puntos_red', 'pt_red']);
+        manejarRadioYSeleccion('radio_ac', valAC > 0, valAC, ['act_ac', 'cant_ac', 'equipos_ac']);
+        manejarRadioYSeleccion('radio_cobro', valCobro > 0, valCobro, ['act_valores_cobrados', 'valores_cobrados', 'val_cobrado']);
 
-        // 7. Forzar el recálculo general de la tarjeta de resumen inferior
+        // 4. Recalcular métricas del resumen inferior
         setTimeout(() => {
             if (typeof calcularTotales === 'function') calcularTotales();
             if (typeof actualizarResumen === 'function') actualizarResumen();
             if (typeof recalcular === 'function') recalcular();
-        }, 200);
+        }, 150);
 
     } catch (err) {
         console.error('Error al cargar datos de edición:', err);
