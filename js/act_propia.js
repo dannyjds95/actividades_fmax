@@ -223,13 +223,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Cargar y completar el formulario con la información del registro seleccionada
-// Cargar y popular el formulario de edición de forma segura
+// Cargar y popular el formulario de edición de forma precisa
 async function cargarDatosParaEditar(id) {
     try {
         const tituloHeader = document.querySelector('h1, h2, h3, .title');
         if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
 
+        // Petición a la API usando la URL correspondiente
         const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
         if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
 
@@ -242,12 +242,14 @@ async function cargarDatosParaEditar(id) {
             return;
         }
 
-        // Helper seguro para asignar valores exclusivamente por ID o selector específico
+        console.log('🔍 DATOS RECUPERADOS DE LA BD:', item);
+
+        // Helper seguro para asignar valor sin alterar otros campos
         const setVal = (selectors, val) => {
             if (val === null || val === undefined) return;
             const list = Array.isArray(selectors) ? selectors : [selectors];
             for (let s of list) {
-                const el = document.getElementById(s) || document.querySelector(s);
+                const el = document.getElementById(s) || document.querySelector(`[name="${s}"]`);
                 if (el) {
                     el.value = val;
                     el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -257,54 +259,66 @@ async function cargarDatosParaEditar(id) {
             }
         };
 
-        // 1. Asignar Datos Principales del Formulario
+        // 1. Llenar Campos Básicos
         setVal(['act_id', 'id'], item.act_id || item.id);
         setVal(['act_fecha', 'fecha'], item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
         setVal(['act_cliente', 'cliente', 'nombre_cliente'], item.act_cliente);
         setVal(['act_sector', 'sector'], item.act_sector);
         setVal(['act_tipo', 'tipo'], item.act_tipo);
+        setVal(['act_fibra', 'fibra'], item.act_fibra || 0);
+        setVal(['act_detalle', 'detalle', 'comentario'], item.act_detalle || '');
 
-        // Asignar Forma de Actividad
+        // Cargar Forma de Actividad tras asegurar el tipo
         setTimeout(() => {
             setVal(['act_forma', 'forma'], item.act_forma);
         }, 50);
 
-        setVal(['act_fibra', 'fibra'], item.act_fibra || 0);
-        setVal(['act_detalle', 'detalle', 'comentario'], item.act_detalle || '');
+        // 2. Extraer cantidades de Puntos de Red, AC y Cobros
+        const valPtRed = parseFloat(item.act_pred ?? item.act_pt_red ?? item.act_puntos_red ?? item.cant_pred ?? item.puntos_red ?? 0);
+        const valAC = parseFloat(item.act_ac ?? item.cant_ac ?? item.equipos_ac ?? item.ac ?? 0);
+        const valCobro = parseFloat(item.act_valores_cobrados ?? item.act_cobro ?? item.valores_cobrados ?? item.cobro ?? 0);
 
-        // 2. Extraer Valores Numéricos
-        const valPtRed = parseFloat(item.act_pred || item.act_pt_red || 0);
-        const valAC = parseFloat(item.act_ac || 0);
-        const valCobro = parseFloat(item.act_valores_cobrados || 0);
+        // 3. Función para simular el click en 'SI' y asignar la cantidad en el selector visible
+        const activarModulo = (radioName, keywordText, valor, inputSelectors) => {
+            const esPositivo = valor > 0;
+            const targetVal = esPositivo ? 'SI' : 'NO';
 
-        // 3. Activar Secciones SI/NO y cargar sus selects/inputs específicos
-        const manejarRadioYSeleccion = (radioName, tieneValor, valor, inputSelectors) => {
-            const targetVal = tieneValor ? 'SI' : 'NO';
-            const radio = document.querySelector(`input[name="${radioName}"][value="${targetVal}"], input[name="${radioName}"][value="${targetVal.toLowerCase()}"]`);
-            
+            // Buscar el radio por su atributo name o por el texto en su contenedor
+            let radio = document.querySelector(`input[name="${radioName}"][value="${targetVal}"], input[name="${radioName}"][value="${targetVal.toLowerCase()}"]`);
+
+            if (!radio) {
+                const contenedores = Array.from(document.querySelectorAll('div, .form-group, .card, .field-group'));
+                const card = contenedores.find(c => c.textContent && c.textContent.toLowerCase().includes(keywordText.toLowerCase()));
+                if (card) {
+                    radio = card.querySelector(`input[type="radio"][value="${targetVal}"], input[type="radio"][value="${targetVal.toLowerCase()}"]`);
+                }
+            }
+
             if (radio) {
                 radio.checked = true;
-                radio.click();
+                radio.click(); // Ejecuta el script nativo que hace visible el <select>
                 radio.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
-            if (tieneValor) {
+            // Una vez desplegado el control, colocar el número correspondiente (ej: 1)
+            if (esPositivo) {
                 setTimeout(() => {
                     setVal(inputSelectors, valor);
-                }, 80);
+                }, 100);
             }
         };
 
-        manejarRadioYSeleccion('radio_pred', valPtRed > 0, valPtRed, ['act_pred', 'cant_pred', 'puntos_red', 'pt_red']);
-        manejarRadioYSeleccion('radio_ac', valAC > 0, valAC, ['act_ac', 'cant_ac', 'equipos_ac']);
-        manejarRadioYSeleccion('radio_cobro', valCobro > 0, valCobro, ['act_valores_cobrados', 'valores_cobrados', 'val_cobrado']);
+        // Ejecutar activación para Puntos de Red, Equipos AC y Cobros
+        activarModulo('radio_pred', 'puntos', valPtRed, ['act_pred', 'cant_pred', 'puntos_red', 'pt_red', 'select_pred']);
+        activarModulo('radio_ac', 'ac', valAC, ['act_ac', 'cant_ac', 'equipos_ac', 'select_ac']);
+        activarModulo('radio_cobro', 'cobr', valCobro, ['act_valores_cobrados', 'valores_cobrados', 'val_cobrado', 'cobro']);
 
-        // 4. Recalcular métricas del resumen inferior
+        // 4. Recalcular los totales en la tarjeta verde/azul del resumen inferior
         setTimeout(() => {
             if (typeof calcularTotales === 'function') calcularTotales();
             if (typeof actualizarResumen === 'function') actualizarResumen();
             if (typeof recalcular === 'function') recalcular();
-        }, 150);
+        }, 200);
 
     } catch (err) {
         console.error('Error al cargar datos de edición:', err);
