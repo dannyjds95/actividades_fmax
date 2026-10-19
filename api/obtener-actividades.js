@@ -10,7 +10,8 @@ module.exports = async (req, res) => {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const { inicio, fin, tipo, sector, cobradas } = req.query;
+    // 1. Extraer 'cliente' (o 'sector' como alternativa) de la URL
+    const { inicio, fin, tipo, cliente, sector, cobradas } = req.query;
 
     let connection;
     try {
@@ -26,25 +27,26 @@ module.exports = async (req, res) => {
         let conditions = [];
         let params = [];
 
-        // 1. Filtro de Rango de Fechas
+        // 2. Filtro de Rango de Fechas
         if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
             conditions.push('act_fecha BETWEEN ? AND ?');
             params.push(inicio, fin);
         }
 
-        // 2. Filtro por Tipo (INSTALACION, TRASLADO, VISITA)
-        if (tipo && tipo !== 'TODOS') {
+        // 3. Filtro por Tipo (INSTALACION, TRASLADO, VISITA)
+        if (tipo && tipo !== 'TODOS' && tipo.trim() !== '') {
             conditions.push('act_tipo = ?');
             params.push(tipo);
         }
 
-        // 3. Búsqueda por Sector o Cliente
-        if (sector && sector.trim() !== '') {
-            conditions.push('(act_cliente LIKE ? OR act_detalle LIKE ?)');
-            params.push(`%${sector}%`, `%${sector}%`);
+        // 4. Búsqueda por Nombre de Cliente (Soporta 'cliente' o 'sector')
+        const terminoCliente = (cliente || sector || '').trim();
+        if (terminoCliente !== '') {
+            conditions.push('act_cliente LIKE ?');
+            params.push(`%${terminoCliente}%`);
         }
 
-        // 4. Filtro por Valores Cobrados
+        // 5. Filtro por Valores Cobrados
         if (cobradas === 'si') {
             conditions.push('CAST(COALESCE(act_valores_cobrados, 0) AS DECIMAL(10,2)) > 0');
         } else if (cobradas === 'no') {
