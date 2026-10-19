@@ -224,14 +224,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Cargar y completar el formulario con la información del registro seleccionada
-// Cargar y popular el formulario con recálculo automático de totales
+// Cargar y popular el formulario con recálculo automático y activación de radios SI/NO
 async function cargarDatosParaEditar(id) {
     try {
-        // 1. Cambiar título del encabezado
+        // 1. Encabezado del formulario
         const tituloHeader = document.querySelector('h1, h2, h3, .title');
         if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
 
-        // 2. Consultar datos de la actividad
+        // 2. Petición a la API
         const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
         if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
 
@@ -244,9 +244,13 @@ async function cargarDatosParaEditar(id) {
             return;
         }
 
-        // Helper para asignar valor y forzar el evento 'change' / 'input'
-        const setValAndTrigger = (idOrSelector, val) => {
-            const el = document.getElementById(idOrSelector) || document.querySelector(idOrSelector);
+        console.log('📦 Registro recuperado de la BD:', item);
+
+        // Helper para asignar valor y forzar recálculo
+        const setValAndTrigger = (selector, val) => {
+            const el = typeof selector === 'string' 
+                ? (document.getElementById(selector) || document.querySelector(selector)) 
+                : selector;
             if (el) {
                 el.value = (val !== null && val !== undefined) ? val : '';
                 el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -255,66 +259,97 @@ async function cargarDatosParaEditar(id) {
             return el;
         };
 
-        // 3. Asignar ID oculto, Fecha, Cliente y Sector
+        // 3. Llenar campos principales
         setValAndTrigger('act_id', item.act_id || item.id);
         setValAndTrigger('act_fecha', item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
         setValAndTrigger('act_cliente', item.act_cliente);
         setValAndTrigger('act_sector', item.act_sector);
-
-        // 4. Seleccionar Tipo de Actividad primero
         setValAndTrigger('act_tipo', item.act_tipo);
 
-        // 5. Cargar 'Forma de Actividad' asegurando coincidencia de texto
+        // Cargar Forma de Actividad
         setTimeout(() => {
             const selectForma = document.getElementById('act_forma') || document.querySelector('select[name="act_forma"]') || document.querySelectorAll('select')[1];
             if (selectForma && item.act_forma) {
                 const valBuscado = String(item.act_forma).trim().toUpperCase();
-                
-                // Buscar la opción exacta dentro del select
                 const opcion = Array.from(selectForma.options).find(
                     opt => opt.value.trim().toUpperCase() === valBuscado || opt.text.trim().toUpperCase() === valBuscado
                 );
-
-                if (opcion) {
-                    selectForma.value = opcion.value;
-                } else {
-                    selectForma.value = item.act_forma;
-                }
+                selectForma.value = opcion ? opcion.value : item.act_forma;
                 selectForma.dispatchEvent(new Event('change', { bubbles: true }));
             }
         }, 50);
 
-        // 6. Asignar Fibra y Detalle
         setValAndTrigger('act_fibra', item.act_fibra || 0);
         setValAndTrigger('act_detalle', item.act_detalle || '');
 
-        // 7. Configurar Botones Radio y activar los campos correspondientes
-        const ptRed = parseFloat(item.act_pred || item.act_pt_red || 0);
-        const ac = parseFloat(item.act_ac || 0);
-        const cobro = parseFloat(item.act_valores_cobrados || 0);
+        // 4. Extraer valores numéricos de Puntos de Red, AC y Cobro
+        const valPtRed = parseFloat(item.act_pred || item.act_pt_red || item.act_puntos_red || 0);
+        const valAC = parseFloat(item.act_ac || item.cant_ac || 0);
+        const valCobro = parseFloat(item.act_valores_cobrados || item.act_cobro || item.valores_cobrados || 0);
 
-        const setRadioGroup = (radioName, hasValue, inputId, val) => {
-            const targetVal = hasValue ? 'SI' : 'NO';
-            const radio = document.querySelector(`input[name="${radioName}"][value="${targetVal}"]`);
-            if (radio) {
-                radio.checked = true;
-                radio.dispatchEvent(new Event('change', { bubbles: true }));
+        // 5. Función universal para activar los Radio "SI" y llenar los inputs desplegados
+        const activarSeccionRadio = (palabraClaveTexto, valorNumerico, idsInputsPosibles) => {
+            if (valorNumerico <= 0 || isNaN(valorNumerico)) return;
+
+            // a. Localizar el contenedor donde está la pregunta
+            const contenedores = Array.from(document.querySelectorAll('div, .form-group, .card, .field-group'));
+            const tarjetaPregunta = contenedores.find(c => c.textContent && c.textContent.toLowerCase().includes(palabraClaveTexto.toLowerCase()));
+
+            let radioSi = null;
+
+            if (tarjetaPregunta) {
+                radioSi = tarjetaPregunta.querySelector('input[type="radio"][value="SI"], input[type="radio"][value="si"], input[type="radio"][value="1"]');
             }
-            if (hasValue && inputId) {
-                setValAndTrigger(inputId, val);
+
+            // b. Si no se halló por texto, buscar en todos los radios "SI" de la página
+            if (!radioSi) {
+                const radiosSi = Array.from(document.querySelectorAll('input[type="radio"][value="SI"], input[type="radio"][value="si"], input[type="radio"][value="1"]'));
+                radioSi = radiosSi.find(r => 
+                    r.name.toLowerCase().includes(palabraClaveTexto) || 
+                    r.id.toLowerCase().includes(palabraClaveTexto)
+                );
             }
+
+            // c. Marcar "SI" y disparar click
+            if (radioSi) {
+                radioSi.checked = true;
+                radioSi.click();
+                radioSi.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            // d. Escribir el valor en la caja de texto correspondiente
+            setTimeout(() => {
+                let inputLlenado = false;
+                for (let idOrName of idsInputsPosibles) {
+                    const el = document.getElementById(idOrName) || document.querySelector(`input[name="${idOrName}"]`);
+                    if (el) {
+                        setValAndTrigger(el, valorNumerico);
+                        inputLlenado = true;
+                        break;
+                    }
+                }
+
+                // Fallback: si no encontró por ID, busca el primer input de texto/número visible dentro de la tarjeta
+                if (!inputLlenado && tarjetaPregunta) {
+                    const inputSecundario = tarjetaPregunta.querySelector('input[type="number"], input[type="text"]');
+                    if (inputSecundario) {
+                        setValAndTrigger(inputSecundario, valorNumerico);
+                    }
+                }
+            }, 100);
         };
 
-        setRadioGroup('radio_pred', ptRed > 0, 'act_pred', ptRed);
-        setRadioGroup('radio_ac', ac > 0, 'act_ac', ac);
-        setRadioGroup('radio_cobro', cobro > 0, 'act_valores_cobrados', cobro);
+        // 6. Ejecutar activación de Puntos de Red, AC y Valores Cobrados
+        activarSeccionRadio('puntos', valPtRed, ['act_pred', 'act_pt_red', 'cant_pred', 'puntos_red', 'pred']);
+        activarSeccionRadio('ac', valAC, ['act_ac', 'cant_ac', 'equipos_ac', 'ac']);
+        activarSeccionRadio('cobr', valCobro, ['act_valores_cobrados', 'valores_cobrados', 'val_cobrado', 'cobro']);
 
-        // 8. Ejecutar la función interna de cálculo de totales si existe en la página
+        // 7. Forzar el recálculo general de la tarjeta de resumen inferior
         setTimeout(() => {
             if (typeof calcularTotales === 'function') calcularTotales();
             if (typeof actualizarResumen === 'function') actualizarResumen();
             if (typeof recalcular === 'function') recalcular();
-        }, 100);
+        }, 200);
 
     } catch (err) {
         console.error('Error al cargar datos de edición:', err);
