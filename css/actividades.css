@@ -1,16 +1,36 @@
+/* ===================================================
+   LAYOUT Y CONTENEDORES PRINCIPALES
+   =================================================== */
+.main-content {
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
 /* Tarjeta de Filtros Superior */
-.filter-card {
+.filter-card,
+.table-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     background: #ffffff;
     border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.filter-card {
     border-radius: 12px;
     padding: 18px 20px;
     margin-bottom: 20px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
 .filter-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 12px;
     align-items: end;
 }
@@ -37,7 +57,9 @@
     color: #0f172a;
     background-color: #fff;
     outline: none;
+    box-sizing: border-box;
 }
+
 
 .form-control:focus {
     border-color: #2563eb;
@@ -45,7 +67,7 @@
 }
 
 .button-group {
-    min-width: 170px;
+    min-width: 160px;
 }
 
 .btn-primary {
@@ -59,87 +81,197 @@
     cursor: pointer;
     transition: background-color 0.2s ease;
     white-space: nowrap;
+    width: 100%;
 }
 
 .btn-primary:hover {
     background-color: #1d4ed8;
 }
 
-/* Tabla y Encabezado */
+/* ===================================================
+   TABLA Y CONTENEDOR DE DATOS
+   =================================================== */
 .table-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    padding: 22px;
 }
 
 .table-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+.table-header h3 {
+    font-size: 19px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
 }
 
 .badge-count {
     background: #f1f5f9;
     color: #475569;
-    padding: 4px 10px;
+    padding: 6px 14px;
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
 }
 
 .table-responsive {
+    width: 100%;
     overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    -webkit-overflow-scrolling: touch; /* Scroll fluido en dispositivos móviles */
 }
 
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 14px;
+    color: #1e293b;
+    white-space: nowrap;
 }
 
-.data-table th, .data-table td {
-    padding: 10px 12px;
-    text-align: left;
-    border-bottom: 1px solid #f1f5f9;
-}
-
+/* Estilos para encabezados th que faltaban */
 .data-table th {
     background-color: #f8fafc;
     color: #64748b;
     font-weight: 700;
-    font-size: 11px;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 14px 16px;
+    border-bottom: 2px solid #e2e8f0;
 }
 
-/* Etiquetas de Tipo */
+.data-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.data-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* ===================================================
+   ALINEACIÓN Y FORMATO DE COLUMNAS
+   =================================================== */
+.text-left   { text-align: left; }
+.text-center { text-align: center; }
+.text-right  { text-align: right; }
+
+.col-cliente {
+    min-width: 200px;
+    max-width: 300px;
+    white-space: normal;
+    word-break: break-word;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.4;
+}
+
+.col-fecha {
+    font-size: 13px;
+    color: #475569;
+    font-weight: 500;
+}
+
 .badge-tipo {
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 10px;
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
     font-weight: 700;
+    letter-spacing: 0.3px;
 }
-.badge-instalacion { background: #dbeafe; color: #1e40af; }
-.badge-traslado    { background: #fef3c7; color: #92400e; }
-.badge-visita      { background: #dcfce7; color: #166534; }
+.badge-instalacion { background-color: #e0f2fe; color: #0369a1; }
+.badge-traslado    { background-color: #fef3c7; color: #b45309; }
+.badge-visita      { background-color: #dcfce7; color: #15803d; }
+.badge-default     { background-color: #f1f5f9; color: #475569; }
 
-/* Botones de Acción */
+/* Destacado de Valores Cobrados */
+.badge-cobrado {
+    background-color: #dcfce7;
+    color: #15803d;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.val-zero {
+    color: #94a3b8;
+}
+
+/* Botones de Acción Estilizados */
 .action-buttons {
     display: flex;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
 }
 
 .btn-action {
-    border: none;
-    padding: 5px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
     font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.btn-edit   { background: #eff6ff; color: #2563eb; }
-.btn-delete { background: #fef2f2; color: #dc2626; }
-.btn-edit:hover   { background: #dbeafe; }
-.btn-delete:hover { background: #fee2e2; }
+.btn-edit { background-color: #eff6ff; color: #2563eb; }
+.btn-edit:hover { background-color: #2563eb; color: #ffffff; }
+
+.btn-delete { background-color: #fef2f2; color: #dc2626; }
+.btn-delete:hover { background-color: #dc2626; color: #ffffff; }
+
+/* ===================================================
+   ADAPTACIÓN RESPONSIVA (TABLETS Y CELULARES)
+   =================================================== */
+
+/* Tablets (pantallas menores a 1024px) */
+@media (max-width: 1024px) {
+    .main-content {
+        padding: 16px;
+    }
+
+    .filter-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .button-group {
+        grid-column: span 3;
+    }
+}
+
+/* Celulares grandes (pantallas menores a 768px) */
+@media (max-width: 768px) {
+    .filter-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .button-group {
+        grid-column: span 2;
+    }
+
+    .table-card {
+        padding: 16px;
+    }
+
+    .data-table th, 
+    .data-table td {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+}

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,9 @@
     <link rel="icon" type="image/png" href="../image/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/layout.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/actividades.css">
 </head>
+
 <body>
 
     <!-- Capa Oscura de Fondo para Dispositivos Móviles -->
@@ -52,7 +53,16 @@
 
 <!-- Contenido Principal -->
         <main class="main-content">
-            <!-- Tarjeta de Filtros -->
+            <!-- ENCABEZADO SUPERIOR (TOPBAR) -->
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Abrir menú">
+                        ☰
+                    </button>
+                </div>
+            </header>
+
+ <!-- Tarjeta de Filtros -->
             <div class="filter-card">
                 <div class="filter-grid">
                     <div class="filter-group">
