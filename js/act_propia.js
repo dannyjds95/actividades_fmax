@@ -250,156 +250,139 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Función Unificada, Sanitizada y Dual de Guardado/Actualización
-    async function guardarFormulario(event) {
-        if (event) event.preventDefault();
+async function guardarFormulario(event) {
+    if (event) event.preventDefault();
 
-        const session = obtenerSesionUsuario();
-        const urlParamsNow = new URLSearchParams(window.location.search);
-        const idFromUrl = urlParamsNow.get('editId');
-        const idFromInput = actIdInput ? actIdInput.value.trim() : '';
+    const session = obtenerSesionUsuario();
+    const urlParamsNow = new URLSearchParams(window.location.search);
+    const idFromUrl = urlParamsNow.get('editId');
+    const idFromInput = actIdInput ? actIdInput.value.trim() : '';
 
-        const actId = idFromUrl || idFromInput;
-        const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
+    const actId = idFromUrl || idFromInput;
+    const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
 
-        const calcs = calculateAll();
-        const clienteVal = actClienteInput ? actClienteInput.value.trim() : '';
+    const calcs = calculateAll();
+    const clienteVal = actClienteInput ? actClienteInput.value.trim() : '';
 
-        // Limpieza de formato para comas decimales (ej. "8,34" -> 8.34)
-        const rawCobrado = inputValoresCobrados ? inputValoresCobrados.value : '0';
-        const valCobradoLimpio = parseFloat(String(rawCobrado).replace(',', '.')) || 0;
+    const rawCobrado = inputValoresCobrados ? inputValoresCobrados.value : '0';
+    const valCobradoLimpio = parseFloat(String(rawCobrado).replace(',', '.')) || 0;
 
-        const totalFinal = Number(calcs.actTotal) || 0;
-        const fibraFinal = actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0;
+    const totalFinal = Number(calcs.actTotal) || 0;
+    const fibraFinal = actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0;
 
-        // Construcción del Payload enviando claves tanto con prefijo como sin el para compatibilidad con la API SQL
-        const payload = {
-            // IDs
-            act_id: esEdicion ? Number(actId) : null,
-            id: esEdicion ? Number(actId) : null,
+    // Payload completo con todos los nombres de columnas para la BD
+    const payload = {
+        act_id: esEdicion ? Number(actId) : null,
+        id: esEdicion ? Number(actId) : null,
 
-            // Usuario
-            user_id: session.id || session.user_id || 0,
-            cuad_id: session.cuad_id || 0,
-            act_origen: 'ACTIVIDAD PROPIA',
+        user_id: session.id || session.user_id || 0,
+        cuad_id: session.cuad_id || 0,
+        act_origen: 'ACTIVIDAD PROPIA',
 
-            // Fecha
-            act_fecha: actFechaInput ? (actFechaInput.value || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
-            fecha: actFechaInput ? (actFechaInput.value || '') : '',
+        act_fecha: actFechaInput ? (actFechaInput.value || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+        fecha: actFechaInput ? (actFechaInput.value || '') : '',
 
-            // Cliente
-            act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
-            cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
+        act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
+        cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
 
-            // Sector, Tipo y Forma
-            act_sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
-            sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
+        act_sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
+        sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
 
-            act_tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
-            tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
+        act_tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
+        tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
 
-            act_forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
-            forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
+        act_forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
+        forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
 
-            // Cantidades y Valores
-            act_cantidad: Number(calcs.actCantidad) || 1,
-            cantidad: Number(calcs.actCantidad) || 1,
+        // Metricas y Valores Calculados
+        act_cantidad: Number(calcs.actCantidad) || 1,
+        cantidad: Number(calcs.actCantidad) || 1,
 
-            act_valor: Number(calcs.actValor) || 0,
-            valor: Number(calcs.actValor) || 0,
+        act_valor: Number(calcs.actValor) || 0,
+        valor: Number(calcs.actValor) || 0,
 
-            // Fibra
-            act_fibra: fibraFinal,
-            fibra: fibraFinal,
+        act_fibra: fibraFinal,
+        fibra: fibraFinal,
 
-            // Puntos de Red
-            act_pred: Number(calcs.actPredQty) || 0,
-            pt_red: Number(calcs.actPredQty) || 0,
-            puntos_red: Number(calcs.actPredQty) || 0,
-            act_pred_valor: Number(calcs.actPredValor) || 0,
+        act_pred: Number(calcs.actPredQty) || 0,
+        pt_red: Number(calcs.actPredQty) || 0,
+        act_pred_valor: Number(calcs.actPredValor) || 0,
 
-            // Equipos AC
-            act_ac: Number(calcs.actAcQty) || 0,
-            ac: Number(calcs.actAcQty) || 0,
-            equipos_ac: Number(calcs.actAcQty) || 0,
-            act_ac_valor: Number(calcs.actAcValor) || 0,
+        act_ac: Number(calcs.actAcQty) || 0,
+        ac: Number(calcs.actAcQty) || 0,
+        act_ac_valor: Number(calcs.actAcValor) || 0,
 
-            // Excedente
-            act_excedente: Number(calcs.actExcedenteM) || 0,
-            excedente: Number(calcs.actExcedenteM) || 0,
-            act_excedente_valor: Number(calcs.actExcedenteValor) || 0,
+        act_excedente: Number(calcs.actExcedenteM) || 0,
+        excedente: Number(calcs.actExcedenteM) || 0,
+        act_excedente_valor: Number(calcs.actExcedenteValor) || 0,
 
-            // Total Actividad
-            act_total: totalFinal,
-            total: totalFinal,
-            total_actividad: totalFinal,
+        // Total
+        act_total: totalFinal,
+        total: totalFinal,
+        total_actividad: totalFinal,
 
-            // Detalle / Comentario
-            act_detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
-            detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
+        act_detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
+        detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
 
-            // Valores Cobrados
-            act_valores_cobrados: valCobradoLimpio,
-            valores_cobrados: valCobradoLimpio,
-            val_cobrado: valCobradoLimpio
-        };
+        act_valores_cobrados: valCobradoLimpio,
+        valores_cobrados: valCobradoLimpio
+    };
 
-        // Reemplazar estrictamente cualquier NaN o undefined por 0 o cadena vacía
-        Object.keys(payload).forEach(key => {
-            if (payload[key] === undefined || payload[key] === null) {
-                if (key === 'act_id' || key === 'id') {
-                    payload[key] = esEdicion ? Number(actId) : null;
-                } else if (typeof payload[key] === 'number') {
-                    payload[key] = 0;
-                } else {
-                    payload[key] = '';
-                }
-            } else if (typeof payload[key] === 'number' && isNaN(payload[key])) {
+    // Asegurar que no vayan valores NaN o undefined
+    Object.keys(payload).forEach(key => {
+        if (payload[key] === undefined || payload[key] === null) {
+            if (key === 'act_id' || key === 'id') {
+                payload[key] = esEdicion ? Number(actId) : null;
+            } else if (typeof payload[key] === 'number') {
                 payload[key] = 0;
+            } else {
+                payload[key] = '';
             }
+        } else if (typeof payload[key] === 'number' && isNaN(payload[key])) {
+            payload[key] = 0;
+        }
+    });
+
+    const targetApiUrl = esEdicion 
+        ? `${BASE_URL}/api/editar-actividad` 
+        : `${BASE_URL}/api/guardar-actividad`;
+        
+    const method = esEdicion ? 'PUT' : 'POST';
+    const btn = document.getElementById('btnSubmit') || document.querySelector('button[type="submit"]');
+
+    try {
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = esEdicion ? 'Actualizando...' : 'Guardando...';
+        }
+
+        const res = await fetch(targetApiUrl, {
+            method: method,
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
         });
 
-        const targetApiUrl = esEdicion 
-            ? `${BASE_URL}/api/editar-actividad` 
-            : `${BASE_URL}/api/guardar-actividad`;
-            
-        const method = esEdicion ? 'PUT' : 'POST';
-        const btn = document.getElementById('btnSubmit') || document.querySelector('button[type="submit"]');
+        const data = await res.json();
 
-        try {
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = esEdicion ? 'Actualizando...' : 'Guardando...';
-            }
-
-            console.log(`🚀 Enviando datos [${method}] a ${targetApiUrl}:`, payload);
-
-            const res = await fetch(targetApiUrl, {
-                method: method,
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await res.json();
-
-            if (res.ok && (data.status === 'success' || data.affectedRows > 0 || data.message?.includes('exito'))) {
-                alert(esEdicion ? '✅ Actividad actualizada correctamente' : '✅ Actividad registrada correctamente');
-                window.location.href = 'actividades.html';
-            } else {
-                alert(`⚠️ Error al guardar: ${data.message || 'Ocurrió un error en la base de datos'}`);
-            }
-        } catch (err) {
-            console.error('Error al enviar:', err);
-            alert('❌ Error de conexión al intentar guardar.');
-        } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = esEdicion ? 'Actualizar Actividad' : 'Guardar Actividad';
-            }
+        if (res.ok && (data.status === 'success' || data.affectedRows > 0 || data.message?.includes('exito'))) {
+            alert(esEdicion ? '✅ Actividad actualizada correctamente' : '✅ Actividad registrada correctamente');
+            window.location.href = 'actividades.html';
+        } else {
+            alert(`⚠️ Error al guardar: ${data.message || 'Error en la base de datos'}`);
+        }
+    } catch (err) {
+        console.error('Error al enviar:', err);
+        alert('❌ Error de conexión al intentar guardar.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = esEdicion ? 'Actualizar Actividad' : 'Guardar Actividad';
         }
     }
+}
 
     window.guardarFormulario = guardarFormulario;
     window.guardarActividad = guardarFormulario;
