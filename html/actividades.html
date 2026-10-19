@@ -77,9 +77,10 @@
                 <button id="btn_vaciar_filtros" class="btn btn-secondary" onclick="vaciarFiltros()">
                     🧹 Vaciar Filtros
                 </button>
-                <button id="btn_registrar" class="btn btn-primary" onclick="abrirModalNuevo()">
-                    📄 Registrar Actividad
-                </button>
+                <div class="modal-header">
+    <h3 id="modal_titulo">Registrar Actividad</h3>
+    <button type="button" class="btn-close" onclick="cerrarModal()">&times;</button>
+</div>
             </div>
         </div>
 

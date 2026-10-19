@@ -297,9 +297,6 @@ async function cargarActividades() {
 // ===================================================
 // 4. ACCIONES DE REGISTRO
 // ===================================================
-function editarActividad(id) {
-    window.location.href = `editar.html?id=${id}`;
-}
 
 // Función para eliminar un registro con confirmación
 async function eliminarActividad(idActividad) {
@@ -651,33 +648,42 @@ function abrirModalNuevo() {
     abrirModal();
 }
 
-// 1. Cargar datos del registro seleccionado en el formulario para editar
 function editarActividad(idActividad) {
+    // Buscar la actividad en los datos cargados
     const item = (window.actividadesCargadas || []).find(act => (act.act_id || act.id) == idActividad);
     if (!item) {
         alert('No se encontró la información del registro seleccionado.');
         return;
     }
 
-    // Cambiar título del modal
-    document.getElementById('modal_titulo').textContent = `Editar Actividad #${idActividad}`;
+    // Asignación segura del título (evita que la consola se bloquee)
+    const tituloModal = document.getElementById('modal_titulo');
+    if (tituloModal) {
+        tituloModal.textContent = `Editar Actividad #${idActividad}`;
+    }
 
-    // Copiar cada campo al formulario
-    document.getElementById('form_act_id').value = item.act_id || item.id || '';
-    document.getElementById('act_fecha').value = item.act_fecha ? String(item.act_fecha).split('T')[0] : '';
-    document.getElementById('cuad_id').value = item.cuad_id || '';
-    document.getElementById('act_cliente').value = item.act_cliente || '';
-    document.getElementById('act_sector').value = item.act_sector || '';
-    document.getElementById('act_tipo').value = item.act_tipo || 'INSTALACION';
-    document.getElementById('act_forma').value = item.act_forma || 'NORMAL';
-    document.getElementById('act_fibra').value = item.act_fibra || 0;
-    document.getElementById('act_excedente').value = item.act_excedente || 0;
-    document.getElementById('act_pred').value = item.act_pred || item.act_pt_red || 0;
-    document.getElementById('act_ac').value = item.act_ac || 0;
-    document.getElementById('act_valores_cobrados').value = item.act_valores_cobrados || 0;
-    document.getElementById('act_detalle').value = item.act_detalle || '';
+    // Helper para asignar valores sin lanzar errores si el elemento no existe en el DOM
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = (val !== null && val !== undefined) ? val : '';
+    };
 
-    // Mostrar modal
+    // Copiar datos de la actividad a los campos del formulario
+    setVal('form_act_id', item.act_id || item.id);
+    setVal('act_fecha', item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
+    setVal('cuad_id', item.cuad_id);
+    setVal('act_cliente', item.act_cliente);
+    setVal('act_sector', item.act_sector);
+    setVal('act_tipo', item.act_tipo || 'INSTALACION');
+    setVal('act_forma', item.act_forma || 'NORMAL');
+    setVal('act_fibra', item.act_fibra || 0);
+    setVal('act_excedente', item.act_excedente || 0);
+    setVal('act_pred', item.act_pred || item.act_pt_red || 0);
+    setVal('act_ac', item.act_ac || 0);
+    setVal('act_valores_cobrados', item.act_valores_cobrados || 0);
+    setVal('act_detalle', item.act_detalle);
+
+    // Abrir la ventana emergente
     abrirModal();
 }
 
