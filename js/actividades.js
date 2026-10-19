@@ -212,25 +212,48 @@ async function eliminarActividad(id) {
     }
 }
 
-// Función para limpiar los filtros secundarios y recargar la tabla
 function vaciarFiltros() {
-    // 1. Limpiar campos de texto y selects
-    document.getElementById('filter_tipo').value = '';
-    document.getElementById('filter_sector').value = '';
-    document.getElementById('filter_cobradas').value = '';
+    // 1. Limpiar campos de texto y selects de filtros secundarios
+    const filterTipo = document.getElementById('filter_tipo');
+    const filterSector = document.getElementById('filter_sector');
+    const filterCobradas = document.getElementById('filter_cobradas');
 
-    // 2. Restablecer el rango de fechas a las fechas originales del período seleccionado
+    if (filterTipo) filterTipo.value = '';
+    if (filterSector) filterSector.value = '';
+    if (filterCobradas) filterCobradas.value = '';
+
+    // 2. Restablecer el selector al Período Actual basado en la fecha de hoy
     const selectPeriodo = document.getElementById('select_periodo');
-    const optSel = selectPeriodo.options[selectPeriodo.selectedIndex];
+    const fechaDesde = document.getElementById('fecha_desde');
+    const fechaHasta = document.getElementById('fecha_hasta');
 
-    if (optSel && optSel.dataset.inicio && optSel.dataset.fin) {
-        document.getElementById('fecha_desde').value = optSel.dataset.inicio;
-        document.getElementById('fecha_hasta').value = optSel.dataset.fin;
-    } else {
-        document.getElementById('fecha_desde').value = '';
-        document.getElementById('fecha_hasta').value = '';
+    if (selectPeriodo && selectPeriodo.options.length > 0) {
+        const hoy = new Date().toISOString().split('T')[0];
+        let actualIdx = -1;
+
+        // Buscar qué opción abarca la fecha actual
+        for (let i = 0; i < selectPeriodo.options.length; i++) {
+            const opt = selectPeriodo.options[i];
+            if (opt.dataset.inicio && opt.dataset.fin) {
+                if (hoy >= opt.dataset.inicio && hoy <= opt.dataset.fin) {
+                    actualIdx = i;
+                    break;
+                }
+            }
+        }
+
+        // Si se encuentra el período actual se selecciona, sino se usa el primero disponible (índice 1)
+        const selIndex = actualIdx !== -1 ? actualIdx : (selectPeriodo.options.length > 1 ? 1 : 0);
+        selectPeriodo.selectedIndex = selIndex;
+
+        // Asignar las fechas desde/hasta del período seleccionado
+        const optSel = selectPeriodo.options[selIndex];
+        if (optSel && optSel.dataset.inicio && optSel.dataset.fin) {
+            if (fechaDesde) fechaDesde.value = optSel.dataset.inicio;
+            if (fechaHasta) fechaHasta.value = optSel.dataset.fin;
+        }
     }
 
-    // 3. Volver a consultar las actividades con los valores reseteados
+    // 3. Consultar las actividades con los filtros limpios
     cargarActividades();
 }
