@@ -4,15 +4,23 @@ const BASE_URL = (typeof window !== 'undefined' && window.location.hostname.incl
     ? ''
     : BASE_VERCEL_URL;
 
+// Helper para obtener la sesión activa en cualquier momento
+function obtenerSesionUsuario() {
+    try {
+        return JSON.parse(localStorage.getItem('usuario_sesion')) || {};
+    } catch (e) {
+        return {};
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Verificar sesión del usuario
-    const userSession = JSON.parse(localStorage.getItem('usuario_sesion'));
-    if (!userSession) {
+    const userSession = obtenerSesionUsuario();
+    if (!userSession || (!userSession.id && !userSession.user_id)) {
         window.location.href = '../index.html';
         return;
     }
 
-    // 2. Obtener referencias a los elementos del DOM
+    // Elementos del Formulario
     const form = document.getElementById('actividadForm') || document.getElementById('form_actividad') || document.querySelector('form');
     const userIdInput = document.getElementById('user_id');
     const actIdInput = document.getElementById('act_id');
@@ -29,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectAcQty = document.getElementById('act_ac_qty') || document.getElementById('act_ac');
     const inputValoresCobrados = document.getElementById('act_valores_cobrados');
 
-    // Etiquetas de Resumen Económico
+    // Etiquetas del Resumen
     const lblCantidad = document.getElementById('lbl_cantidad');
     const lblValorAct = document.getElementById('lbl_valor_act');
     const lblValorPred = document.getElementById('lbl_valor_pred');
@@ -38,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lblValorExc = document.getElementById('lbl_valor_exc');
     const lblTotal = document.getElementById('lbl_total');
 
-    // Inicializar IDs de usuario y Fecha actual si es nuevo registro
+    // Asignar ID de Usuario y Fecha inicial
     if (userIdInput) userIdInput.value = userSession.id || userSession.user_id || '';
     if (actFechaInput && !actFechaInput.value) {
         const hoy = new Date();
@@ -48,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         actFechaInput.value = `${year}-${month}-${day}`;
     }
 
-    // 3. Manejo Dinámico de Opciones de Forma según Tipo
+    // Actualizar opciones de Forma según el Tipo seleccionado
     function updateFormaOptions() {
         if (!actTipoSelect || !actFormaSelect) return;
         const tipo = actTipoSelect.value;
@@ -70,8 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
         calculateAll();
     }
 
-    // 4. Lógica de Cálculo de Totales
+    // Cálculo general de tarifas y métricas
     function calculateAll() {
+        const session = obtenerSesionUsuario();
         const tipo = actTipoSelect ? actTipoSelect.value : '';
         const forma = actFormaSelect ? actFormaSelect.value : '';
 
@@ -81,8 +90,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tipo !== '' && forma !== '') {
             actCantidad = (forma === 'DOBLE' || forma === 'RECABLEADO DOBLE') ? 2 : 1;
             tarifaBase = (tipo === 'VISITA') 
-                ? (parseFloat(userSession.valor_visita) || 0) 
-                : (parseFloat(userSession.valor_act) || 0);
+                ? (parseFloat(session.valor_visita) || 0) 
+                : (parseFloat(session.valor_act) || 0);
         }
 
         if (lblCantidad) lblCantidad.textContent = actCantidad;
@@ -92,22 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Puntos de Red
         const radioPredChecked = document.querySelector('input[name="has_pred"]:checked, input[name="radio_pred"]:checked')?.value;
-        const hasPred = radioPredChecked === 'SI' || radioPredChecked === 'si';
+        const hasPred = String(radioPredChecked).toUpperCase() === 'SI';
         const actPredQty = (hasPred && selectPredQty) ? (parseInt(selectPredQty.value, 10) || 0) : 0;
-        const actPredValor = actPredQty * (parseFloat(userSession.valor_pred) || 0);
+        const actPredValor = actPredQty * (parseFloat(session.valor_pred) || 0);
         if (lblValorPred) lblValorPred.textContent = `$${actPredValor.toFixed(2)}`;
 
         // Equipos AC
         const radioAcChecked = document.querySelector('input[name="has_ac"]:checked, input[name="radio_ac"]:checked')?.value;
-        const hasAc = radioAcChecked === 'SI' || radioAcChecked === 'si';
+        const hasAc = String(radioAcChecked).toUpperCase() === 'SI';
         const actAcQty = (hasAc && selectAcQty) ? (parseInt(selectAcQty.value, 10) || 0) : 0;
-        const actAcValor = actAcQty * (parseFloat(userSession.valor_ac) || 0);
+        const actAcValor = actAcQty * (parseFloat(session.valor_ac) || 0);
         if (lblValorAc) lblValorAc.textContent = `$${actAcValor.toFixed(2)}`;
 
         // Excedente de Fibra
         const fibra = actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0;
         const actExcedenteM = fibra > 350 ? (fibra - 350) : 0;
-        const actExcedenteValor = actExcedenteM * (parseFloat(userSession.valor_exc) || 0);
+        const actExcedenteValor = actExcedenteM * (parseFloat(session.valor_exc) || 0);
         
         if (lblExcedenteM) lblExcedenteM.textContent = actExcedenteM;
         if (lblValorExc) lblValorExc.textContent = `$${actExcedenteValor.toFixed(2)}`;
@@ -117,23 +126,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lblTotal) lblTotal.textContent = `$${actTotal.toFixed(2)}`;
 
         return {
-            actCantidad, actValor, actPredQty, actPredValor, 
-            actAcQty, actAcValor, actExcedenteM, actExcedenteValor, actTotal
+            actCantidad: Number(actCantidad) || 0,
+            actValor: Number(actValor) || 0,
+            actPredQty: Number(actPredQty) || 0,
+            actPredValor: Number(actPredValor) || 0,
+            actAcQty: Number(actAcQty) || 0,
+            actAcValor: Number(actAcValor) || 0,
+            actExcedenteM: Number(actExcedenteM) || 0,
+            actExcedenteValor: Number(actExcedenteValor) || 0,
+            actTotal: Number(actTotal) || 0
         };
     }
 
-    // Exportar funciones de cálculo al ámbito global
     window.calculateAll = calculateAll;
     window.calcularTotales = calculateAll;
 
-    // 5. Configurar escuchadores de eventos para los inputs
+    // Escuchadores de eventos
     if (actTipoSelect) actTipoSelect.addEventListener('change', updateFormaOptions);
     if (actFormaSelect) actFormaSelect.addEventListener('change', calculateAll);
     if (actFibraInput) actFibraInput.addEventListener('input', calculateAll);
     if (selectPredQty) selectPredQty.addEventListener('change', calculateAll);
     if (selectAcQty) selectAcQty.addEventListener('change', calculateAll);
 
-    // Escuchadores de Radio Buttons
     document.querySelectorAll('input[name="has_pred"], input[name="radio_pred"]').forEach(r => {
         r.addEventListener('change', (e) => {
             if (selectPredQty) selectPredQty.classList.toggle('hidden', e.target.value.toUpperCase() === 'NO');
@@ -159,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 6. Cargar Datos si venimos de Actividades en Modo Edición
+    // Detectar si venimos a editar desde la URL
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('editId');
 
@@ -167,12 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
         cargarDatosParaEditar(editId);
     }
 
-    // 7. Interceptar y procesar la acción de Guardar / Editar
+    // Interceptador principal de envío
     if (form) {
         form.onsubmit = guardarFormulario;
     }
 
-    // Función para Cargar los Datos del Registro a Editar
+    // Cargar datos del registro para editar
     async function cargarDatosParaEditar(id) {
         try {
             if (actIdInput) actIdInput.value = id;
@@ -203,7 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (actFibraInput) actFibraInput.value = item.act_fibra || 0;
             if (actDetalleInput) actDetalleInput.value = item.act_detalle || '';
 
-            // Carga de Puntos de Red, AC y Cobros
             const valPtRed = parseFloat(item.act_pred ?? item.act_pt_red ?? 0);
             const valAC = parseFloat(item.act_ac ?? item.cant_ac ?? 0);
             const valCobro = parseFloat(item.act_valores_cobrados ?? item.act_cobro ?? 0);
@@ -236,98 +249,105 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-// Función Unificada de Guardado / Edición
-async function guardarFormulario(event) {
-    if (event) event.preventDefault();
+    // Función Unificada y Sanitizada para Enviar (Guardar o Actualizar)
+    async function guardarFormulario(event) {
+        if (event) event.preventDefault();
 
-    const urlParamsNow = new URLSearchParams(window.location.search);
-    const idFromUrl = urlParamsNow.get('editId');
-    const idFromInput = actIdInput ? actIdInput.value.trim() : '';
+        const session = obtenerSesionUsuario();
+        const urlParamsNow = new URLSearchParams(window.location.search);
+        const idFromUrl = urlParamsNow.get('editId');
+        const idFromInput = actIdInput ? actIdInput.value.trim() : '';
 
-    const actId = idFromUrl || idFromInput;
-    const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
+        const actId = idFromUrl || idFromInput;
+        const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
 
-    const calcs = calculateAll();
-    const clienteVal = actClienteInput ? actClienteInput.value.trim() : '';
+        const calcs = calculateAll();
+        const clienteVal = actClienteInput ? actClienteInput.value.trim() : '';
 
-    // 1. Crear el payload asignando valores por defecto seguros (evitar 'undefined')
-    const payload = {
-        act_id: esEdicion ? Number(actId) : null,
-        id: esEdicion ? Number(actId) : null,
-        user_id: userSession?.id || userSession?.user_id || null,
-        cuad_id: userSession?.cuad_id || 1, // Fallback si no existe en localStorage
-        act_origen: 'ACTIVIDAD PROPIA',
-        act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
-        act_fecha: actFechaInput ? actFechaInput.value : '',
-        act_sector: actSectorSelect ? actSectorSelect.value : 'NORTE',
-        act_tipo: actTipoSelect ? actTipoSelect.value : 'INSTALACION',
-        act_forma: actFormaSelect ? actFormaSelect.value : 'NORMAL',
-        act_cantidad: calcs.actCantidad || 1,
-        act_valor: calcs.actValor || 0,
-        act_fibra: actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0,
-        act_pred: calcs.actPredQty || 0,
-        act_pred_valor: calcs.actPredValor || 0,
-        act_ac: calcs.actAcQty || 0,
-        act_ac_valor: calcs.actAcValor || 0,
-        act_excedente: calcs.actExcedenteM || 0,
-        act_excedente_valor: calcs.actExcedenteValor || 0,
-        act_total: calcs.actTotal || 0,
-        act_detalle: actDetalleInput ? actDetalleInput.value : '',
-        act_valores_cobrados: inputValoresCobrados ? (parseFloat(inputValoresCobrados.value) || 0) : 0
-    };
+        // Construcción limpia y sanitizada del objeto JSON
+        const payload = {
+            act_id: esEdicion ? Number(actId) : null,
+            id: esEdicion ? Number(actId) : null,
+            user_id: session.id || session.user_id || 0,
+            cuad_id: session.cuad_id || 0,
+            act_origen: 'ACTIVIDAD PROPIA',
+            act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
+            act_fecha: actFechaInput ? (actFechaInput.value || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+            act_sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
+            act_tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
+            act_forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
+            act_cantidad: Number(calcs.actCantidad) || 1,
+            act_valor: Number(calcs.actValor) || 0,
+            act_fibra: actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0,
+            act_pred: Number(calcs.actPredQty) || 0,
+            act_pred_valor: Number(calcs.actPredValor) || 0,
+            act_ac: Number(calcs.actAcQty) || 0,
+            act_ac_valor: Number(calcs.actAcValor) || 0,
+            act_excedente: Number(calcs.actExcedenteM) || 0,
+            act_excedente_valor: Number(calcs.actExcedenteValor) || 0,
+            act_total: Number(calcs.actTotal) || 0,
+            act_detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
+            act_valores_cobrados: inputValoresCobrados ? (parseFloat(inputValoresCobrados.value) || 0) : 0
+        };
 
-    // 2. HIGIENE DE DATOS: Convertir cualquier propiedad que haya quedado 'undefined' a 'null'
-    Object.keys(payload).forEach(key => {
-        if (payload[key] === undefined) {
-            payload[key] = null;
-        }
-    });
-
-    const targetApiUrl = esEdicion 
-        ? `${BASE_URL}/api/editar-actividad` 
-        : `${BASE_URL}/api/guardar-actividad`;
-        
-    const method = esEdicion ? 'PUT' : 'POST';
-
-    const btn = document.getElementById('btnSubmit') || document.querySelector('button[type="submit"]');
-
-    try {
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = esEdicion ? 'Actualizando...' : 'Guardando...';
-        }
-
-        console.log(`🚀 Enviando datos sanitizados [${method}] a ${targetApiUrl}:`, payload);
-
-        const res = await fetch(targetApiUrl, {
-            method: method,
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(payload)
+        // Reemplazar estrictamente cualquier NaN o undefined por 0 o cadena vacía
+        Object.keys(payload).forEach(key => {
+            if (payload[key] === undefined || payload[key] === null) {
+                if (key === 'act_id' || key === 'id') {
+                    payload[key] = esEdicion ? Number(actId) : null;
+                } else if (typeof payload[key] === 'number') {
+                    payload[key] = 0;
+                } else {
+                    payload[key] = '';
+                }
+            } else if (typeof payload[key] === 'number' && isNaN(payload[key])) {
+                payload[key] = 0;
+            }
         });
 
-        const data = await res.json();
+        const targetApiUrl = esEdicion 
+            ? `${BASE_URL}/api/editar-actividad` 
+            : `${BASE_URL}/api/guardar-actividad`;
+            
+        const method = esEdicion ? 'PUT' : 'POST';
+        const btn = document.getElementById('btnSubmit') || document.querySelector('button[type="submit"]');
 
-        if (res.ok && (data.status === 'success' || data.affectedRows > 0 || data.message?.includes('exito'))) {
-            alert(esEdicion ? '✅ Actividad actualizada correctamente' : '✅ Actividad registrada correctamente');
-            window.location.href = 'actividades.html';
-        } else {
-            alert(`⚠️ Error al procesar: ${data.message || 'Error en la base de datos'}`);
-        }
-    } catch (err) {
-        console.error('Error de red:', err);
-        alert('❌ Error de conexión con el servidor.');
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = esEdicion ? 'Actualizar Actividad' : 'Guardar Actividad';
+        try {
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = esEdicion ? 'Actualizando...' : 'Guardando...';
+            }
+
+            console.log(`🚀 Enviando datos sanitizados [${method}] a ${targetApiUrl}:`, payload);
+
+            const res = await fetch(targetApiUrl, {
+                method: method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (res.ok && (data.status === 'success' || data.affectedRows > 0 || data.message?.includes('exito'))) {
+                alert(esEdicion ? '✅ Actividad actualizada correctamente' : '✅ Actividad registrada correctamente');
+                window.location.href = 'actividades.html';
+            } else {
+                alert(`⚠️ Error al guardar: ${data.message || 'Ocurrió un error en la base de datos'}`);
+            }
+        } catch (err) {
+            console.error('Error al enviar:', err);
+            alert('❌ Error de conexión al intentar guardar.');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = esEdicion ? 'Actualizar Actividad' : 'Guardar Actividad';
+            }
         }
     }
-}
 
-    // Exponer función de guardado a nivel global
     window.guardarFormulario = guardarFormulario;
     window.guardarActividad = guardarFormulario;
 });
