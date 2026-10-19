@@ -224,68 +224,97 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Cargar y completar el formulario con la información del registro seleccionada
+// Cargar y popular el formulario con recálculo automático de totales
 async function cargarDatosParaEditar(id) {
     try {
-        // Cambiar título del formulario
+        // 1. Cambiar título del encabezado
         const tituloHeader = document.querySelector('h1, h2, h3, .title');
         if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
 
-        // Consulta a la API con la URL dinámica
+        // 2. Consultar datos de la actividad
         const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP ${response.status}: No se pudo obtener la información del servidor`);
-        }
+        if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
 
         const data = await response.json();
         const actividades = data.actividades || [];
         const item = actividades.find(a => (a.act_id || a.id) == id);
 
         if (!item) {
-            alert(`No se encontró la actividad #${id} en la base de datos.`);
+            alert(`No se encontró la actividad #${id}.`);
             return;
         }
 
-        // Helper para asignar valores en los inputs de forma segura
-        const setVal = (idOrSelector, val) => {
+        // Helper para asignar valor y forzar el evento 'change' / 'input'
+        const setValAndTrigger = (idOrSelector, val) => {
             const el = document.getElementById(idOrSelector) || document.querySelector(idOrSelector);
-            if (el) el.value = (val !== null && val !== undefined) ? val : '';
+            if (el) {
+                el.value = (val !== null && val !== undefined) ? val : '';
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return el;
         };
 
-        // Copiar ID oculto y valores principales
-        setVal('act_id', item.act_id || item.id);
-        setVal('act_fecha', item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
-        setVal('act_cliente', item.act_cliente);
-        setVal('act_tipo', item.act_tipo);
-        setVal('act_forma', item.act_forma);
-        setVal('act_sector', item.act_sector);
-        setVal('act_fibra', item.act_fibra || 0);
-        setVal('act_detalle', item.act_detalle || '');
+        // 3. Asignar ID oculto, Fecha, Cliente y Sector
+        setValAndTrigger('act_id', item.act_id || item.id);
+        setValAndTrigger('act_fecha', item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
+        setValAndTrigger('act_cliente', item.act_cliente);
+        setValAndTrigger('act_sector', item.act_sector);
 
-        // Configurar selección en botones Radio (Puntos de red, AC, Cobrados)
-        const predVal = parseFloat(item.act_pred || item.act_pt_red || 0);
-        const acVal = parseFloat(item.act_ac || 0);
-        const cobroVal = parseFloat(item.act_valores_cobrados || 0);
+        // 4. Seleccionar Tipo de Actividad primero
+        setValAndTrigger('act_tipo', item.act_tipo);
 
-        const setRadio = (name, isSi) => {
-            const targetVal = isSi ? 'SI' : 'NO';
-            const radio = document.querySelector(`input[name="${name}"][value="${targetVal}"]`);
+        // 5. Cargar 'Forma de Actividad' asegurando coincidencia de texto
+        setTimeout(() => {
+            const selectForma = document.getElementById('act_forma') || document.querySelector('select[name="act_forma"]') || document.querySelectorAll('select')[1];
+            if (selectForma && item.act_forma) {
+                const valBuscado = String(item.act_forma).trim().toUpperCase();
+                
+                // Buscar la opción exacta dentro del select
+                const opcion = Array.from(selectForma.options).find(
+                    opt => opt.value.trim().toUpperCase() === valBuscado || opt.text.trim().toUpperCase() === valBuscado
+                );
+
+                if (opcion) {
+                    selectForma.value = opcion.value;
+                } else {
+                    selectForma.value = item.act_forma;
+                }
+                selectForma.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }, 50);
+
+        // 6. Asignar Fibra y Detalle
+        setValAndTrigger('act_fibra', item.act_fibra || 0);
+        setValAndTrigger('act_detalle', item.act_detalle || '');
+
+        // 7. Configurar Botones Radio y activar los campos correspondientes
+        const ptRed = parseFloat(item.act_pred || item.act_pt_red || 0);
+        const ac = parseFloat(item.act_ac || 0);
+        const cobro = parseFloat(item.act_valores_cobrados || 0);
+
+        const setRadioGroup = (radioName, hasValue, inputId, val) => {
+            const targetVal = hasValue ? 'SI' : 'NO';
+            const radio = document.querySelector(`input[name="${radioName}"][value="${targetVal}"]`);
             if (radio) {
                 radio.checked = true;
-                radio.dispatchEvent(new Event('change'));
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (hasValue && inputId) {
+                setValAndTrigger(inputId, val);
             }
         };
 
-        setRadio('radio_pred', predVal > 0);
-        setRadio('radio_ac', acVal > 0);
-        setRadio('radio_cobro', cobroVal > 0);
+        setRadioGroup('radio_pred', ptRed > 0, 'act_pred', ptRed);
+        setRadioGroup('radio_ac', ac > 0, 'act_ac', ac);
+        setRadioGroup('radio_cobro', cobro > 0, 'act_valores_cobrados', cobro);
 
-        // Llenar campos numéricos
-        setVal('act_pred', predVal);
-        setVal('act_ac', acVal);
-        setVal('act_valores_cobrados', cobroVal);
-
-        console.log('✅ Actividad cargada para editar:', item);
+        // 8. Ejecutar la función interna de cálculo de totales si existe en la página
+        setTimeout(() => {
+            if (typeof calcularTotales === 'function') calcularTotales();
+            if (typeof actualizarResumen === 'function') actualizarResumen();
+            if (typeof recalcular === 'function') recalcular();
+        }, 100);
 
     } catch (err) {
         console.error('Error al cargar datos de edición:', err);
