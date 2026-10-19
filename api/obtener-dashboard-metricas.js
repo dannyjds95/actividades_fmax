@@ -1,16 +1,13 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
-    // Cabeceras obligatorias CORS y tipo de contenido JSON
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Content-Type');
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
 
     const { inicio, fin } = req.query;
 
@@ -28,7 +25,6 @@ module.exports = async (req, res) => {
         let whereClause = '';
         let params = [];
 
-        // Aplica filtro de fechas solo si vienen definidos
         if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
             whereClause = ' WHERE act_fecha BETWEEN ? AND ?';
             params = [inicio, fin];
@@ -43,7 +39,8 @@ module.exports = async (req, res) => {
                 COALESCE(SUM(act_excedente_valor), 0) AS excedente_valor,
                 COALESCE(SUM(act_pred), 0) AS puntos_red,
                 COALESCE(SUM(act_ac), 0) AS equipos_ac,
-                COALESCE(SUM(COALESCE(act_valores_cobrados, 0)), 0) AS valores_cobrados
+                COALESCE(SUM(CAST(COALESCE(act_valores_cobrados, 0) AS DECIMAL(10,2))), 0) AS valores_cobrados,
+                COALESCE(SUM(CAST(COALESCE(act_valores_cobrados, 0) AS DECIMAL(10,2))), 0) AS act_valores_cobrados
             FROM actividad_detalle
             ${whereClause}
         `;

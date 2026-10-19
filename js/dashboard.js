@@ -24,20 +24,33 @@ function getBadgeClass(tipo) {
 
 // Cargar métricas principales (Tarjetas superiores)
 async function cargarMetricas(fechaInicio, fechaFin) {
-    if (!fechaInicio || !fechaFin || fechaFin === 'undefined') return;
+    if (!fechaInicio || !fechaFin || fechaInicio === 'undefined' || fechaFin === 'undefined' || fechaInicio === 'null' || fechaFin === 'null') return;
 
     try {
         const res = await fetch(`${BASE_URL}/api/obtener-dashboard-metricas?inicio=${fechaInicio}&fin=${fechaFin}`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
         const data = await res.json();
 
         if (data.status === 'success') {
             const m = data.metricas || {};
-            document.getElementById('lbl_monto_facturado').textContent = `$${parseFloat(m.monto_facturado || 0).toFixed(2)}`;
-            document.getElementById('lbl_total_actividades').textContent = m.total_actividades || 0;
-            document.getElementById('lbl_registros_guardados').textContent = m.registros_guardados || 0;
-            document.getElementById('lbl_excedente_fibra').textContent = `${m.excedente_m || 0} m`;
-            document.getElementById('lbl_excedente_valor').textContent = `$${parseFloat(m.excedente_valor || 0).toFixed(2)}`;
-            document.getElementById('lbl_puntos_red_ac').textContent = `${m.puntos_red || 0}    / ${m.equipos_ac || 0} `;
+
+            // Función auxiliar para asignar texto evitando errores de elemento nulo
+            const setTexto = (id, texto) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = texto;
+            };
+
+            setTexto('lbl_monto_facturado', `$${parseFloat(m.monto_facturado || 0).toFixed(2)}`);
+            setTexto('lbl_total_actividades', m.total_actividades || 0);
+            setTexto('lbl_registros_guardados', m.registros_guardados || 0);
+            setTexto('lbl_excedente_fibra', `${m.excedente_m || 0} m`);
+            setTexto('lbl_excedente_valor', `$${parseFloat(m.excedente_valor || 0).toFixed(2)}`);
+            setTexto('lbl_puntos_red_ac', `${m.puntos_red || 0} / ${m.equipos_ac || 0}`);
+
+            // Actualización de la tarjeta Valores Cobrados
+            const totalCobrado = m.valores_cobrados !== undefined ? m.valores_cobrados : (m.act_valores_cobrados || 0);
+            setTexto('lbl_valores_cobrados', `$${parseFloat(totalCobrado || 0).toFixed(2)}`);
         }
     } catch (err) {
         console.error('Error cargando métricas:', err);
