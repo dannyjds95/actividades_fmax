@@ -112,17 +112,21 @@ async function cargarActividades() {
     const tbody = document.getElementById('tbl_actividades_body');
     const txtTotal = document.getElementById('txt_total_registros');
 
-    const inicio = document.getElementById('fecha_desde').value;
-    const fin = document.getElementById('fecha_hasta').value;
-    const tipo = document.getElementById('filter_tipo').value;
-    const sector = document.getElementById('filter_sector').value.trim();
-    const cobradas = document.getElementById('filter_cobradas').value;
+    if (!tbody) return;
+
+    // 1. Obtener valores de los filtros de forma segura
+    const inicio = document.getElementById('fecha_desde')?.value || '';
+    const fin = document.getElementById('fecha_hasta')?.value || '';
+    const tipo = document.getElementById('filter_tipo')?.value || '';
+    const sector = (document.getElementById('filter_sector')?.value || '').trim();
+    const cobradas = document.getElementById('filter_cobradas')?.value || '';
 
     tbody.innerHTML = '<tr><td colspan="11" class="text-center">Buscando registros...</td></tr>';
 
     try {
         const queryParams = new URLSearchParams({ inicio, fin, tipo, sector, cobradas });
         const res = await fetch(`${BASE_URL}/api/obtener-actividades?${queryParams}`);
+        
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
         const data = await res.json();
@@ -136,28 +140,48 @@ async function cargarActividades() {
                 return;
             }
 
-            tbody.innerHTML = lista.map(item => `
-                <tr>
-                    <td>${formatFecha(item.act_fecha)}</td>
-                    <td><b>${item.act_cliente || 'N/A'}</b></td>
-                    <td><span class="badge-tipo ${getBadgeClass(item.act_tipo)}">${item.act_tipo || 'GENERAL'}</span></td>
-                    <td>${item.act_forma || 'NORMAL'}</td>
-                    <td>${item.act_fibra || 0} m</td>
-                    <td>${item.act_excedente || 0} m ($${parseFloat(item.act_excedente_valor || 0).toFixed(2)})</td>
-                    <td>${item.act_pred || 0}</td>
-                    <td>${item.act_ac || 0}</td>
-                    <td><b>$${parseFloat(item.act_total || item.act_valor || 0).toFixed(2)}</b></td>
-                    <td class="${parseFloat(item.act_valores_cobrados || 0) > 0 ? 'text-green' : ''}">
-                        $${parseFloat(item.act_valores_cobrados || 0).toFixed(2)}
-                    </td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-action btn-edit" onclick="editarActividad(${item.id})">Editar</button>
-                            <button class="btn-action btn-delete" onclick="eliminarActividad(${item.id})">Eliminar</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+            // 2. Renderizar filas de la tabla
+            tbody.innerHTML = lista.map(item => {
+                // Identificador único de fila (Soporta `id` o `act_id`)
+                const idReg = item.id || item.act_id || 0;
+                
+                // Formateo seguro de valores numéricos
+                const excedenteValor = parseFloat(item.act_excedente_valor || 0).toFixed(2);
+                const totalMonto = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)).toFixed(2);
+                const valorCobrado = parseFloat(item.act_valores_cobrados || 0).toFixed(2);
+                const esCobrado = parseFloat(item.act_valores_cobrados || 0) > 0;
+
+                const fechaFormateada = typeof formatFecha === 'function' 
+                    ? formatFecha(item.act_fecha) 
+                    : (item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
+
+                const claseBadge = typeof getBadgeClass === 'function' 
+                    ? getBadgeClass(item.act_tipo) 
+                    : 'badge-default';
+
+                return `
+                    <tr>
+                        <td>${fechaFormateada}</td>
+                        <td><b>${item.act_cliente || 'N/A'}</b></td>
+                        <td><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
+                        <td>${item.act_forma || 'NORMAL'}</td>
+                        <td>${item.act_fibra || 0} m</td>
+                        <td>${item.act_excedente || 0} m ($${excedenteValor})</td>
+                        <td>${item.act_pred || 0}</td>
+                        <td>${item.act_ac || 0}</td>
+                        <td><b>$${totalMonto}</b></td>
+                        <td class="${esCobrado ? 'text-green' : ''}">$${valorCobrado}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-action btn-edit" onclick="editarActividad(${idReg})">Editar</button>
+                                <button class="btn-action btn-delete" onclick="eliminarActividad(${idReg})">Eliminar</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center">No se pudieron obtener los datos.</td></tr>';
         }
     } catch (err) {
         console.error('Error al cargar lista de actividades:', err);

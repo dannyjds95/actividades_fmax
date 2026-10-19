@@ -1,6 +1,7 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
+    // Cabeceras CORS y Content-Type
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,21 +26,25 @@ module.exports = async (req, res) => {
         let conditions = [];
         let params = [];
 
+        // 1. Filtro de Rango de Fechas
         if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
             conditions.push('act_fecha BETWEEN ? AND ?');
             params.push(inicio, fin);
         }
 
-        if (tipo) {
+        // 2. Filtro por Tipo (INSTALACION, TRASLADO, VISITA)
+        if (tipo && tipo !== 'TODOS') {
             conditions.push('act_tipo = ?');
             params.push(tipo);
         }
 
-        if (sector) {
-            conditions.push('(act_sector LIKE ? OR act_cliente LIKE ?)');
+        // 3. Búsqueda por Sector o Cliente
+        if (sector && sector.trim() !== '') {
+            conditions.push('(act_cliente LIKE ? OR act_detalle LIKE ?)');
             params.push(`%${sector}%`, `%${sector}%`);
         }
 
+        // 4. Filtro por Valores Cobrados
         if (cobradas === 'si') {
             conditions.push('CAST(COALESCE(act_valores_cobrados, 0) AS DECIMAL(10,2)) > 0');
         } else if (cobradas === 'no') {
@@ -48,10 +53,10 @@ module.exports = async (req, res) => {
 
         const whereClause = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
 
-        const [rows] = await connection.execute(
-            `SELECT * FROM actividad_detalle ${whereClause} ORDER BY act_fecha DESC, id DESC`,
-            params
-        );
+        // Consulta sobre la tabla actividad_detalle
+        const query = `SELECT * FROM actividad_detalle ${whereClause} ORDER BY act_fecha DESC`;
+
+        const [rows] = await connection.execute(query, params);
 
         return res.status(200).json({
             status: 'success',
