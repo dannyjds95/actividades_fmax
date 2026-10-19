@@ -4,7 +4,7 @@ const BASE_URL = (typeof window !== 'undefined' && window.location.hostname.incl
     ? ''
     : BASE_VERCEL_URL;
 
-// Helper para obtener la sesión activa en cualquier momento
+// Helper para obtener la sesión del usuario
 function obtenerSesionUsuario() {
     try {
         return JSON.parse(localStorage.getItem('usuario_sesion')) || {};
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Función Unificada y Sanitizada para Enviar (Guardar o Actualizar)
+    // Función Unificada, Sanitizada y Dual de Guardado/Actualización
     async function guardarFormulario(event) {
         if (event) event.preventDefault();
 
@@ -264,30 +264,83 @@ document.addEventListener('DOMContentLoaded', () => {
         const calcs = calculateAll();
         const clienteVal = actClienteInput ? actClienteInput.value.trim() : '';
 
-        // Construcción limpia y sanitizada del objeto JSON
+        // Limpieza de formato para comas decimales (ej. "8,34" -> 8.34)
+        const rawCobrado = inputValoresCobrados ? inputValoresCobrados.value : '0';
+        const valCobradoLimpio = parseFloat(String(rawCobrado).replace(',', '.')) || 0;
+
+        const totalFinal = Number(calcs.actTotal) || 0;
+        const fibraFinal = actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0;
+
+        // Construcción del Payload enviando claves tanto con prefijo como sin el para compatibilidad con la API SQL
         const payload = {
+            // IDs
             act_id: esEdicion ? Number(actId) : null,
             id: esEdicion ? Number(actId) : null,
+
+            // Usuario
             user_id: session.id || session.user_id || 0,
             cuad_id: session.cuad_id || 0,
             act_origen: 'ACTIVIDAD PROPIA',
-            act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
+
+            // Fecha
             act_fecha: actFechaInput ? (actFechaInput.value || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+            fecha: actFechaInput ? (actFechaInput.value || '') : '',
+
+            // Cliente
+            act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
+            cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
+
+            // Sector, Tipo y Forma
             act_sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
+            sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
+
             act_tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
+            tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
+
             act_forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
+            forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
+
+            // Cantidades y Valores
             act_cantidad: Number(calcs.actCantidad) || 1,
+            cantidad: Number(calcs.actCantidad) || 1,
+
             act_valor: Number(calcs.actValor) || 0,
-            act_fibra: actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0,
+            valor: Number(calcs.actValor) || 0,
+
+            // Fibra
+            act_fibra: fibraFinal,
+            fibra: fibraFinal,
+
+            // Puntos de Red
             act_pred: Number(calcs.actPredQty) || 0,
+            pt_red: Number(calcs.actPredQty) || 0,
+            puntos_red: Number(calcs.actPredQty) || 0,
             act_pred_valor: Number(calcs.actPredValor) || 0,
+
+            // Equipos AC
             act_ac: Number(calcs.actAcQty) || 0,
+            ac: Number(calcs.actAcQty) || 0,
+            equipos_ac: Number(calcs.actAcQty) || 0,
             act_ac_valor: Number(calcs.actAcValor) || 0,
+
+            // Excedente
             act_excedente: Number(calcs.actExcedenteM) || 0,
+            excedente: Number(calcs.actExcedenteM) || 0,
             act_excedente_valor: Number(calcs.actExcedenteValor) || 0,
-            act_total: Number(calcs.actTotal) || 0,
+
+            // Total Actividad
+            act_total: totalFinal,
+            total: totalFinal,
+            total_actividad: totalFinal,
+
+            // Detalle / Comentario
             act_detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
-            act_valores_cobrados: inputValoresCobrados ? (parseFloat(inputValoresCobrados.value) || 0) : 0
+            detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
+
+            // Valores Cobrados
+            act_valores_cobrados: valCobradoLimpio,
+            valores_cobrados: valCobradoLimpio,
+            val_cobrado: valCobradoLimpio
         };
 
         // Reemplazar estrictamente cualquier NaN o undefined por 0 o cadena vacía
@@ -318,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.textContent = esEdicion ? 'Actualizando...' : 'Guardando...';
             }
 
-            console.log(`🚀 Enviando datos sanitizados [${method}] a ${targetApiUrl}:`, payload);
+            console.log(`🚀 Enviando datos [${method}] a ${targetApiUrl}:`, payload);
 
             const res = await fetch(targetApiUrl, {
                 method: method,
