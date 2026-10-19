@@ -648,27 +648,28 @@ function abrirModalNuevo() {
     abrirModal();
 }
 
+// Se dispara al hacer clic en el botón Editar de la tabla
 function editarActividad(idActividad) {
-    // Buscar la actividad en los datos cargados
+    // 1. Obtener los datos del registro desde la lista global
     const item = (window.actividadesCargadas || []).find(act => (act.act_id || act.id) == idActividad);
     if (!item) {
         alert('No se encontró la información del registro seleccionado.');
         return;
     }
 
-    // Asignación segura del título (evita que la consola se bloquee)
+    // 2. Cambiar el título del modal de forma segura (sin bloquear la consola)
     const tituloModal = document.getElementById('modal_titulo');
     if (tituloModal) {
         tituloModal.textContent = `Editar Actividad #${idActividad}`;
     }
 
-    // Helper para asignar valores sin lanzar errores si el elemento no existe en el DOM
+    // 3. Función auxiliar para pasar los datos a cada input sin errores
     const setVal = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.value = (val !== null && val !== undefined) ? val : '';
     };
 
-    // Copiar datos de la actividad a los campos del formulario
+    // 4. Copiar los valores del registro al formulario
     setVal('form_act_id', item.act_id || item.id);
     setVal('act_fecha', item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
     setVal('cuad_id', item.cuad_id);
@@ -683,7 +684,7 @@ function editarActividad(idActividad) {
     setVal('act_valores_cobrados', item.act_valores_cobrados || 0);
     setVal('act_detalle', item.act_detalle);
 
-    // Abrir la ventana emergente
+    // 5. Desplegar el pop-up con los datos listos para modificar
     abrirModal();
 }
 
