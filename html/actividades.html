@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="../image/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/actividades.css">
 </head>
 <body>
 
@@ -48,32 +50,96 @@
             </div>
         </aside>
 
-        <!-- ÁREA PRINCIPAL -->
+<!-- Contenido Principal -->
         <main class="main-content">
-            <!-- ENCABEZADO SUPERIOR (TOPBAR) -->
-            <header class="topbar">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Abrir menú">
-                        ☰
-                    </button>
-                    <h1 class="topbar-title">Título de la Página</h1>
+            <!-- Tarjeta de Filtros -->
+            <div class="filter-card">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label for="select_periodo">Período</label>
+                        <select id="select_periodo" class="form-control">
+                            <option value="">Cargando períodos...</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="fecha_desde">Desde</label>
+                        <input type="date" id="fecha_desde" class="form-control">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="fecha_hasta">Hasta</label>
+                        <input type="date" id="fecha_hasta" class="form-control">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filter_tipo">Tipo</label>
+                        <select id="filter_tipo" class="form-control">
+                            <option value="">TODOS</option>
+                            <option value="INSTALACION">INSTALACIÓN</option>
+                            <option value="TRASLADO">TRASLADO</option>
+                            <option value="VISITA">VISITA</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filter_sector">Sector</label>
+                        <input type="text" id="filter_sector" class="form-control" placeholder="Ej. Norte, Centro...">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filter_cobradas">Cobradas</label>
+                        <select id="filter_cobradas" class="form-control">
+                            <option value="">TODAS</option>
+                            <option value="si">SOLO COBRADAS (> $0)</option>
+                            <option value="no">SIN COBRAR ($0)</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group button-group">
+                        <button id="btn_registrar" class="btn btn-primary" onclick="window.location.href='registrar.html'">
+                            + Registrar Actividad
+                        </button>
+                    </div>
                 </div>
-
-            </header>
-
-            <!-- CUERPO DE LA PÁGINA (CONTENIDO AQUÍ) -->
-            <div class="content-body">
-                <!-- Coloca el contenido específico de tu vista aquí -->
             </div>
 
-            <!-- PIE DE PÁGINA -->
-            <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); margin-top: auto;">
-                <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
-            </footer>
+            <!-- Tabla de Datos -->
+            <div class="table-card">
+                <div class="table-header">
+                    <h3>Registros de Actividades</h3>
+                    <span id="txt_total_registros" class="badge-count">0 registros</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>FECHA</th>
+                                <th>CLIENTE</th>
+                                <th>TIPO</th>
+                                <th>FORMA</th>
+                                <th>FIBRA</th>
+                                <th>EXCEDENTE</th>
+                                <th>PT. RED</th>
+                                <th>AC</th>
+                                <th>TOTAL</th>
+                                <th>V. COBRADOS</th>
+                                <th>ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl_actividades_body">
+                            <tr>
+                                <td colspan="11" class="text-center">Cargando actividades...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </main>
     </div>
 
     <script src="../js/auth.js"></script>
     <script src="../js/layout.js"></script>
+    <script src="../js/actividades.js"></script>
 </body>
 </html>
