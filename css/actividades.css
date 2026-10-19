@@ -561,3 +561,25 @@ select.form-control {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* ===================================================
+   TARJETAS CLIQUEABLES Y MODAL ANCHO DE DETALLES
+   =================================================== */
+.summary-item.clickable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+.summary-item.clickable:hover {
+    border-color: #2563eb;
+    background-color: #eff6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+}
+
+/* Modal ampliado para acomodar la tabla */
+.modal-content.modal-lg {
+    max-width: 850px;
+    width: 95%;
+}

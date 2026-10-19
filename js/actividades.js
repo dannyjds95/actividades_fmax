@@ -5,6 +5,8 @@ const BASE_URL = window.location.hostname.includes('vercel.app')
     ? ''
     : 'https://actividades-fmax-9ysb.vercel.app';
 
+window.actividadesCargadas = [];
+
 const formatFecha = (fechaStr) => {
     if (!fechaStr) return '';
     return String(fechaStr).split('T')[0];
@@ -140,7 +142,7 @@ async function cargarActividades() {
 
     if (!tbody) return;
 
-    // 1. Obtener valores de los filtros (Actualizado: cliente en lugar de sector)
+    // 1. Obtener valores de los filtros
     const inicio = document.getElementById('fecha_desde')?.value || '';
     const fin = document.getElementById('fecha_hasta')?.value || '';
     const tipo = document.getElementById('filter_tipo')?.value || '';
@@ -158,7 +160,31 @@ async function cargarActividades() {
         const data = await res.json();
 
         if (data.status === 'success' && Array.isArray(data.actividades)) {
-            const lista = data.actividades;
+            let lista = data.actividades;
+
+            // 🔍 Respaldo Frontend: Filtrado de seguridad en cliente si la API no filtra
+            if (cliente !== '') {
+                const queryCliente = cliente.toLowerCase();
+                lista = lista.filter(item => 
+                    (item.act_cliente || '').toLowerCase().includes(queryCliente)
+                );
+            }
+
+            if (tipo !== '' && tipo !== 'TODOS') {
+                lista = lista.filter(item => 
+                    (item.act_tipo || '').toUpperCase() === tipo.toUpperCase()
+                );
+            }
+
+            if (cobradas === 'si') {
+                lista = lista.filter(item => parseFloat(item.act_valores_cobrados || 0) > 0);
+            } else if (cobradas === 'no') {
+                lista = lista.filter(item => parseFloat(item.act_valores_cobrados || 0) === 0);
+            }
+
+            // 📌 Almacenar la lista activa para los pop-ups de las tarjetas de métricas
+            window.actividadesCargadas = lista;
+
             if (txtTotal) txtTotal.textContent = `${lista.length} registros`;
 
             if (lista.length === 0) {
@@ -185,7 +211,7 @@ async function cargarActividades() {
                 const excedenteMonto = parseFloat(item.act_excedente_valor || 0);
                 const excedenteValorFormatted = excedenteMonto.toFixed(2);
                 
-                const numPtRed = parseFloat(item.act_pred || 0);
+                const numPtRed = parseFloat(item.act_pred || item.act_pt_red || 0);
                 const numAc = parseFloat(item.act_ac || 0);
 
                 const totalMontoNum = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0));
@@ -254,10 +280,12 @@ async function cargarActividades() {
             );
 
         } else {
+            window.actividadesCargadas = [];
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">No se pudieron obtener los datos.</td></tr>';
             actualizarResumenTotales(0, 0, 0, 0, 0, 0, 0);
         }
     } catch (err) {
+        window.actividadesCargadas = [];
         console.error('Error al cargar lista de actividades:', err);
         tbody.innerHTML = '<tr><td colspan="11" class="text-center text-red">Error al conectar con la base de datos.</td></tr>';
         actualizarResumenTotales(0, 0, 0, 0, 0, 0, 0);
@@ -331,3 +359,115 @@ function vaciarFiltros() {
     // 3. Consultar las actividades con los filtros limpios
     cargarActividades();
 }
+
+function abrirModalDetalle(tipoMetrica) {
+    const modal = document.getElementById('modal_detalle_metrica');
+    const titulo = document.getElementById('modal_detalle_titulo');
+    const tbody = document.getElementById('tbl_detalle_metrica_body');
+
+    if (!modal || !tbody) return;
+
+    let registrosFiltrados = [];
+    let tituloTexto = '';
+
+    // Filtrado según el tipo de tarjeta presionada
+    switch (tipoMetrica) {
+        case 'excedente':
+            tituloTexto = 'Actividades con Excedente';
+            registrosFiltrados = window.actividadesCargadas.filter(item => 
+                parseFloat(item.act_excedente || 0) > 0 || parseFloat(item.act_excedente_valor || 0) > 0
+            );
+            break;
+
+        case 'pt_red':
+            tituloTexto = 'Actividades con Puntos de Red';
+            registrosFiltrados = window.actividadesCargadas.filter(item => 
+                parseFloat(item.act_pred || item.act_pt_red || 0) > 0
+            );
+            break;
+
+        case 'ac':
+            tituloTexto = 'Actividades con AC Instalados';
+            registrosFiltrados = window.actividadesCargadas.filter(item => 
+                parseFloat(item.act_ac || 0) > 0
+            );
+            break;
+
+        case 'cobrados':
+            tituloTexto = 'Actividades con Valores Cobrados';
+            registrosFiltrados = window.actividadesCargadas.filter(item => 
+                parseFloat(item.act_valores_cobrados || 0) > 0
+            );
+            break;
+
+        case 'monto_total':
+            tituloTexto = 'Todas las Actividades con Monto';
+            registrosFiltrados = window.actividadesCargadas.filter(item => 
+                parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)) > 0
+            );
+            break;
+
+        case 'totales':
+        default:
+            tituloTexto = 'Todas las Actividades del Período';
+            registrosFiltrados = [...window.actividadesCargadas];
+            break;
+    }
+
+    if (titulo) titulo.textContent = `${tituloTexto} (${registrosFiltrados.length})`;
+
+    // Si no existen filas coincidentes
+    if (registrosFiltrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay registros que coincidan con esta métrica.</td></tr>';
+    } else {
+        tbody.innerHTML = registrosFiltrados.map(item => {
+            const fechaFormateada = typeof formatFecha === 'function' 
+                ? formatFecha(item.act_fecha) 
+                : (item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
+
+            const totalMonto = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)).toFixed(2);
+            const cobradoNum = parseFloat(item.act_valores_cobrados || 0);
+            const cobradoMonto = cobradoNum.toFixed(2);
+
+            // Generar el texto descriptivo del criterio
+            let detalleCriterio = '';
+            if (tipoMetrica === 'excedente') {
+                detalleCriterio = `${item.act_excedente || 0} m ($${parseFloat(item.act_excedente_valor || 0).toFixed(2)})`;
+            } else if (tipoMetrica === 'pt_red') {
+                detalleCriterio = `${item.act_pred || item.act_pt_red || 0} Puntos`;
+            } else if (tipoMetrica === 'ac') {
+                detalleCriterio = `${item.act_ac || 0} AC`;
+            } else {
+                detalleCriterio = `${item.act_fibra || 0} m Fibra`;
+            }
+
+            return `
+                <tr>
+                    <td class="text-center">${fechaFormateada}</td>
+                    <td><b>${item.act_cliente || 'N/A'}</b></td>
+                    <td class="text-center"><span class="badge-tipo">${item.act_tipo || 'GENERAL'}</span></td>
+                    <td class="text-center">${detalleCriterio}</td>
+                    <td class="text-right"><b>$${totalMonto}</b></td>
+                    <td class="text-center">
+                        ${cobradoNum > 0 
+                            ? `<span class="badge-cobrado">$${cobradoMonto}</span>` 
+                            : `<span class="val-zero">$${cobradoMonto}</span>`}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Mostrar modal
+    modal.classList.add('active');
+}
+
+function cerrarModalDetalle() {
+    const modal = document.getElementById('modal_detalle_metrica');
+    if (modal) modal.classList.remove('active');
+}
+
+// Permitir cerrar modal con la tecla ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrarModalDetalle();
+});
