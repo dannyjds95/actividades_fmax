@@ -1,5 +1,26 @@
-const BASE_URL = window.location.origin;
+// ===================================================
+// 1. CONFIGURACIÓN GLOBAL Y AUXILIARES
+// ===================================================
+const BASE_URL = window.location.hostname.includes('vercel.app')
+    ? ''
+    : 'https://actividades-fmax-9ysb.vercel.app';
 
+const formatFecha = (fechaStr) => {
+    if (!fechaStr) return '';
+    return String(fechaStr).split('T')[0];
+};
+
+function getBadgeClass(tipo) {
+    const t = String(tipo || '').toUpperCase();
+    if (t.includes('INSTALAC')) return 'badge-instalacion';
+    if (t.includes('VISITA')) return 'badge-visita';
+    if (t.includes('TRASLADO')) return 'badge-traslado';
+    return 'badge-default';
+}
+
+// ===================================================
+// 2. INICIALIZACIÓN Y EVENTOS
+// ===================================================
 document.addEventListener('DOMContentLoaded', () => {
     const selectPeriodo = document.getElementById('select_periodo');
     const fechaDesde = document.getElementById('fecha_desde');
@@ -8,10 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterSector = document.getElementById('filter_sector');
     const filterCobradas = document.getElementById('filter_cobradas');
 
-    // Cargar selector de períodos y seleccionar el activo de la fecha actual
+    // Cargar selector de períodos y auto-seleccionar el período actual
     cargarPeriodos(selectPeriodo);
 
-    // Listener para cambio de período
+    // Evento al cambiar de período en el select
     selectPeriodo.addEventListener('change', (e) => {
         const opt = e.target.options[e.target.selectedIndex];
         if (opt && opt.dataset.inicio && opt.dataset.fin) {
@@ -21,21 +42,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Listeners de actualización dinámica
+    // Filtros dinámicos inmediatos
     [fechaDesde, fechaHasta, filterTipo, filterCobradas].forEach(el => {
-        el.addEventListener('change', cargarActividades);
+        if (el) el.addEventListener('change', cargarActividades);
     });
 
+    // Filtro por sector/cliente con debounce
     let timeoutSector;
-    filterSector.addEventListener('input', () => {
-        clearTimeout(timeoutSector);
-        timeoutSector = setTimeout(cargarActividades, 300);
-    });
+    if (filterSector) {
+        filterSector.addEventListener('input', () => {
+            clearTimeout(timeoutSector);
+            timeoutSector = setTimeout(cargarActividades, 300);
+        });
+    }
 });
 
+// ===================================================
+// 3. CARGA DE DATOS (API)
+// ===================================================
 async function cargarPeriodos(selectPeriodo) {
     try {
         const res = await fetch(`${BASE_URL}/api/obtener-periodos`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
         const data = await res.json();
 
         if (data.status === 'success' && Array.isArray(data.periodos)) {
@@ -46,8 +75,8 @@ async function cargarPeriodos(selectPeriodo) {
 
             data.periodos.forEach((p, index) => {
                 const opt = document.createElement('option');
-                const inicio = String(p.fecha_inicio).split('T')[0];
-                const fin = String(p.fecha_final).split('T')[0];
+                const inicio = formatFecha(p.fecha_inicio);
+                const fin = formatFecha(p.fecha_final);
 
                 opt.value = p.id;
                 opt.textContent = `${inicio} a ${fin}`;
@@ -56,21 +85,26 @@ async function cargarPeriodos(selectPeriodo) {
                 selectPeriodo.appendChild(opt);
 
                 if (hoy >= inicio && hoy <= fin) {
-                    actualIdx = index + 1;
+                    actualIdx = index + 1; // +1 por la opción inicial
                 }
             });
 
-            const selIndex = actualIdx !== -1 ? actualIdx : 1;
+            // Seleccionar período actual (o el primero disponible)
+            const selIndex = actualIdx !== -1 ? actualIdx : (data.periodos.length > 0 ? 1 : 0);
+
             if (selectPeriodo.options[selIndex]) {
                 selectPeriodo.selectedIndex = selIndex;
                 const optSel = selectPeriodo.options[selIndex];
-                document.getElementById('fecha_desde').value = optSel.dataset.inicio;
-                document.getElementById('fecha_hasta').value = optSel.dataset.fin;
+                
+                document.getElementById('fecha_desde').value = optSel.dataset.inicio || '';
+                document.getElementById('fecha_hasta').value = optSel.dataset.fin || '';
+                
                 cargarActividades();
             }
         }
     } catch (err) {
         console.error('Error al obtener períodos:', err);
+        selectPeriodo.innerHTML = '<option value="">Error al cargar períodos</option>';
     }
 }
 
@@ -89,11 +123,13 @@ async function cargarActividades() {
     try {
         const queryParams = new URLSearchParams({ inicio, fin, tipo, sector, cobradas });
         const res = await fetch(`${BASE_URL}/api/obtener-actividades?${queryParams}`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
         const data = await res.json();
 
         if (data.status === 'success' && Array.isArray(data.actividades)) {
             const lista = data.actividades;
-            txtTotal.textContent = `${lista.length} registros`;
+            if (txtTotal) txtTotal.textContent = `${lista.length} registros`;
 
             if (lista.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="11" class="text-center">No se encontraron registros para estos filtros.</td></tr>';
@@ -102,9 +138,9 @@ async function cargarActividades() {
 
             tbody.innerHTML = lista.map(item => `
                 <tr>
-                    <td>${item.act_fecha ? item.act_fecha.split('T')[0] : ''}</td>
+                    <td>${formatFecha(item.act_fecha)}</td>
                     <td><b>${item.act_cliente || 'N/A'}</b></td>
-                    <td><span class="badge-tipo badge-${(item.act_tipo || 'GENERAL').toLowerCase()}">${item.act_tipo || 'GENERAL'}</span></td>
+                    <td><span class="badge-tipo ${getBadgeClass(item.act_tipo)}">${item.act_tipo || 'GENERAL'}</span></td>
                     <td>${item.act_forma || 'NORMAL'}</td>
                     <td>${item.act_fibra || 0} m</td>
                     <td>${item.act_excedente || 0} m ($${parseFloat(item.act_excedente_valor || 0).toFixed(2)})</td>
@@ -125,10 +161,13 @@ async function cargarActividades() {
         }
     } catch (err) {
         console.error('Error al cargar lista de actividades:', err);
-        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-red">Error al cargar datos.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-red">Error al conectar con la base de datos.</td></tr>';
     }
 }
 
+// ===================================================
+// 4. ACCIONES DE REGISTRO
+// ===================================================
 function editarActividad(id) {
     window.location.href = `editar.html?id=${id}`;
 }
