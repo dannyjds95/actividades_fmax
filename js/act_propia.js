@@ -1,35 +1,35 @@
+// URL dinámica de la API (Vercel vs Local)
 const BASE_VERCEL_URL = 'https://actividades-fmax-9ysb.vercel.app';
-const BASE_URL = window.location.hostname.includes('vercel.app')
+const BASE_URL = (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app'))
     ? ''
     : BASE_VERCEL_URL;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Verificar sesión del usuario
+    // 1. Verificar sesión del usuario
     const userSession = JSON.parse(localStorage.getItem('usuario_sesion'));
     if (!userSession) {
         window.location.href = '../index.html';
         return;
     }
 
-    // Elementos del Formulario
-    const form = document.getElementById('actividadForm');
+    // 2. Obtener referencias a los elementos del DOM
+    const form = document.getElementById('actividadForm') || document.getElementById('form_actividad') || document.querySelector('form');
     const userIdInput = document.getElementById('user_id');
+    const actIdInput = document.getElementById('act_id');
     const actFechaInput = document.getElementById('act_fecha');
+    const actClienteInput = document.getElementById('act_cliente');
+    const actSectorSelect = document.getElementById('act_sector');
     const actTipoSelect = document.getElementById('act_tipo');
     const actFormaSelect = document.getElementById('act_forma');
     const actFibraInput = document.getElementById('act_fibra');
-    
-    // Radios y selects condicionales
-    const radiosPred = document.querySelectorAll('input[name="has_pred"]');
-    const selectPredQty = document.getElementById('act_pred_qty');
-    
-    const radiosAc = document.querySelectorAll('input[name="has_ac"]');
-    const selectAcQty = document.getElementById('act_ac_qty');
-    
-    const radiosCobro = document.querySelectorAll('input[name="has_cobro"]');
+    const actDetalleInput = document.getElementById('act_detalle');
+
+    // Radios y Controles Condicionales
+    const selectPredQty = document.getElementById('act_pred_qty') || document.getElementById('act_pred');
+    const selectAcQty = document.getElementById('act_ac_qty') || document.getElementById('act_ac');
     const inputValoresCobrados = document.getElementById('act_valores_cobrados');
 
-    // Etiquetas de Resumen
+    // Etiquetas de Resumen Económico
     const lblCantidad = document.getElementById('lbl_cantidad');
     const lblValorAct = document.getElementById('lbl_valor_act');
     const lblValorPred = document.getElementById('lbl_valor_pred');
@@ -38,11 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const lblValorExc = document.getElementById('lbl_valor_exc');
     const lblTotal = document.getElementById('lbl_total');
 
-    // 1. Inicializar Campos Ocultos y Fecha Actual (zona horaria local)
-    if (userIdInput) {
-        userIdInput.value = userSession.id || userSession.user_id || '';
-    }
-
+    // Inicializar IDs de usuario y Fecha actual si es nuevo registro
+    if (userIdInput) userIdInput.value = userSession.id || userSession.user_id || '';
     if (actFechaInput && !actFechaInput.value) {
         const hoy = new Date();
         const year = hoy.getFullYear();
@@ -51,9 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
         actFechaInput.value = `${year}-${month}-${day}`;
     }
 
-    // 2. Manejo Dinámico de Forma condicionado por Tipo de Actividad
+    // 3. Manejo Dinámico de Opciones de Forma según Tipo
     function updateFormaOptions() {
+        if (!actTipoSelect || !actFormaSelect) return;
         const tipo = actTipoSelect.value;
+        const currentForma = actFormaSelect.value;
         actFormaSelect.innerHTML = '';
 
         if (tipo === 'INSTALACION' || tipo === 'TRASLADO') {
@@ -64,39 +63,21 @@ document.addEventListener('DOMContentLoaded', () => {
             actFormaSelect.add(new Option('RECABLEADO NORMAL', 'RECABLEADO NORMAL'));
             actFormaSelect.add(new Option('RECABLEADO DOBLE', 'RECABLEADO DOBLE'));
         } else {
-            // Opción predeterminada si no hay tipo seleccionado
             actFormaSelect.add(new Option('Seleccione Forma', ''));
         }
+
+        if (currentForma) actFormaSelect.value = currentForma;
         calculateAll();
     }
 
-    // 3. Mostrar/Ocultar Selects de Puntos de Red, Equipos AC y Cobro
-    radiosPred.forEach(radio => radio.addEventListener('change', (e) => {
-        selectPredQty.classList.toggle('hidden', e.target.value === 'NO');
-        calculateAll();
-    }));
-
-    radiosAc.forEach(radio => radio.addEventListener('change', (e) => {
-        selectAcQty.classList.toggle('hidden', e.target.value === 'NO');
-        calculateAll();
-    }));
-
-    radiosCobro.forEach(radio => radio.addEventListener('change', (e) => {
-        const isSi = e.target.value === 'SI';
-        inputValoresCobrados.classList.toggle('hidden', !isSi);
-        if (!isSi) inputValoresCobrados.value = 0;
-        calculateAll();
-    }));
-
-    // 4. Lógica de Cálculo
+    // 4. Lógica de Cálculo de Totales
     function calculateAll() {
-        const tipo = actTipoSelect.value;
-        const forma = actFormaSelect.value;
+        const tipo = actTipoSelect ? actTipoSelect.value : '';
+        const forma = actFormaSelect ? actFormaSelect.value : '';
 
         let actCantidad = 0;
         let tarifaBase = 0;
 
-        // Si se selecciona un tipo y forma válidos
         if (tipo !== '' && forma !== '') {
             actCantidad = (forma === 'DOBLE' || forma === 'RECABLEADO DOBLE') ? 2 : 1;
             tarifaBase = (tipo === 'VISITA') 
@@ -104,35 +85,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 : (parseFloat(userSession.valor_act) || 0);
         }
 
-        lblCantidad.textContent = actCantidad;
+        if (lblCantidad) lblCantidad.textContent = actCantidad;
 
-        // Valor Actividad
         const actValor = tarifaBase * actCantidad;
-        lblValorAct.textContent = `$${actValor.toFixed(2)}`;
+        if (lblValorAct) lblValorAct.textContent = `$${actValor.toFixed(2)}`;
 
         // Puntos de Red
-        const hasPred = document.querySelector('input[name="has_pred"]:checked')?.value === 'SI';
-        const actPredQty = hasPred ? parseInt(selectPredQty.value) : 0;
+        const radioPredChecked = document.querySelector('input[name="has_pred"]:checked, input[name="radio_pred"]:checked')?.value;
+        const hasPred = radioPredChecked === 'SI' || radioPredChecked === 'si';
+        const actPredQty = (hasPred && selectPredQty) ? (parseInt(selectPredQty.value, 10) || 0) : 0;
         const actPredValor = actPredQty * (parseFloat(userSession.valor_pred) || 0);
-        lblValorPred.textContent = `$${actPredValor.toFixed(2)}`;
+        if (lblValorPred) lblValorPred.textContent = `$${actPredValor.toFixed(2)}`;
 
         // Equipos AC
-        const hasAc = document.querySelector('input[name="has_ac"]:checked')?.value === 'SI';
-        const actAcQty = hasAc ? parseInt(selectAcQty.value) : 0;
+        const radioAcChecked = document.querySelector('input[name="has_ac"]:checked, input[name="radio_ac"]:checked')?.value;
+        const hasAc = radioAcChecked === 'SI' || radioAcChecked === 'si';
+        const actAcQty = (hasAc && selectAcQty) ? (parseInt(selectAcQty.value, 10) || 0) : 0;
         const actAcValor = actAcQty * (parseFloat(userSession.valor_ac) || 0);
-        lblValorAc.textContent = `$${actAcValor.toFixed(2)}`;
+        if (lblValorAc) lblValorAc.textContent = `$${actAcValor.toFixed(2)}`;
 
         // Excedente de Fibra
-        const fibra = parseInt(actFibraInput.value) || 0;
+        const fibra = actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0;
         const actExcedenteM = fibra > 350 ? (fibra - 350) : 0;
         const actExcedenteValor = actExcedenteM * (parseFloat(userSession.valor_exc) || 0);
         
-        lblExcedenteM.textContent = actExcedenteM;
-        lblValorExc.textContent = `$${actExcedenteValor.toFixed(2)}`;
+        if (lblExcedenteM) lblExcedenteM.textContent = actExcedenteM;
+        if (lblValorExc) lblValorExc.textContent = `$${actExcedenteValor.toFixed(2)}`;
 
         // Total General
         const actTotal = actValor + actPredValor + actAcValor + actExcedenteValor;
-        lblTotal.textContent = `$${actTotal.toFixed(2)}`;
+        if (lblTotal) lblTotal.textContent = `$${actTotal.toFixed(2)}`;
 
         return {
             actCantidad, actValor, actPredQty, actPredValor, 
@@ -140,37 +122,148 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Escuchadores de Eventos
-    actTipoSelect.addEventListener('change', updateFormaOptions);
-    actFormaSelect.addEventListener('change', calculateAll);
-    actFibraInput.addEventListener('input', calculateAll);
-    selectPredQty.addEventListener('change', calculateAll);
-    selectAcQty.addEventListener('change', calculateAll);
+    // Exportar funciones de cálculo al ámbito global
+    window.calculateAll = calculateAll;
+    window.calcularTotales = calculateAll;
 
-    // Inicializar Opciones y Cálculos al Cargar
-    updateFormaOptions();
+    // 5. Configurar escuchadores de eventos para los inputs
+    if (actTipoSelect) actTipoSelect.addEventListener('change', updateFormaOptions);
+    if (actFormaSelect) actFormaSelect.addEventListener('change', calculateAll);
+    if (actFibraInput) actFibraInput.addEventListener('input', calculateAll);
+    if (selectPredQty) selectPredQty.addEventListener('change', calculateAll);
+    if (selectAcQty) selectAcQty.addEventListener('change', calculateAll);
 
-    // 5. Envío del Formulario
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    // Escuchadores de Radio Buttons
+    document.querySelectorAll('input[name="has_pred"], input[name="radio_pred"]').forEach(r => {
+        r.addEventListener('change', (e) => {
+            if (selectPredQty) selectPredQty.classList.toggle('hidden', e.target.value.toUpperCase() === 'NO');
+            calculateAll();
+        });
+    });
+
+    document.querySelectorAll('input[name="has_ac"], input[name="radio_ac"]').forEach(r => {
+        r.addEventListener('change', (e) => {
+            if (selectAcQty) selectAcQty.classList.toggle('hidden', e.target.value.toUpperCase() === 'NO');
+            calculateAll();
+        });
+    });
+
+    document.querySelectorAll('input[name="has_cobro"], input[name="radio_cobro"]').forEach(r => {
+        r.addEventListener('change', (e) => {
+            const isSi = e.target.value.toUpperCase() === 'SI';
+            if (inputValoresCobrados) {
+                inputValoresCobrados.classList.toggle('hidden', !isSi);
+                if (!isSi) inputValoresCobrados.value = 0;
+            }
+            calculateAll();
+        });
+    });
+
+    // 6. Cargar Datos si venimos de Actividades en Modo Edición
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('editId');
+
+    if (editId) {
+        cargarDatosParaEditar(editId);
+    }
+
+    // 7. Interceptar y procesar la acción de Guardar / Editar
+    if (form) {
+        form.onsubmit = guardarFormulario;
+    }
+
+    // Función para Cargar los Datos del Registro a Editar
+    async function cargarDatosParaEditar(id) {
+        try {
+            if (actIdInput) actIdInput.value = id;
+
+            const tituloHeader = document.querySelector('h1, h2, h3, .title');
+            if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
+
+            const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
+            if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
+
+            const data = await response.json();
+            const actividades = data.actividades || [];
+            const item = actividades.find(a => (a.act_id || a.id) == id);
+
+            if (!item) {
+                alert(`No se encontró la actividad #${id}.`);
+                return;
+            }
+
+            if (actIdInput) actIdInput.value = item.act_id || item.id || id;
+            if (actClienteInput) actClienteInput.value = item.act_cliente || '';
+            if (actFechaInput) actFechaInput.value = item.act_fecha ? String(item.act_fecha).split('T')[0] : '';
+            if (actSectorSelect) actSectorSelect.value = item.act_sector || '';
+            if (actTipoSelect) actTipoSelect.value = item.act_tipo || '';
+            
+            updateFormaOptions();
+            if (actFormaSelect) actFormaSelect.value = item.act_forma || '';
+            if (actFibraInput) actFibraInput.value = item.act_fibra || 0;
+            if (actDetalleInput) actDetalleInput.value = item.act_detalle || '';
+
+            // Carga de Puntos de Red, AC y Cobros
+            const valPtRed = parseFloat(item.act_pred ?? item.act_pt_red ?? 0);
+            const valAC = parseFloat(item.act_ac ?? item.cant_ac ?? 0);
+            const valCobro = parseFloat(item.act_valores_cobrados ?? item.act_cobro ?? 0);
+
+            const setRadioGroup = (names, numVal, inputEl) => {
+                const targetVal = numVal > 0 ? 'SI' : 'NO';
+                for (let name of names) {
+                    const r = document.querySelector(`input[name="${name}"][value="${targetVal}"], input[name="${name}"][value="${targetVal.toLowerCase()}"]`);
+                    if (r) {
+                        r.checked = true;
+                        r.dispatchEvent(new Event('change', { bubbles: true }));
+                        break;
+                    }
+                }
+                if (numVal > 0 && inputEl) {
+                    inputEl.value = numVal;
+                    inputEl.classList.remove('hidden');
+                }
+            };
+
+            setRadioGroup(['has_pred', 'radio_pred'], valPtRed, selectPredQty);
+            setRadioGroup(['has_ac', 'radio_ac'], valAC, selectAcQty);
+            setRadioGroup(['has_cobro', 'radio_cobro'], valCobro, inputValoresCobrados);
+
+            setTimeout(calculateAll, 100);
+
+        } catch (err) {
+            console.error('Error al cargar datos:', err);
+            alert(`Ocurrió un inconveniente al cargar el registro: ${err.message}`);
+        }
+    }
+
+    // Función Unificada de Guardado
+    async function guardarFormulario(event) {
+        if (event) event.preventDefault();
+
+        const urlParamsNow = new URLSearchParams(window.location.search);
+        const idFromUrl = urlParamsNow.get('editId');
+        const idFromInput = actIdInput ? actIdInput.value.trim() : '';
+
+        const actId = idFromUrl || idFromInput;
+        const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
+
         const calcs = calculateAll();
-        
-        // Asignación predeterminada si el nombre viene vacío
-        const clienteInput = document.getElementById('act_cliente')?.value.trim() || '';
-        const actCliente = clienteInput !== '' ? clienteInput : 'NO DEFINIDO';
+        const clienteVal = actClienteInput ? actClienteInput.value.trim() : '';
 
         const payload = {
+            act_id: esEdicion ? Number(actId) : null,
+            id: esEdicion ? Number(actId) : null,
             user_id: userSession.id || userSession.user_id,
             act_origen: 'ACTIVIDAD PROPIA',
-            act_cliente: actCliente,
-            act_fecha: actFechaInput.value,
+            act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
+            act_fecha: actFechaInput ? actFechaInput.value : '',
             cuad_id: userSession.cuad_id,
-            act_sector: document.getElementById('act_sector').value,
-            act_tipo: actTipoSelect.value,
-            act_forma: actFormaSelect.value,
+            act_sector: actSectorSelect ? actSectorSelect.value : '',
+            act_tipo: actTipoSelect ? actTipoSelect.value : '',
+            act_forma: actFormaSelect ? actFormaSelect.value : '',
             act_cantidad: calcs.actCantidad,
             act_valor: calcs.actValor,
-            act_fibra: parseInt(actFibraInput.value) || 0,
+            act_fibra: actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0,
             act_pred: calcs.actPredQty,
             act_pred_valor: calcs.actPredValor,
             act_ac: calcs.actAcQty,
@@ -178,218 +271,55 @@ document.addEventListener('DOMContentLoaded', () => {
             act_excedente: calcs.actExcedenteM,
             act_excedente_valor: calcs.actExcedenteValor,
             act_total: calcs.actTotal,
-            act_detalle: document.getElementById('act_detalle').value,
-            act_valores_cobrados: parseFloat(inputValoresCobrados.value) || 0
+            act_detalle: actDetalleInput ? actDetalleInput.value : '',
+            act_valores_cobrados: inputValoresCobrados ? (parseFloat(inputValoresCobrados.value) || 0) : 0
         };
 
-        const BASE_URL = window.location.hostname.includes('vercel.app')
-            ? '/api/guardar-actividad'
-            : 'https://actividades-fmax-9ysb.vercel.app/api/guardar-actividad';
+        const targetApiUrl = esEdicion 
+            ? `${BASE_URL}/api/editar-actividad` 
+            : `${BASE_URL}/api/guardar-actividad`;
+            
+        const method = esEdicion ? 'PUT' : 'POST';
 
-        const btn = document.getElementById('btnSubmit');
+        const btn = document.getElementById('btnSubmit') || document.querySelector('button[type="submit"]');
+
         try {
-            btn.disabled = true;
-            btn.textContent = 'Guardando...';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = esEdicion ? 'Actualizando...' : 'Guardando...';
+            }
 
-            const res = await fetch(BASE_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            console.log(`🚀 Enviando datos [${method}] a ${targetApiUrl}:`, payload);
+
+            const res = await fetch(targetApiUrl, {
+                method: method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
                 body: JSON.stringify(payload)
             });
 
             const data = await res.json();
-            if (res.ok && data.status === 'success') {
-                alert('¡Actividad registrada correctamente!');
-                window.location.href = 'dashboard.html';
+
+            if (res.ok && (data.status === 'success' || data.affectedRows > 0 || data.message?.includes('exito'))) {
+                alert(esEdicion ? '✅ Actividad actualizada correctamente' : '✅ Actividad registrada correctamente');
+                window.location.href = 'actividades.html';
             } else {
-                alert(data.message || 'Error al guardar la actividad');
+                alert(`⚠️ Error al procesar: ${data.message || 'Error en el servidor'}`);
             }
         } catch (err) {
-            alert('Error de conexión con el servidor');
+            console.error('Error de red:', err);
+            alert('❌ Error de conexión con el servidor.');
         } finally {
-            btn.disabled = false;
-            btn.textContent = 'Guardar Actividad';
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = esEdicion ? 'Actualizar Actividad' : 'Guardar Actividad';
+            }
         }
-    });
+    }
+
+    // Exponer función de guardado a nivel global
+    window.guardarFormulario = guardarFormulario;
+    window.guardarActividad = guardarFormulario;
 });
-
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Vincular el evento de envío al formulario para interceptar el Submit siempre
-    const form = document.getElementById('form_actividad') || document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', guardarFormulario);
-    }
-
-    // 2. Detectar si la URL contiene el parámetro de edición 'editId'
-    const urlParams = new URLSearchParams(window.location.search);
-    const editId = urlParams.get('editId');
-
-    if (editId) {
-        cargarDatosParaEditar(editId);
-    }
-});
-
-// Cargar y popular los campos del formulario desde el backend
-async function cargarDatosParaEditar(id) {
-    try {
-        // Asignar inmediatamente el ID al campo oculto
-        const inputHidden = document.getElementById('act_id');
-        if (inputHidden) inputHidden.value = id;
-
-        // Actualizar título del encabezado
-        const tituloHeader = document.querySelector('h1, h2, h3, .title');
-        if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
-
-        const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
-        if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
-
-        const data = await response.json();
-        const actividades = data.actividades || [];
-        const item = actividades.find(a => (a.act_id || a.id) == id);
-
-        if (!item) {
-            alert(`No se encontró la actividad #${id}.`);
-            return;
-        }
-
-        // Reconfirmar el ID en el input oculto
-        if (inputHidden) inputHidden.value = item.act_id || item.id || id;
-
-        // Asignación directa y protegida para el Nombre del Cliente
-        const clienteInput = document.getElementById('act_cliente') || document.querySelector('[name="act_cliente"]');
-        if (clienteInput) clienteInput.value = item.act_cliente || '';
-
-        // Helper seguro para asignar valores en el resto de inputs sin sobreescribir el cliente ni el id oculto
-        const setInputValue = (selectorList, value) => {
-            if (value === null || value === undefined) return;
-            const list = Array.isArray(selectorList) ? selectorList : [selectorList];
-            for (let nameOrId of list) {
-                const el = document.getElementById(nameOrId) || document.querySelector(`[name="${nameOrId}"]`);
-                if (el && el.id !== 'act_cliente' && el.name !== 'act_cliente' && el.id !== 'act_id') {
-                    el.value = value;
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-                    el.dispatchEvent(new Event('change', { bubbles: true }));
-                    break;
-                }
-            }
-        };
-
-        setInputValue(['act_fecha', 'fecha'], item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
-        setInputValue(['act_sector', 'sector'], item.act_sector || '');
-        setInputValue(['act_tipo', 'tipo'], item.act_tipo || '');
-        setInputValue(['act_fibra', 'fibra'], item.act_fibra || 0);
-        setInputValue(['act_detalle', 'detalle', 'comentario'], item.act_detalle || '');
-
-        setTimeout(() => {
-            setInputValue(['act_forma', 'forma'], item.act_forma || '');
-        }, 50);
-
-        // Extraer valores numéricos exactos de la BD
-        const valPtRed = parseFloat(item.act_pred ?? item.act_pt_red ?? item.act_puntos_red ?? 0);
-        const valAC = parseFloat(item.act_ac ?? item.cant_ac ?? 0);
-        const valCobro = parseFloat(item.act_valores_cobrados ?? item.act_cobro ?? item.valores_cobrados ?? 0);
-
-        // Procesador de secciones con botones Radio (SI/NO)
-        const procesarSeccionRadio = (possibleRadioNames, valueNum, possibleInputNames) => {
-            const tieneValor = valueNum > 0;
-            const targetRadioVal = tieneValor ? 'SI' : 'NO';
-
-            let radioEl = null;
-            for (let rName of possibleRadioNames) {
-                radioEl = document.querySelector(`input[name="${rName}"][value="${targetRadioVal}"], input[name="${rName}"][value="${targetRadioVal.toLowerCase()}"]`);
-                if (radioEl) break;
-            }
-
-            if (radioEl) {
-                radioEl.checked = true;
-                radioEl.click();
-                radioEl.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-
-            if (tieneValor) {
-                setTimeout(() => {
-                    setInputValue(possibleInputNames, valueNum);
-                }, 100);
-            }
-        };
-
-        procesarSeccionRadio(['radio_pred', 'pred', 'pt_red', 'puntos_red'], valPtRed, ['act_pred', 'cant_pred', 'puntos_red', 'pt_red']);
-        procesarSeccionRadio(['radio_ac', 'ac', 'equipos_ac', 'cant_ac'], valAC, ['act_ac', 'cant_ac', 'equipos_ac']);
-        procesarSeccionRadio(['radio_cobro', 'cobro', 'valores_cobrados', 'radio_valores'], valCobro, ['act_valores_cobrados', 'valores_cobrados', 'val_cobrado']);
-
-        // Recalcular el resumen económico inferior
-        setTimeout(() => {
-            if (typeof calcularTotales === 'function') calcularTotales();
-            if (typeof actualizarResumen === 'function') actualizarResumen();
-            if (typeof recalcular === 'function') recalcular();
-        }, 200);
-
-    } catch (err) {
-        console.error('Error al cargar datos de edición:', err);
-        alert(`No se pudo cargar la actividad: ${err.message}`);
-    }
-}
-
-// Guardar o Actualizar el formulario
-async function guardarFormulario(event) {
-    if (event) event.preventDefault();
-
-    // Detección doble del ID: desde el parámetro de la URL O desde el campo oculto #act_id
-    const urlParams = new URLSearchParams(window.location.search);
-    const idFromUrl = urlParams.get('editId');
-    const idFromInput = document.getElementById('act_id')?.value;
-
-    const actId = idFromUrl || idFromInput;
-    const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
-
-    const getVal = (id) => {
-        const el = document.getElementById(id) || document.querySelector(`[name="${id}"]`);
-        return el ? el.value : '';
-    };
-
-    const payload = {
-        act_id: esEdicion ? Number(actId) : null,
-        id: esEdicion ? Number(actId) : null, // Envío dual para compatibilidad con la API
-        act_fecha: getVal('act_fecha'),
-        act_cliente: getVal('act_cliente'),
-        act_tipo: getVal('act_tipo'),
-        act_forma: getVal('act_forma'),
-        act_sector: getVal('act_sector'),
-        act_fibra: parseFloat(getVal('act_fibra') || 0),
-        act_pred: parseInt(getVal('act_pred') || 0, 10),
-        act_ac: parseInt(getVal('act_ac') || 0, 10),
-        act_valores_cobrados: parseFloat(getVal('act_valores_cobrados') || 0),
-        act_detalle: getVal('act_detalle')
-    };
-
-    const url = esEdicion 
-        ? `${BASE_URL}/api/editar-actividad` 
-        : `${BASE_URL}/api/guardar-actividad`;
-        
-    const method = esEdicion ? 'PUT' : 'POST';
-
-    console.log(`🚀 Enviando solicitud [${method}] a ${url}:`, payload);
-
-    try {
-        const response = await fetch(url, {
-            method: method,
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const resData = await response.json();
-
-        if (response.ok && (resData.status === 'success' || resData.affectedRows > 0 || resData.message?.includes('exito'))) {
-            alert(esEdicion ? '✅ Registro actualizado correctamente' : '✅ Registro guardado exitosamente');
-            window.location.href = 'actividades.html';
-        } else {
-            alert(`⚠️ Error al guardar: ${resData.message || 'Ocurrió un inconveniente'}`);
-        }
-    } catch (err) {
-        console.error('Error al enviar formulario:', err);
-        alert('❌ Error de conexión al guardar el registro.');
-    }
-}
