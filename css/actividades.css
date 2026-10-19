@@ -583,3 +583,85 @@ select.form-control {
     max-width: 850px;
     width: 95%;
 }
+
+/* ===================================================
+   ESTILOS OBLIGATORIOS PARA EL POP-UP / MODAL
+   =================================================== */
+
+/* Capa de fondo fija e invisible por defecto */
+.modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: rgba(15, 23, 42, 0.6) !important; /* Fondo oscuro translúcido */
+    backdrop-filter: blur(4px);
+    display: none !important; /* Oculto por defecto */
+    align-items: center;
+    justify-content: center;
+    z-index: 99999 !important; /* Por encima de cualquier elemento */
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Estado activo cuando se presiona una tarjeta */
+.modal-overlay.active {
+    display: flex !important;
+}
+
+/* Caja del Pop-up */
+.modal-content.modal-lg {
+    background: #ffffff !important;
+    border-radius: 12px;
+    max-width: 850px;
+    width: 100%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    animation: modalPopIn 0.2s ease-out;
+}
+
+@keyframes modalPopIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Cabecera y cuerpo del modal */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 12px 20px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}

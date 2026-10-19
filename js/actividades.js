@@ -363,102 +363,119 @@ function vaciarFiltros() {
 function abrirModalDetalle(tipoMetrica) {
     const modal = document.getElementById('modal_detalle_metrica');
     const titulo = document.getElementById('modal_detalle_titulo');
+    const thead = document.getElementById('tbl_detalle_metrica_head');
     const tbody = document.getElementById('tbl_detalle_metrica_body');
 
-    if (!modal || !tbody) return;
+    if (!modal || !tbody || !thead) return;
 
     let registrosFiltrados = [];
     let tituloTexto = '';
+    let nombreColumnaMétrica = '';
+    let obtenerValorMétrica = (item) => '';
 
-    // Filtrado según el tipo de tarjeta presionada
+    // Filtrado y configuración dinámica según la tarjeta seleccionada
     switch (tipoMetrica) {
         case 'excedente':
             tituloTexto = 'Actividades con Excedente';
-            registrosFiltrados = window.actividadesCargadas.filter(item => 
+            nombreColumnaMétrica = 'Excedente';
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item => 
                 parseFloat(item.act_excedente || 0) > 0 || parseFloat(item.act_excedente_valor || 0) > 0
             );
+            obtenerValorMétrica = (item) => {
+                const m = item.act_excedente || 0;
+                const val = parseFloat(item.act_excedente_valor || 0).toFixed(2);
+                return `<span class="badge-excedente">${m} m ($${val})</span>`;
+            };
             break;
 
         case 'pt_red':
             tituloTexto = 'Actividades con Puntos de Red';
-            registrosFiltrados = window.actividadesCargadas.filter(item => 
+            nombreColumnaMétrica = 'Puntos de Red';
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item => 
                 parseFloat(item.act_pred || item.act_pt_red || 0) > 0
             );
+            obtenerValorMétrica = (item) => `<b>${item.act_pred || item.act_pt_red || 0}</b>`;
             break;
 
         case 'ac':
             tituloTexto = 'Actividades con AC Instalados';
-            registrosFiltrados = window.actividadesCargadas.filter(item => 
+            nombreColumnaMétrica = 'AC Instalados';
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item => 
                 parseFloat(item.act_ac || 0) > 0
             );
+            obtenerValorMétrica = (item) => `<b>${item.act_ac || 0}</b>`;
             break;
 
         case 'cobrados':
             tituloTexto = 'Actividades con Valores Cobrados';
-            registrosFiltrados = window.actividadesCargadas.filter(item => 
+            nombreColumnaMétrica = 'Valores Cobrados';
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item => 
                 parseFloat(item.act_valores_cobrados || 0) > 0
             );
+            obtenerValorMétrica = (item) => {
+                const val = parseFloat(item.act_valores_cobrados || 0).toFixed(2);
+                return `<span class="badge-cobrado">$${val}</span>`;
+            };
             break;
 
         case 'monto_total':
-            tituloTexto = 'Todas las Actividades con Monto';
-            registrosFiltrados = window.actividadesCargadas.filter(item => 
+            tituloTexto = 'Actividades con Monto Total';
+            nombreColumnaMétrica = 'Monto Total';
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item => 
                 parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)) > 0
             );
+            obtenerValorMétrica = (item) => {
+                const total = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)).toFixed(2);
+                return `<b>$${total}</b>`;
+            };
             break;
 
         case 'totales':
         default:
             tituloTexto = 'Todas las Actividades del Período';
-            registrosFiltrados = [...window.actividadesCargadas];
+            nombreColumnaMétrica = 'Cantidad / Fibra';
+            registrosFiltrados = [...(window.actividadesCargadas || [])];
+            obtenerValorMétrica = (item) => `${item.act_cantidad || 1} act (${item.act_fibra || 0} m)`;
             break;
     }
 
     if (titulo) titulo.textContent = `${tituloTexto} (${registrosFiltrados.length})`;
 
-    // Si no existen filas coincidentes
+    // 1. Construir únicamente las cabeceras necesarias
+    thead.innerHTML = `
+        <tr>
+            <th class="text-center">Fecha</th>
+            <th>Cliente</th>
+            <th class="text-center">Tipo</th>
+            <th class="text-center">${nombreColumnaMétrica}</th>
+        </tr>
+    `;
+
+    // 2. Renderizar los datos limpios
     if (registrosFiltrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay registros que coincidan con esta métrica.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No hay registros que coincidan con esta métrica.</td></tr>';
     } else {
         tbody.innerHTML = registrosFiltrados.map(item => {
             const fechaFormateada = typeof formatFecha === 'function' 
                 ? formatFecha(item.act_fecha) 
                 : (item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
 
-            const totalMonto = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)).toFixed(2);
-            const cobradoNum = parseFloat(item.act_valores_cobrados || 0);
-            const cobradoMonto = cobradoNum.toFixed(2);
-
-            // Generar el texto descriptivo del criterio
-            let detalleCriterio = '';
-            if (tipoMetrica === 'excedente') {
-                detalleCriterio = `${item.act_excedente || 0} m ($${parseFloat(item.act_excedente_valor || 0).toFixed(2)})`;
-            } else if (tipoMetrica === 'pt_red') {
-                detalleCriterio = `${item.act_pred || item.act_pt_red || 0} Puntos`;
-            } else if (tipoMetrica === 'ac') {
-                detalleCriterio = `${item.act_ac || 0} AC`;
-            } else {
-                detalleCriterio = `${item.act_fibra || 0} m Fibra`;
-            }
+            const claseBadge = typeof getBadgeClass === 'function' 
+                ? getBadgeClass(item.act_tipo) 
+                : 'badge-default';
 
             return `
                 <tr>
                     <td class="text-center">${fechaFormateada}</td>
                     <td><b>${item.act_cliente || 'N/A'}</b></td>
-                    <td class="text-center"><span class="badge-tipo">${item.act_tipo || 'GENERAL'}</span></td>
-                    <td class="text-center">${detalleCriterio}</td>
-                    <td class="text-right"><b>$${totalMonto}</b></td>
-                    <td class="text-center">
-                        ${cobradoNum > 0 
-                            ? `<span class="badge-cobrado">$${cobradoMonto}</span>` 
-                            : `<span class="val-zero">$${cobradoMonto}</span>`}
-                    </td>
+                    <td class="text-center"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
+                    <td class="text-center">${obtenerValorMétrica(item)}</td>
                 </tr>
             `;
         }).join('');
     }
 
-    // Mostrar modal
+    // Mostrar el modal centrado
     modal.classList.add('active');
 }
 

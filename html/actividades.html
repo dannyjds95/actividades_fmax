@@ -125,13 +125,16 @@
                     </div>
                 </div>
 
-                <!-- Tarjeta de Resumen de Totales Filtrados -->
-                <!-- Tarjeta de Resumen interactiva -->
                 <div class="summary-card">
                     <div class="summary-grid">
-                        <div class="summary-item clickable" onclick="abrirModalDetalle('totales')">
+                        <div class="summary-item">
                             <span class="summary-label">Total Actividades</span>
                             <span class="summary-value" id="sum_total_actividades">0</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="summary-label">Monto Total</span>
+                            <span class="summary-value" id="sum_total_monto">$0.00</span>
                         </div>
 
                         <div class="summary-item clickable" onclick="abrirModalDetalle('excedente')">
@@ -149,11 +152,6 @@
                             <span class="summary-value" id="sum_cantidad_ac">0</span>
                         </div>
 
-                        <div class="summary-item clickable" onclick="abrirModalDetalle('monto_total')">
-                            <span class="summary-label">Monto Total</span>
-                            <span class="summary-value" id="sum_total_monto">$0.00</span>
-                        </div>
-
                         <div class="summary-item clickable" onclick="abrirModalDetalle('cobrados')">
                             <span class="summary-label">Valores Cobrados</span>
                             <span class="summary-value val-green" id="sum_valores_cobrados">$0.00</span>
@@ -162,35 +160,7 @@
                 </div>
 
 
-                <!-- Modal Pop-up para el Detalle de Métricas -->
-<div id="modal_detalle_metrica" class="modal-overlay">
-    <div class="modal-content modal-lg">
-        <div class="modal-header">
-            <h3 id="modal_detalle_titulo">Detalle de Actividades</h3>
-            <button type="button" class="btn-close" onclick="cerrarModalDetalle()">&times;</button>
-        </div>
-        <div class="modal-body" style="max-height: 420px; overflow-y: auto;">
-            <table class="table-custom">
-                <thead>
-                    <tr>
-                        <th class="text-center">Fecha</th>
-                        <th>Cliente</th>
-                        <th class="text-center">Tipo</th>
-                        <th class="text-center">Detalle Métrica</th>
-                        <th class="text-right">Monto Total</th>
-                        <th class="text-center">Cobrado</th>
-                    </tr>
-                </thead>
-                <tbody id="tbl_detalle_metrica_body">
-                    <!-- Registros dinámicos -->
-                </tbody>
-            </table>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-action" onclick="cerrarModalDetalle()">Cerrar</button>
-        </div>
-    </div>
-</div>
+
 
 
 
@@ -229,6 +199,28 @@
             </div>
         </main>
     </div>
+
+
+<!-- Modal Pop-up para el Detalle de Métricas -->
+<div id="modal_detalle_metrica" class="modal-overlay">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3 id="modal_detalle_titulo">Detalle de Actividades</h3>
+            <button type="button" class="btn-close" onclick="cerrarModalDetalle()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <table class="table-custom">
+                <!-- Cabecera dinámica -->
+                <thead id="tbl_detalle_metrica_head"></thead>
+                <!-- Registros dinámicos -->
+                <tbody id="tbl_detalle_metrica_body"></tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-action" onclick="cerrarModalDetalle()">Cerrar</button>
+        </div>
+    </div>
+</div>
 
     <script src="../js/auth.js"></script>
     <script src="../js/layout.js"></script>
