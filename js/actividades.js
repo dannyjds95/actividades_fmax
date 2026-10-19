@@ -649,43 +649,14 @@ function abrirModalNuevo() {
 }
 
 // Se dispara al hacer clic en el botón Editar de la tabla
+// Redirige a la página del formulario pasando el ID en la URL
 function editarActividad(idActividad) {
-    // 1. Obtener los datos del registro desde la lista global
-    const item = (window.actividadesCargadas || []).find(act => (act.act_id || act.id) == idActividad);
-    if (!item) {
-        alert('No se encontró la información del registro seleccionado.');
+    if (!idActividad) {
+        alert('ID de registro no válido.');
         return;
     }
-
-    // 2. Cambiar el título del modal de forma segura (sin bloquear la consola)
-    const tituloModal = document.getElementById('modal_titulo');
-    if (tituloModal) {
-        tituloModal.textContent = `Editar Actividad #${idActividad}`;
-    }
-
-    // 3. Función auxiliar para pasar los datos a cada input sin errores
-    const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.value = (val !== null && val !== undefined) ? val : '';
-    };
-
-    // 4. Copiar los valores del registro al formulario
-    setVal('form_act_id', item.act_id || item.id);
-    setVal('act_fecha', item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
-    setVal('cuad_id', item.cuad_id);
-    setVal('act_cliente', item.act_cliente);
-    setVal('act_sector', item.act_sector);
-    setVal('act_tipo', item.act_tipo || 'INSTALACION');
-    setVal('act_forma', item.act_forma || 'NORMAL');
-    setVal('act_fibra', item.act_fibra || 0);
-    setVal('act_excedente', item.act_excedente || 0);
-    setVal('act_pred', item.act_pred || item.act_pt_red || 0);
-    setVal('act_ac', item.act_ac || 0);
-    setVal('act_valores_cobrados', item.act_valores_cobrados || 0);
-    setVal('act_detalle', item.act_detalle);
-
-    // 5. Desplegar el pop-up con los datos listos para modificar
-    abrirModal();
+    // Redirección directa al formulario con el parámetro de edición
+    window.location.href = `act_propia.html?editId=${idActividad}`;
 }
 
 // 2. Enviar actualización o creación según exista el ID

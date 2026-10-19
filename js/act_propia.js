@@ -207,3 +207,117 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Detectar si la URL contiene el parámetro 'editId'
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('editId');
+
+    if (editId) {
+        cargarDatosParaEditar(editId);
+    }
+});
+
+// Función para obtener y popular los datos en el formulario
+async function cargarDatosParaEditar(id) {
+    try {
+        // Cambiar título de la página/formulario
+        const tituloHeader = document.querySelector('h2, h3, .title') || {};
+        if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
+
+        // Obtener la lista de actividades para buscar la seleccionada
+        const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
+        if (!response.ok) throw new Error('Error al consultar servidor');
+        
+        const data = await response.json();
+        const actividades = data.actividades || [];
+        const item = actividades.find(a => (a.act_id || a.id) == id);
+
+        if (!item) {
+            alert('No se encontró la información de esta actividad.');
+            return;
+        }
+
+        // 2. Llenar los campos básicos del formulario
+        const setVal = (idEl, val) => {
+            const el = document.getElementById(idEl);
+            if (el) el.value = (val !== null && val !== undefined) ? val : '';
+        };
+
+        setVal('act_id', item.act_id || item.id);
+        setVal('act_fecha', item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
+        setVal('act_cliente', item.act_cliente);
+        setVal('act_tipo', item.act_tipo);
+        setVal('act_forma', item.act_forma);
+        setVal('act_sector', item.act_sector);
+        setVal('act_fibra', item.act_fibra || 0);
+        setVal('act_detalle', item.act_detalle || '');
+
+        // 3. Seleccionar opciones en botones Radio (Puntos de red, AC, Cobrados)
+        const setRadio = (groupName, condition) => {
+            const radio = document.querySelector(`input[name="${groupName}"][value="${condition ? 'SI' : 'NO'}"]`);
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change')); // Disparar eventos de visibilidad si los hay
+            }
+        };
+
+        setRadio('radio_pred', (parseFloat(item.act_pred || item.act_pt_red || 0) > 0));
+        setRadio('radio_ac', (parseFloat(item.act_ac || 0) > 0));
+        setRadio('radio_cobro', (parseFloat(item.act_valores_cobrados || 0) > 0));
+
+        // Asignar cantidades secundarias si existen inputs para ello
+        setVal('act_pred', item.act_pred || item.act_pt_red || 0);
+        setVal('act_ac', item.act_ac || 0);
+        setVal('act_valores_cobrados', item.act_valores_cobrados || 0);
+
+    } catch (err) {
+        console.error('Error al cargar datos de edición:', err);
+        alert('Ocurrió un error al cargar la información para editar.');
+    }
+}
+
+async function guardarFormulario(event) {
+    if (event) event.preventDefault();
+
+    const actId = document.getElementById('act_id')?.value;
+    const esEdicion = Boolean(actId);
+
+    const payload = {
+        act_id: esEdicion ? Number(actId) : null,
+        act_fecha: document.getElementById('act_fecha')?.value,
+        act_cliente: document.getElementById('act_cliente')?.value,
+        act_tipo: document.getElementById('act_tipo')?.value,
+        act_forma: document.getElementById('act_forma')?.value,
+        act_sector: document.getElementById('act_sector')?.value,
+        act_fibra: parseFloat(document.getElementById('act_fibra')?.value || 0),
+        act_pred: parseInt(document.getElementById('act_pred')?.value || 0, 10),
+        act_ac: parseInt(document.getElementById('act_ac')?.value || 0, 10),
+        act_valores_cobrados: parseFloat(document.getElementById('act_valores_cobrados')?.value || 0),
+        act_detalle: document.getElementById('act_detalle')?.value
+    };
+
+    const url = esEdicion ? `${BASE_URL}/api/editar-actividad` : `${BASE_URL}/api/guardar-actividad`;
+    const method = esEdicion ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const resData = await response.json();
+
+        if (resData.status === 'success') {
+            alert(esEdicion ? '✅ Registro actualizado con éxito' : '✅ Registro guardado con éxito');
+            // Redirigir de regreso al panel del dashboard
+            window.location.href = 'actividades.html';
+        } else {
+            alert(`⚠️ Error: ${resData.message}`);
+        }
+    } catch (err) {
+        console.error('Error al enviar formulario:', err);
+        alert('❌ Error al procesar la solicitud.');
+    }
+}
