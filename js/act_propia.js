@@ -1,10 +1,3 @@
-// Obtener la URL de la API de forma segura
-const getApiUrl = (endpoint) => {
-    const base = (typeof BASE_URL !== 'undefined' && BASE_URL) ? BASE_URL : '';
-    return `${base}${endpoint}`;
-};
-
-
 document.addEventListener('DOMContentLoaded', () => {
     // Verificar sesión del usuario
     const userSession = JSON.parse(localStorage.getItem('usuario_sesion'));
