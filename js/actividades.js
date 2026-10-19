@@ -634,3 +634,109 @@ function cerrarModalVerActividad() {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') cerrarModalVerActividad();
 });
+
+
+// Abrir modal en modo "Nueva Actividad"
+function abrirModalNuevo() {
+    const form = document.getElementById('form_actividad');
+    if (form) form.reset();
+    
+    document.getElementById('form_act_id').value = '';
+    document.getElementById('modal_titulo').textContent = 'Registrar Actividad';
+    
+    // Fecha predeterminada de hoy
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('act_fecha').value = hoy;
+
+    abrirModal();
+}
+
+// 1. Cargar datos del registro seleccionado en el formulario para editar
+function editarActividad(idActividad) {
+    const item = (window.actividadesCargadas || []).find(act => (act.act_id || act.id) == idActividad);
+    if (!item) {
+        alert('No se encontró la información del registro seleccionado.');
+        return;
+    }
+
+    // Cambiar título del modal
+    document.getElementById('modal_titulo').textContent = `Editar Actividad #${idActividad}`;
+
+    // Copiar cada campo al formulario
+    document.getElementById('form_act_id').value = item.act_id || item.id || '';
+    document.getElementById('act_fecha').value = item.act_fecha ? String(item.act_fecha).split('T')[0] : '';
+    document.getElementById('cuad_id').value = item.cuad_id || '';
+    document.getElementById('act_cliente').value = item.act_cliente || '';
+    document.getElementById('act_sector').value = item.act_sector || '';
+    document.getElementById('act_tipo').value = item.act_tipo || 'INSTALACION';
+    document.getElementById('act_forma').value = item.act_forma || 'NORMAL';
+    document.getElementById('act_fibra').value = item.act_fibra || 0;
+    document.getElementById('act_excedente').value = item.act_excedente || 0;
+    document.getElementById('act_pred').value = item.act_pred || item.act_pt_red || 0;
+    document.getElementById('act_ac').value = item.act_ac || 0;
+    document.getElementById('act_valores_cobrados').value = item.act_valores_cobrados || 0;
+    document.getElementById('act_detalle').value = item.act_detalle || '';
+
+    // Mostrar modal
+    abrirModal();
+}
+
+// 2. Enviar actualización o creación según exista el ID
+async function guardarActividad(e) {
+    if (e) e.preventDefault();
+
+    const act_id = document.getElementById('form_act_id').value;
+
+    const payload = {
+        act_id: act_id ? Number(act_id) : null,
+        act_fecha: document.getElementById('act_fecha').value,
+        cuad_id: Number(document.getElementById('cuad_id').value || 1),
+        act_cliente: document.getElementById('act_cliente').value.trim(),
+        act_sector: document.getElementById('act_sector').value.trim(),
+        act_tipo: document.getElementById('act_tipo').value,
+        act_forma: document.getElementById('act_forma').value.trim(),
+        act_fibra: parseFloat(document.getElementById('act_fibra').value || 0),
+        act_excedente: parseFloat(document.getElementById('act_excedente').value || 0),
+        act_pred: parseInt(document.getElementById('act_pred').value || 0, 10),
+        act_ac: parseInt(document.getElementById('act_ac').value || 0, 10),
+        act_valores_cobrados: parseFloat(document.getElementById('act_valores_cobrados').value || 0),
+        act_detalle: document.getElementById('act_detalle').value.trim()
+    };
+
+    const isEdit = Boolean(act_id);
+    const url = isEdit ? `${BASE_URL}/api/editar-actividad` : `${BASE_URL}/api/guardar-actividad`;
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            alert(isEdit ? '✅ Actividad actualizada correctamente.' : '✅ Actividad registrada con éxito.');
+            cerrarModal();
+            cargarActividades(); // Recargar tabla y métricas superiores
+        } else {
+            alert(`⚠️ Error: ${data.message || 'No se pudo guardar la actividad.'}`);
+        }
+    } catch (err) {
+        console.error('Error al guardar actividad:', err);
+        alert('❌ Error de conexión al intentar guardar la actividad.');
+    }
+}
+
+function abrirModal() {
+    const modal = document.getElementById('modal_actividad');
+    if (modal) modal.classList.add('active');
+}
+
+function cerrarModal() {
+    const modal = document.getElementById('modal_actividad');
+    if (modal) modal.classList.remove('active');
+}

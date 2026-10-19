@@ -52,152 +52,142 @@
             </div>
         </aside>
 
-        <!-- Contenido Principal -->
         <main class="main-content">
-            <!-- ENCABEZADO SUPERIOR (TOPBAR) -->
-            <header class="topbar">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Abrir menú">
-                        ☰
-                    </button>
-                </div>
-            </header>
+    <!-- ENCABEZADO SUPERIOR (TOPBAR) -->
+    <header class="topbar">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Abrir menú">
+                ☰
+            </button>
+        </div>
+    </header>
 
-            <!-- Tarjeta de Filtros -->
-            <div class="filter-card">
-                <!-- 1. Tarjeta Superior: Período y Acciones Principales -->
-                <div class="header-action-card">
-                    <div class="periodo-container">
-                        <label for="select_periodo" class="label-periodo">Período de Facturación</label>
-                        <select id="select_periodo" class="form-control select-periodo">
-                            <option value="">Cargando períodos...</option>
-                        </select>
-                    </div>
-
-                    <div class="action-buttons-group">
-                        <button id="btn_vaciar_filtros" class="btn btn-secondary" onclick="vaciarFiltros()">
-                            🧹 Vaciar Filtros
-                        </button>
-                        <button id="btn_registrar" class="btn btn-primary"
-                            onclick="window.location.href='act_propia.html'">
-                            📄 Registrar Actividad
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 2. Tarjeta Inferior: Filtros de Búsqueda -->
-                <div class="filter-card">
-                    <div class="filter-grid">
-                        <div class="filter-group">
-                            <label for="fecha_desde">Desde</label>
-                            <input type="date" id="fecha_desde" class="form-control">
-                        </div>
-
-                        <div class="filter-group">
-                            <label for="fecha_hasta">Hasta</label>
-                            <input type="date" id="fecha_hasta" class="form-control">
-                        </div>
-
-                        <div class="filter-group">
-                            <label for="filter_tipo">Tipo de Actividad</label>
-                            <select id="filter_tipo" class="form-control">
-                                <option value="">TODOS</option>
-                                <option value="INSTALACION">INSTALACIÓN</option>
-                                <option value="TRASLADO">TRASLADO</option>
-                                <option value="VISITA">VISITA</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label for="filter_cliente">Cliente</label>
-                            <input type="text" id="filter_cliente" class="form-control"
-                                placeholder="Buscar por cliente...">
-                        </div>
-
-                        <div class="filter-group">
-                            <label for="filter_cobradas">valores Cobradas</label>
-                            <select id="filter_cobradas" class="form-control">
-                                <option value="">TODAS</option>
-                                <option value="si">ACTIVIDADES COBRADAS</option>
-                                <option value="no">ACTIVIDADES GRATIS</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="summary-card">
-                    <div class="summary-grid">
-                        <div class="summary-item">
-                            <span class="summary-label">Total Actividades</span>
-                            <span class="summary-value" id="sum_total_actividades">0</span>
-                        </div>
-
-                        <div class="summary-item">
-                            <span class="summary-label">Monto Total</span>
-                            <span class="summary-value" id="sum_total_monto">$0.00</span>
-                        </div>
-
-                        <div class="summary-item clickable" onclick="abrirModalDetalle('excedente')">
-                            <span class="summary-label">Excedente</span>
-                            <span class="summary-value val-blue" id="sum_total_excedente">0 m ($0.00)</span>
-                        </div>
-
-                        <div class="summary-item clickable" onclick="abrirModalDetalle('pt_red')">
-                            <span class="summary-label">Puntos de Red</span>
-                            <span class="summary-value" id="sum_puntos_red">0</span>
-                        </div>
-
-                        <div class="summary-item clickable" onclick="abrirModalDetalle('ac')">
-                            <span class="summary-label">AC Instalados</span>
-                            <span class="summary-value" id="sum_cantidad_ac">0</span>
-                        </div>
-
-                        <div class="summary-item clickable" onclick="abrirModalDetalle('cobrados')">
-                            <span class="summary-label">Valores Cobrados</span>
-                            <span class="summary-value val-green" id="sum_valores_cobrados">$0.00</span>
-                        </div>
-                    </div>
-                </div>
-
-
-
-
-
-
+    <!-- Contenedor Principal de Filtros y Resumen -->
+    <div class="filter-card">
+        <!-- 1. Período y Acciones Principales -->
+        <div class="header-action-card">
+            <div class="periodo-container">
+                <label for="select_periodo" class="label-periodo">Período de Facturación</label>
+                <select id="select_periodo" class="form-control select-periodo">
+                    <option value="">Cargando períodos...</option>
+                </select>
             </div>
 
-            <!-- Tabla de Datos -->
-            <div class="table-card">
-                <div class="table-header">
-                    <h3>Registros de Actividades</h3>
-                    <span id="txt_total_registros" class="badge-count">0 registros</span>
+            <div class="action-buttons-group">
+                <button id="btn_vaciar_filtros" class="btn btn-secondary" onclick="vaciarFiltros()">
+                    🧹 Vaciar Filtros
+                </button>
+                <button id="btn_registrar" class="btn btn-primary" onclick="abrirModalNuevo()">
+                    📄 Registrar Actividad
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. Filtros de Búsqueda -->
+        <div class="filter-grid" style="margin-top: 15px;">
+            <div class="filter-group">
+                <label for="fecha_desde">Desde</label>
+                <input type="date" id="fecha_desde" class="form-control">
+            </div>
+
+            <div class="filter-group">
+                <label for="fecha_hasta">Hasta</label>
+                <input type="date" id="fecha_hasta" class="form-control">
+            </div>
+
+            <div class="filter-group">
+                <label for="filter_tipo">Tipo de Actividad</label>
+                <select id="filter_tipo" class="form-control">
+                    <option value="">TODOS</option>
+                    <option value="INSTALACION">INSTALACIÓN</option>
+                    <option value="TRASLADO">TRASLADO</option>
+                    <option value="VISITA">VISITA</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="filter_cliente">Cliente</label>
+                <input type="text" id="filter_cliente" class="form-control" placeholder="Buscar por cliente...">
+            </div>
+
+            <div class="filter-group">
+                <label for="filter_cobradas">Valores Cobrados</label>
+                <select id="filter_cobradas" class="form-control">
+                    <option value="">TODAS</option>
+                    <option value="si">ACTIVIDADES COBRADAS</option>
+                    <option value="no">ACTIVIDADES GRATIS</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 3. Tarjetas de Resumen Interactivas -->
+        <div class="summary-card" style="margin-top: 15px;">
+            <div class="summary-grid">
+                <div class="summary-item clickable" onclick="abrirModalDetalle('totales')">
+                    <span class="summary-label">Total Actividades</span>
+                    <span class="summary-value" id="sum_total_actividades">0</span>
                 </div>
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>FECHA</th>
-                                <th>CLIENTE</th>
-                                <th>TIPO</th>
-                                <th>FORMA</th>
-                                <th>FIBRA</th>
-                                <th>EXCEDENTE</th>
-                                <th>PT. RED</th>
-                                <th>AC</th>
-                                <th>TOTAL</th>
-                                <th>V. COBRADOS</th>
-                                <th>ACCIONES</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbl_actividades_body">
-                            <tr>
-                                <td colspan="11" class="text-center">Cargando actividades...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                <div class="summary-item clickable" onclick="abrirModalDetalle('monto_total')">
+                    <span class="summary-label">Monto Total</span>
+                    <span class="summary-value" id="sum_total_monto">$0.00</span>
+                </div>
+
+                <div class="summary-item clickable" onclick="abrirModalDetalle('excedente')">
+                    <span class="summary-label">Excedente</span>
+                    <span class="summary-value val-blue" id="sum_total_excedente">0 m ($0.00)</span>
+                </div>
+
+                <div class="summary-item clickable" onclick="abrirModalDetalle('pt_red')">
+                    <span class="summary-label">Puntos de Red</span>
+                    <span class="summary-value" id="sum_puntos_red">0</span>
+                </div>
+
+                <div class="summary-item clickable" onclick="abrirModalDetalle('ac')">
+                    <span class="summary-label">AC Instalados</span>
+                    <span class="summary-value" id="sum_cantidad_ac">0</span>
+                </div>
+
+                <div class="summary-item clickable" onclick="abrirModalDetalle('cobrados')">
+                    <span class="summary-label">Valores Cobrados</span>
+                    <span class="summary-value val-green" id="sum_valores_cobrados">$0.00</span>
                 </div>
             </div>
-        </main>
+        </div>
+    </div>
+
+    <!-- Tabla de Datos -->
+    <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+            <h3>Registros de Actividades</h3>
+            <span id="txt_total_registros" class="badge-count">0 registros</span>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>FECHA</th>
+                        <th>CLIENTE</th>
+                        <th>TIPO</th>
+                        <th>FORMA</th>
+                        <th>FIBRA</th>
+                        <th>EXCEDENTE</th>
+                        <th>PT. RED</th>
+                        <th>AC</th>
+                        <th>TOTAL</th>
+                        <th>V. COBRADOS</th>
+                        <th>ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody id="tbl_actividades_body">
+                    <tr>
+                        <td colspan="11" class="text-center">Cargando actividades...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
     </div>
 
 
