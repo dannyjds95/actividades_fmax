@@ -99,7 +99,7 @@
                         </div>
 
                         <div class="filter-group">
-                            <label for="filter_tipo">Tipo</label>
+                            <label for="filter_tipo">Tipo de Actividad</label>
                             <select id="filter_tipo" class="form-control">
                                 <option value="">TODOS</option>
                                 <option value="INSTALACION">INSTALACIÓN</option>
@@ -109,21 +109,57 @@
                         </div>
 
                         <div class="filter-group">
-                            <label for="filter_sector">Sector</label>
-                            <input type="text" id="filter_sector" class="form-control"
-                                placeholder="Ej. Norte, Centro...">
+                            <label for="filter_cliente">Cliente</label>
+                            <input type="text" id="filter_cliente" class="form-control"
+                                placeholder="Buscar por cliente...">
                         </div>
 
                         <div class="filter-group">
-                            <label for="filter_cobradas">Cobradas</label>
+                            <label for="filter_cobradas">valores Cobradas</label>
                             <select id="filter_cobradas" class="form-control">
                                 <option value="">TODAS</option>
-                                <option value="si">SOLO COBRADAS (> $0)</option>
-                                <option value="no">SIN COBRAR ($0)</option>
+                                <option value="si">ACTIVIDADES COBRADAS</option>
+                                <option value="no">ACTIVIDADES GRATIS</option>
                             </select>
                         </div>
                     </div>
                 </div>
+
+                <!-- Tarjeta de Resumen de Totales Filtrados -->
+                <div class="summary-card">
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="summary-label">Total Actividades</span>
+                            <span class="summary-value" id="sum_total_actividades">0</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="summary-label">Excedente</span>
+                            <span class="summary-value val-blue" id="sum_total_excedente">0 m ($0.00)</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="summary-label">Puntos de Red</span>
+                            <span class="summary-value" id="sum_puntos_red">0</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="summary-label">AC Instalados</span>
+                            <span class="summary-value" id="sum_cantidad_ac">0</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="summary-label">Total Actividades</span>
+                            <span class="summary-value" id="sum_total_monto">$0.00</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="summary-label">Valores Cobrados</span>
+                            <span class="summary-value val-green" id="sum_valores_cobrados">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Tabla de Datos -->

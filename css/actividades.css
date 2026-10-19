@@ -350,26 +350,70 @@
     box-sizing: border-box;
 }
 
-/* 5 columnas perfectamente distribuidas */
+/* 1. Grilla de 5 columnas idénticas en ancho */
 .filter-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr)); /* minmax(0, 1fr) fuerza ancho 100% equitativo */
     gap: 14px;
+    width: 100%;
+    align-items: end;
 }
 
 .filter-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
+    width: 100%;
 }
 
+/* Fijar altura de la etiqueta para alineación horizontal perfecta */
 .filter-group label {
     font-size: 11px;
     font-weight: 700;
     color: #475569;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    height: 14px;
+    line-height: 14px;
 }
 
+
+/* 2. Normalización de alto y estilo para todos los controles */
+.form-control,
+input.form-control,
+select.form-control {
+    width: 100% !important;
+    height: 42px !important;        /* Altura idéntica fija */
+    min-height: 42px !important;
+    max-height: 42px !important;
+    padding: 0 12px !important;     /* Relleno interno parejo */
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #0f172a;
+    background-color: #ffffff;
+    box-sizing: border-box !important;
+    outline: none;
+    font-family: inherit;
+    -webkit-appearance: none;      /* Elimina diferencias de renderizado entre navegadores */
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Flecha personalizada para los <select> (Tipo y Cobradas) */
+select.form-control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 36px !important; /* Espacio para no encimar texto con la flecha */
+}
+
+/* Enfoque al hacer clic o tab */
+.form-control:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
 /* ===================================================
    RESPONSIVE DESIGN (TABLETS Y MÓVILES)
    =================================================== */
@@ -412,5 +456,108 @@
 @media (max-width: 480px) {
     .filter-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ===================================================
+   ESTILOS PARA V. COBRADOS
+   =================================================== */
+
+/* Destacado verde suave cuando hay un cobro registrado (> $0) */
+.badge-cobrado {
+    background-color: #dcfce7;
+    color: #15803d;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+/* Color neutro claro cuando no se ha cobrado ($0.00) */
+.val-zero {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* ===================================================
+   ESTILOS PARA EXCEDENTES (> $0)
+   =================================================== */
+
+/* Destacado azul suave cuando hay costo de excedente */
+.badge-excedente {
+    background-color: #dbeafe;
+    color: #1e40af;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+/* ===================================================
+   TARJETA DE RESUMEN / TOTALES FILTRADOS
+   =================================================== */
+.summary-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;     /* Centra las etiquetas y valores horizontalmente */
+    justify-content: center; /* Centra el contenido verticalmente */
+    text-align: center;      /* Asegura la alineación de texto para etiquetas largas */
+    gap: 6px;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 8px;
+    transition: transform 0.15s ease;
+}
+
+.summary-item:hover {
+    background-color: #f1f5f9;
+}
+
+.summary-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* Colores de acento */
+.summary-value.val-blue { color: #2563eb; }
+.summary-value.val-green { color: #16a34a; }
+
+/* Adaptabilidad para tablets y celulares */
+@media (max-width: 1024px) {
+    .summary-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }

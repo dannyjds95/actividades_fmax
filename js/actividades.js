@@ -108,23 +108,40 @@ async function cargarPeriodos(selectPeriodo) {
     }
 }
 
+// Función auxiliar para actualizar los valores en los elementos del DOM del Resumen
+function actualizarResumenTotales(totalAct, excM, excV, ptRed, cantAc, totalM, cobradosM) {
+    const elTotalAct = document.getElementById('sum_total_actividades');
+    const elExc = document.getElementById('sum_total_excedente');
+    const elPtRed = document.getElementById('sum_puntos_red');
+    const elAc = document.getElementById('sum_cantidad_ac');
+    const elTotalMonto = document.getElementById('sum_total_monto');
+    const elCobrados = document.getElementById('sum_valores_cobrados');
+
+    if (elTotalAct) elTotalAct.textContent = totalAct;
+    if (elExc) elExc.textContent = `${excM} m ($${excV.toFixed(2)})`;
+    if (elPtRed) elPtRed.textContent = ptRed;
+    if (elAc) elAc.textContent = cantAc;
+    if (elTotalMonto) elTotalMonto.textContent = `$${totalM.toFixed(2)}`;
+    if (elCobrados) elCobrados.textContent = `$${cobradosM.toFixed(2)}`;
+}
+
 async function cargarActividades() {
     const tbody = document.getElementById('tbl_actividades_body');
     const txtTotal = document.getElementById('txt_total_registros');
 
     if (!tbody) return;
 
-    // 1. Obtener valores de los filtros de forma segura
+    // 1. Obtener valores de los filtros (Actualizado: cliente en lugar de sector)
     const inicio = document.getElementById('fecha_desde')?.value || '';
     const fin = document.getElementById('fecha_hasta')?.value || '';
     const tipo = document.getElementById('filter_tipo')?.value || '';
-    const sector = (document.getElementById('filter_sector')?.value || '').trim();
+    const cliente = (document.getElementById('filter_cliente')?.value || '').trim();
     const cobradas = document.getElementById('filter_cobradas')?.value || '';
 
     tbody.innerHTML = '<tr><td colspan="11" class="text-center">Buscando registros...</td></tr>';
 
     try {
-        const queryParams = new URLSearchParams({ inicio, fin, tipo, sector, cobradas });
+        const queryParams = new URLSearchParams({ inicio, fin, tipo, cliente, cobradas });
         const res = await fetch(`${BASE_URL}/api/obtener-actividades?${queryParams}`);
         
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -137,19 +154,45 @@ async function cargarActividades() {
 
             if (lista.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="11" class="text-center">No se encontraron registros para estos filtros.</td></tr>';
+                actualizarResumenTotales(0, 0, 0, 0, 0, 0, 0);
                 return;
             }
 
-            // 2. Renderizar filas de la tabla
+            // Variables acumuladoras para los totales filtrados
+            let sumActividades = 0;
+            let sumExcedenteMetros = 0;
+            let sumExcedenteValor = 0;
+            let sumPtRed = 0;
+            let sumAc = 0;
+            let sumTotalMonto = 0;
+            let sumValoresCobrados = 0;
+
+            // 2. Renderizar filas y realizar sumatorias
             tbody.innerHTML = lista.map(item => {
-                // Identificador único de fila (Soporta `id` o `act_id`)
                 const idReg = item.id || item.act_id || 0;
                 
-                // Formateo seguro de valores numéricos
-                const excedenteValor = parseFloat(item.act_excedente_valor || 0).toFixed(2);
-                const totalMonto = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)).toFixed(2);
-                const valorCobrado = parseFloat(item.act_valores_cobrados || 0).toFixed(2);
-                const esCobrado = parseFloat(item.act_valores_cobrados || 0) > 0;
+                const cantAct = parseFloat(item.act_cantidad || 1);
+                const excMetros = parseFloat(item.act_excedente || 0);
+                const excedenteMonto = parseFloat(item.act_excedente_valor || 0);
+                const excedenteValorFormatted = excedenteMonto.toFixed(2);
+                
+                const numPtRed = parseFloat(item.act_pred || 0);
+                const numAc = parseFloat(item.act_ac || 0);
+
+                const totalMontoNum = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0));
+                const totalMontoFormatted = totalMontoNum.toFixed(2);
+
+                const cobradoNum = parseFloat(item.act_valores_cobrados || 0);
+                const valorCobradoFormatted = cobradoNum.toFixed(2);
+
+                // Sumatorias acumuladas
+                sumActividades += cantAct;
+                sumExcedenteMetros += excMetros;
+                sumExcedenteValor += excedenteMonto;
+                sumPtRed += numPtRed;
+                sumAc += numAc;
+                sumTotalMonto += totalMontoNum;
+                sumValoresCobrados += cobradoNum;
 
                 const fechaFormateada = typeof formatFecha === 'function' 
                     ? formatFecha(item.act_fecha) 
@@ -161,17 +204,26 @@ async function cargarActividades() {
 
                 return `
                     <tr>
-                        <td>${fechaFormateada}</td>
-                        <td><b>${item.act_cliente || 'N/A'}</b></td>
-                        <td><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
-                        <td>${item.act_forma || 'NORMAL'}</td>
-                        <td>${item.act_fibra || 0} m</td>
-                        <td>${item.act_excedente || 0} m ($${excedenteValor})</td>
-                        <td>${item.act_pred || 0}</td>
-                        <td>${item.act_ac || 0}</td>
-                        <td><b>$${totalMonto}</b></td>
-                        <td class="${esCobrado ? 'text-green' : ''}">$${valorCobrado}</td>
-                        <td>
+                        <td class="col-fecha text-center">${fechaFormateada}</td>
+                        <td class="col-cliente">${item.act_cliente || 'N/A'}</td>
+                        <td class="text-center"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
+                        <td class="text-center">${item.act_forma || 'NORMAL'}</td>
+                        <td class="text-center">${item.act_fibra || 0} m</td>
+                        <td class="text-center">
+                            ${excMetros} m 
+                            ${excedenteMonto > 0 
+                                ? `<span class="badge-excedente">($${excedenteValorFormatted})</span>` 
+                                : `<span class="val-zero">($${excedenteValorFormatted})</span>`}
+                        </td>
+                        <td class="text-center">${numPtRed}</td>
+                        <td class="text-center">${numAc}</td>
+                        <td class="text-right"><b>$${totalMontoFormatted}</b></td>
+                        <td class="text-center">
+                            ${cobradoNum > 0 
+                                ? `<span class="badge-cobrado">$${valorCobradoFormatted}</span>` 
+                                : `<span class="val-zero">$${valorCobradoFormatted}</span>`}
+                        </td>
+                        <td class="text-center">
                             <div class="action-buttons">
                                 <button class="btn-action btn-edit" onclick="editarActividad(${idReg})">Editar</button>
                                 <button class="btn-action btn-delete" onclick="eliminarActividad(${idReg})">Eliminar</button>
@@ -180,15 +232,28 @@ async function cargarActividades() {
                     </tr>
                 `;
             }).join('');
+
+            // 3. Actualizar la tarjeta de resumen en el DOM
+            actualizarResumenTotales(
+                sumActividades,
+                sumExcedenteMetros,
+                sumExcedenteValor,
+                sumPtRed,
+                sumAc,
+                sumTotalMonto,
+                sumValoresCobrados
+            );
+
         } else {
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">No se pudieron obtener los datos.</td></tr>';
+            actualizarResumenTotales(0, 0, 0, 0, 0, 0, 0);
         }
     } catch (err) {
         console.error('Error al cargar lista de actividades:', err);
         tbody.innerHTML = '<tr><td colspan="11" class="text-center text-red">Error al conectar con la base de datos.</td></tr>';
+        actualizarResumenTotales(0, 0, 0, 0, 0, 0, 0);
     }
 }
-
 // ===================================================
 // 4. ACCIONES DE REGISTRO
 // ===================================================
@@ -213,13 +278,13 @@ async function eliminarActividad(id) {
 }
 
 function vaciarFiltros() {
-    // 1. Limpiar campos de texto y selects de filtros secundarios
+    // 1. Limpiar campos de texto y selects (Actualizado: filter_cliente)
     const filterTipo = document.getElementById('filter_tipo');
-    const filterSector = document.getElementById('filter_sector');
+    const filterCliente = document.getElementById('filter_cliente');
     const filterCobradas = document.getElementById('filter_cobradas');
 
     if (filterTipo) filterTipo.value = '';
-    if (filterSector) filterSector.value = '';
+    if (filterCliente) filterCliente.value = '';
     if (filterCobradas) filterCobradas.value = '';
 
     // 2. Restablecer el selector al Período Actual basado en la fecha de hoy
@@ -242,7 +307,7 @@ function vaciarFiltros() {
             }
         }
 
-        // Si se encuentra el período actual se selecciona, sino se usa el primero disponible (índice 1)
+        // Si se encuentra el período actual se selecciona, sino se usa el primero disponible
         const selIndex = actualIdx !== -1 ? actualIdx : (selectPeriodo.options.length > 1 ? 1 : 0);
         selectPeriodo.selectedIndex = selIndex;
 
