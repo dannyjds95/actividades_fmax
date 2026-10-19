@@ -214,7 +214,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Detectar si se ingresó a la página en modo edición desde actividades.html
+    // 1. Vincular el evento de envío al formulario para interceptar el Submit siempre
+    const form = document.getElementById('form_actividad') || document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', guardarFormulario);
+    }
+
+    // 2. Detectar si la URL contiene el parámetro de edición 'editId'
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('editId');
 
@@ -223,16 +229,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Cargar y popular el formulario de edición de forma exacta
-// 1. Asegurar la asignación explícita del ID al cargar para editar
+// Cargar y popular los campos del formulario desde el backend
 async function cargarDatosParaEditar(id) {
     try {
-        // Asignar inmediatamente el ID al campo oculto del formulario
+        // Asignar inmediatamente el ID al campo oculto
         const inputHidden = document.getElementById('act_id');
-        if (inputHidden) {
-            inputHidden.value = id;
-        }
+        if (inputHidden) inputHidden.value = id;
 
+        // Actualizar título del encabezado
         const tituloHeader = document.querySelector('h1, h2, h3, .title');
         if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
 
@@ -248,14 +252,14 @@ async function cargarDatosParaEditar(id) {
             return;
         }
 
-        // Reconfirmar el ID recuperado de la base de datos
+        // Reconfirmar el ID en el input oculto
         if (inputHidden) inputHidden.value = item.act_id || item.id || id;
 
-        // Asignar Cliente
+        // Asignación directa y protegida para el Nombre del Cliente
         const clienteInput = document.getElementById('act_cliente') || document.querySelector('[name="act_cliente"]');
         if (clienteInput) clienteInput.value = item.act_cliente || '';
 
-        // Helper seguro para el resto de inputs
+        // Helper seguro para asignar valores en el resto de inputs sin sobreescribir el cliente ni el id oculto
         const setInputValue = (selectorList, value) => {
             if (value === null || value === undefined) return;
             const list = Array.isArray(selectorList) ? selectorList : [selectorList];
@@ -280,11 +284,12 @@ async function cargarDatosParaEditar(id) {
             setInputValue(['act_forma', 'forma'], item.act_forma || '');
         }, 50);
 
-        // Extraer valores de Puntos de Red, AC y Cobros
+        // Extraer valores numéricos exactos de la BD
         const valPtRed = parseFloat(item.act_pred ?? item.act_pt_red ?? item.act_puntos_red ?? 0);
         const valAC = parseFloat(item.act_ac ?? item.cant_ac ?? 0);
         const valCobro = parseFloat(item.act_valores_cobrados ?? item.act_cobro ?? item.valores_cobrados ?? 0);
 
+        // Procesador de secciones con botones Radio (SI/NO)
         const procesarSeccionRadio = (possibleRadioNames, valueNum, possibleInputNames) => {
             const tieneValor = valueNum > 0;
             const targetRadioVal = tieneValor ? 'SI' : 'NO';
@@ -312,6 +317,7 @@ async function cargarDatosParaEditar(id) {
         procesarSeccionRadio(['radio_ac', 'ac', 'equipos_ac', 'cant_ac'], valAC, ['act_ac', 'cant_ac', 'equipos_ac']);
         procesarSeccionRadio(['radio_cobro', 'cobro', 'valores_cobrados', 'radio_valores'], valCobro, ['act_valores_cobrados', 'valores_cobrados', 'val_cobrado']);
 
+        // Recalcular el resumen económico inferior
         setTimeout(() => {
             if (typeof calcularTotales === 'function') calcularTotales();
             if (typeof actualizarResumen === 'function') actualizarResumen();
@@ -324,17 +330,18 @@ async function cargarDatosParaEditar(id) {
     }
 }
 
-// 2. Función de Envío / Guardado (Distingue entre CREAR y EDITAR)
+// Guardar o Actualizar el formulario
 async function guardarFormulario(event) {
     if (event) event.preventDefault();
 
-    // Leer el ID guardado en el campo oculto
-    const actIdInput = document.getElementById('act_id');
-    const actId = actIdInput ? actIdInput.value.trim() : '';
+    // Detección doble del ID: desde el parámetro de la URL O desde el campo oculto #act_id
+    const urlParams = new URLSearchParams(window.location.search);
+    const idFromUrl = urlParams.get('editId');
+    const idFromInput = document.getElementById('act_id')?.value;
 
-    const esEdicion = Boolean(actId);
+    const actId = idFromUrl || idFromInput;
+    const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
 
-    // Obtención de valores del formulario
     const getVal = (id) => {
         const el = document.getElementById(id) || document.querySelector(`[name="${id}"]`);
         return el ? el.value : '';
@@ -342,6 +349,7 @@ async function guardarFormulario(event) {
 
     const payload = {
         act_id: esEdicion ? Number(actId) : null,
+        id: esEdicion ? Number(actId) : null, // Envío dual para compatibilidad con la API
         act_fecha: getVal('act_fecha'),
         act_cliente: getVal('act_cliente'),
         act_tipo: getVal('act_tipo'),
@@ -354,27 +362,29 @@ async function guardarFormulario(event) {
         act_detalle: getVal('act_detalle')
     };
 
-    // Determinar Endpoint y Método HTTP
     const url = esEdicion 
         ? `${BASE_URL}/api/editar-actividad` 
         : `${BASE_URL}/api/guardar-actividad`;
         
     const method = esEdicion ? 'PUT' : 'POST';
 
-    console.log(`🚀 Enviando datos [${method}] a ${url}:`, payload);
+    console.log(`🚀 Enviando solicitud [${method}] a ${url}:`, payload);
 
     try {
         const response = await fetch(url, {
             method: method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
             body: JSON.stringify(payload)
         });
 
         const resData = await response.json();
 
-        if (response.ok && (resData.status === 'success' || resData.affectedRows > 0)) {
+        if (response.ok && (resData.status === 'success' || resData.affectedRows > 0 || resData.message?.includes('exito'))) {
             alert(esEdicion ? '✅ Registro actualizado correctamente' : '✅ Registro guardado exitosamente');
-            window.location.href = 'actividades.html'; // Redirigir al dashboard
+            window.location.href = 'actividades.html';
         } else {
             alert(`⚠️ Error al guardar: ${resData.message || 'Ocurrió un inconveniente'}`);
         }
