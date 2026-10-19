@@ -224,13 +224,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Cargar y popular el formulario de edición de forma exacta
+// 1. Asegurar la asignación explícita del ID al cargar para editar
 async function cargarDatosParaEditar(id) {
     try {
-        // 1. Actualizar el título
+        // Asignar inmediatamente el ID al campo oculto del formulario
+        const inputHidden = document.getElementById('act_id');
+        if (inputHidden) {
+            inputHidden.value = id;
+        }
+
         const tituloHeader = document.querySelector('h1, h2, h3, .title');
         if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
 
-        // 2. Consultar datos a la API
         const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
         if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
 
@@ -243,17 +248,20 @@ async function cargarDatosParaEditar(id) {
             return;
         }
 
-        console.log('📦 Registro recuperado:', item);
+        // Reconfirmar el ID recuperado de la base de datos
+        if (inputHidden) inputHidden.value = item.act_id || item.id || id;
 
-        // Helper seguro para asignar valores
+        // Asignar Cliente
+        const clienteInput = document.getElementById('act_cliente') || document.querySelector('[name="act_cliente"]');
+        if (clienteInput) clienteInput.value = item.act_cliente || '';
+
+        // Helper seguro para el resto de inputs
         const setInputValue = (selectorList, value) => {
             if (value === null || value === undefined) return;
             const list = Array.isArray(selectorList) ? selectorList : [selectorList];
-            
             for (let nameOrId of list) {
                 const el = document.getElementById(nameOrId) || document.querySelector(`[name="${nameOrId}"]`);
-                // NUNCA escribir cantidades numéricas secundarias dentro del nombre del cliente
-                if (el && el.id !== 'act_cliente' && el.name !== 'act_cliente') {
+                if (el && el.id !== 'act_cliente' && el.name !== 'act_cliente' && el.id !== 'act_id') {
                     el.value = value;
                     el.dispatchEvent(new Event('input', { bubbles: true }));
                     el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -262,47 +270,37 @@ async function cargarDatosParaEditar(id) {
             }
         };
 
-        // 3. Asignar los Datos Principales (Asignación exclusiva y directa)
-        const clienteInput = document.getElementById('act_cliente') || document.querySelector('[name="act_cliente"]');
-        if (clienteInput) clienteInput.value = item.act_cliente || '';
-
-        setInputValue(['act_id', 'id'], item.act_id || item.id);
         setInputValue(['act_fecha', 'fecha'], item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
         setInputValue(['act_sector', 'sector'], item.act_sector || '');
         setInputValue(['act_tipo', 'tipo'], item.act_tipo || '');
         setInputValue(['act_fibra', 'fibra'], item.act_fibra || 0);
         setInputValue(['act_detalle', 'detalle', 'comentario'], item.act_detalle || '');
 
-        // Cargar Forma de Actividad
         setTimeout(() => {
             setInputValue(['act_forma', 'forma'], item.act_forma || '');
         }, 50);
 
-        // 4. Extraer valores numéricos exactos desde el objeto de la BD
+        // Extraer valores de Puntos de Red, AC y Cobros
         const valPtRed = parseFloat(item.act_pred ?? item.act_pt_red ?? item.act_puntos_red ?? 0);
         const valAC = parseFloat(item.act_ac ?? item.cant_ac ?? 0);
         const valCobro = parseFloat(item.act_valores_cobrados ?? item.act_cobro ?? item.valores_cobrados ?? 0);
 
-        // 5. Manejo estricto de Radio Buttons e Inputs desplegables
         const procesarSeccionRadio = (possibleRadioNames, valueNum, possibleInputNames) => {
             const tieneValor = valueNum > 0;
             const targetRadioVal = tieneValor ? 'SI' : 'NO';
 
-            // Buscar el botón radio específico
             let radioEl = null;
             for (let rName of possibleRadioNames) {
                 radioEl = document.querySelector(`input[name="${rName}"][value="${targetRadioVal}"], input[name="${rName}"][value="${targetRadioVal.toLowerCase()}"]`);
                 if (radioEl) break;
             }
 
-            // Seleccionar el radio y simular el click nativo
             if (radioEl) {
                 radioEl.checked = true;
                 radioEl.click();
                 radioEl.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
-            // Si es 'SI', asignar el valor al selector/input correspondiente
             if (tieneValor) {
                 setTimeout(() => {
                     setInputValue(possibleInputNames, valueNum);
@@ -310,12 +308,10 @@ async function cargarDatosParaEditar(id) {
             }
         };
 
-        // Ejecutar asignación limpia por nombres de atributo
         procesarSeccionRadio(['radio_pred', 'pred', 'pt_red', 'puntos_red'], valPtRed, ['act_pred', 'cant_pred', 'puntos_red', 'pt_red']);
         procesarSeccionRadio(['radio_ac', 'ac', 'equipos_ac', 'cant_ac'], valAC, ['act_ac', 'cant_ac', 'equipos_ac']);
         procesarSeccionRadio(['radio_cobro', 'cobro', 'valores_cobrados', 'radio_valores'], valCobro, ['act_valores_cobrados', 'valores_cobrados', 'val_cobrado']);
 
-        // 6. Recalcular el resumen económico inferior
         setTimeout(() => {
             if (typeof calcularTotales === 'function') calcularTotales();
             if (typeof actualizarResumen === 'function') actualizarResumen();
@@ -328,28 +324,44 @@ async function cargarDatosParaEditar(id) {
     }
 }
 
+// 2. Función de Envío / Guardado (Distingue entre CREAR y EDITAR)
 async function guardarFormulario(event) {
     if (event) event.preventDefault();
 
-    const actId = document.getElementById('act_id')?.value;
+    // Leer el ID guardado en el campo oculto
+    const actIdInput = document.getElementById('act_id');
+    const actId = actIdInput ? actIdInput.value.trim() : '';
+
     const esEdicion = Boolean(actId);
+
+    // Obtención de valores del formulario
+    const getVal = (id) => {
+        const el = document.getElementById(id) || document.querySelector(`[name="${id}"]`);
+        return el ? el.value : '';
+    };
 
     const payload = {
         act_id: esEdicion ? Number(actId) : null,
-        act_fecha: document.getElementById('act_fecha')?.value,
-        act_cliente: document.getElementById('act_cliente')?.value,
-        act_tipo: document.getElementById('act_tipo')?.value,
-        act_forma: document.getElementById('act_forma')?.value,
-        act_sector: document.getElementById('act_sector')?.value,
-        act_fibra: parseFloat(document.getElementById('act_fibra')?.value || 0),
-        act_pred: parseInt(document.getElementById('act_pred')?.value || 0, 10),
-        act_ac: parseInt(document.getElementById('act_ac')?.value || 0, 10),
-        act_valores_cobrados: parseFloat(document.getElementById('act_valores_cobrados')?.value || 0),
-        act_detalle: document.getElementById('act_detalle')?.value
+        act_fecha: getVal('act_fecha'),
+        act_cliente: getVal('act_cliente'),
+        act_tipo: getVal('act_tipo'),
+        act_forma: getVal('act_forma'),
+        act_sector: getVal('act_sector'),
+        act_fibra: parseFloat(getVal('act_fibra') || 0),
+        act_pred: parseInt(getVal('act_pred') || 0, 10),
+        act_ac: parseInt(getVal('act_ac') || 0, 10),
+        act_valores_cobrados: parseFloat(getVal('act_valores_cobrados') || 0),
+        act_detalle: getVal('act_detalle')
     };
 
-    const url = esEdicion ? `${BASE_URL}/api/editar-actividad` : `${BASE_URL}/api/guardar-actividad`;
+    // Determinar Endpoint y Método HTTP
+    const url = esEdicion 
+        ? `${BASE_URL}/api/editar-actividad` 
+        : `${BASE_URL}/api/guardar-actividad`;
+        
     const method = esEdicion ? 'PUT' : 'POST';
+
+    console.log(`🚀 Enviando datos [${method}] a ${url}:`, payload);
 
     try {
         const response = await fetch(url, {
@@ -360,15 +372,14 @@ async function guardarFormulario(event) {
 
         const resData = await response.json();
 
-        if (resData.status === 'success') {
-            alert(esEdicion ? '✅ Registro actualizado con éxito' : '✅ Registro guardado con éxito');
-            // Redirigir de regreso al panel del dashboard
-            window.location.href = 'actividades.html';
+        if (response.ok && (resData.status === 'success' || resData.affectedRows > 0)) {
+            alert(esEdicion ? '✅ Registro actualizado correctamente' : '✅ Registro guardado exitosamente');
+            window.location.href = 'actividades.html'; // Redirigir al dashboard
         } else {
-            alert(`⚠️ Error: ${resData.message}`);
+            alert(`⚠️ Error al guardar: ${resData.message || 'Ocurrió un inconveniente'}`);
         }
     } catch (err) {
         console.error('Error al enviar formulario:', err);
-        alert('❌ Error al procesar la solicitud.');
+        alert('❌ Error de conexión al guardar el registro.');
     }
 }
