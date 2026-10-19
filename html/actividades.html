@@ -64,54 +64,63 @@
 
  <!-- Tarjeta de Filtros -->
             <div class="filter-card">
-                <div class="filter-grid">
-                    <div class="filter-group">
-                        <label for="select_periodo">Período</label>
-                        <select id="select_periodo" class="form-control">
-                            <option value="">Cargando períodos...</option>
-                        </select>
-                    </div>
+                <!-- 1. Tarjeta Superior: Período y Acciones Principales -->
+<div class="header-action-card">
+    <div class="periodo-container">
+        <label for="select_periodo" class="label-periodo">Período de Facturación</label>
+        <select id="select_periodo" class="form-control select-periodo">
+            <option value="">Cargando períodos...</option>
+        </select>
+    </div>
 
-                    <div class="filter-group">
-                        <label for="fecha_desde">Desde</label>
-                        <input type="date" id="fecha_desde" class="form-control">
-                    </div>
+    <div class="action-buttons-group">
+        <button id="btn_vaciar_filtros" class="btn btn-secondary" onclick="vaciarFiltros()">
+            🧹 Vaciar Filtros
+        </button>
+        <button id="btn_registrar" class="btn btn-primary" onclick="window.location.href='registrar.html'">
+            📄 Registrar Actividad
+        </button>
+    </div>
+</div>
 
-                    <div class="filter-group">
-                        <label for="fecha_hasta">Hasta</label>
-                        <input type="date" id="fecha_hasta" class="form-control">
-                    </div>
+<!-- 2. Tarjeta Inferior: Filtros de Búsqueda -->
+<div class="filter-card">
+    <div class="filter-grid">
+        <div class="filter-group">
+            <label for="fecha_desde">Desde</label>
+            <input type="date" id="fecha_desde" class="form-control">
+        </div>
 
-                    <div class="filter-group">
-                        <label for="filter_tipo">Tipo</label>
-                        <select id="filter_tipo" class="form-control">
-                            <option value="">TODOS</option>
-                            <option value="INSTALACION">INSTALACIÓN</option>
-                            <option value="TRASLADO">TRASLADO</option>
-                            <option value="VISITA">VISITA</option>
-                        </select>
-                    </div>
+        <div class="filter-group">
+            <label for="fecha_hasta">Hasta</label>
+            <input type="date" id="fecha_hasta" class="form-control">
+        </div>
 
-                    <div class="filter-group">
-                        <label for="filter_sector">Sector</label>
-                        <input type="text" id="filter_sector" class="form-control" placeholder="Ej. Norte, Centro...">
-                    </div>
+        <div class="filter-group">
+            <label for="filter_tipo">Tipo</label>
+            <select id="filter_tipo" class="form-control">
+                <option value="">TODOS</option>
+                <option value="INSTALACION">INSTALACIÓN</option>
+                <option value="TRASLADO">TRASLADO</option>
+                <option value="VISITA">VISITA</option>
+            </select>
+        </div>
 
-                    <div class="filter-group">
-                        <label for="filter_cobradas">Cobradas</label>
-                        <select id="filter_cobradas" class="form-control">
-                            <option value="">TODAS</option>
-                            <option value="si">SOLO COBRADAS (> $0)</option>
-                            <option value="no">SIN COBRAR ($0)</option>
-                        </select>
-                    </div>
+        <div class="filter-group">
+            <label for="filter_sector">Sector</label>
+            <input type="text" id="filter_sector" class="form-control" placeholder="Ej. Norte, Centro...">
+        </div>
 
-                    <div class="filter-group button-group">
-                        <button id="btn_registrar" class="btn btn-primary" onclick="window.location.href='registrar.html'">
-                            + Registrar Actividad
-                        </button>
-                    </div>
-                </div>
+        <div class="filter-group">
+            <label for="filter_cobradas">Cobradas</label>
+            <select id="filter_cobradas" class="form-control">
+                <option value="">TODAS</option>
+                <option value="si">SOLO COBRADAS (> $0)</option>
+                <option value="no">SIN COBRAR ($0)</option>
+            </select>
+        </div>
+    </div>
+</div>
             </div>
 
             <!-- Tabla de Datos -->

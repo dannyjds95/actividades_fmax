@@ -230,10 +230,10 @@
     transition: all 0.2s ease;
 }
 
-.btn-edit { background-color: #eff6ff; color: #2563eb; }
+.btn-edit { background-color: #d2d5da; color: #2563eb; }
 .btn-edit:hover { background-color: #2563eb; color: #ffffff; }
 
-.btn-delete { background-color: #fef2f2; color: #dc2626; }
+.btn-delete { background-color: #d2d5da; color: #dc2626; }
 .btn-delete:hover { background-color: #dc2626; color: #ffffff; }
 
 /* ===================================================
@@ -273,5 +273,144 @@
     .data-table td {
         padding: 10px 12px;
         font-size: 13px;
+    }
+}
+
+/* ===================================================
+   1. TARJETA SUPERIOR (PERÍODO Y BOTONES)
+   =================================================== */
+.header-action-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.periodo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.label-periodo {
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    white-space: nowrap;
+}
+
+.select-periodo {
+    min-width: 240px;
+}
+
+.action-buttons-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Estilo para el botón secundario (Vaciar Filtros) */
+.btn-secondary {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-secondary:hover {
+    background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+/* ===================================================
+   2. TARJETA INFERIOR (GRILLA DE FILTROS)
+   =================================================== */
+.filter-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* 5 columnas perfectamente distribuidas */
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.filter-group label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+}
+
+/* ===================================================
+   RESPONSIVE DESIGN (TABLETS Y MÓVILES)
+   =================================================== */
+@media (max-width: 1024px) {
+    .filter-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .header-action-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .periodo-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .select-periodo {
+        width: 100%;
+    }
+
+    .action-buttons-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .action-buttons-group .btn {
+        flex: 1;
+        text-align: center;
+    }
+
+    .filter-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .filter-grid {
+        grid-template-columns: 1fr;
     }
 }

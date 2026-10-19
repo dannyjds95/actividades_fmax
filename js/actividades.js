@@ -211,3 +211,26 @@ async function eliminarActividad(id) {
         }
     }
 }
+
+// Función para limpiar los filtros secundarios y recargar la tabla
+function vaciarFiltros() {
+    // 1. Limpiar campos de texto y selects
+    document.getElementById('filter_tipo').value = '';
+    document.getElementById('filter_sector').value = '';
+    document.getElementById('filter_cobradas').value = '';
+
+    // 2. Restablecer el rango de fechas a las fechas originales del período seleccionado
+    const selectPeriodo = document.getElementById('select_periodo');
+    const optSel = selectPeriodo.options[selectPeriodo.selectedIndex];
+
+    if (optSel && optSel.dataset.inicio && optSel.dataset.fin) {
+        document.getElementById('fecha_desde').value = optSel.dataset.inicio;
+        document.getElementById('fecha_hasta').value = optSel.dataset.fin;
+    } else {
+        document.getElementById('fecha_desde').value = '';
+        document.getElementById('fecha_hasta').value = '';
+    }
+
+    // 3. Volver a consultar las actividades con los valores reseteados
+    cargarActividades();
+}
