@@ -1,10 +1,13 @@
+// Variable global para almacenar el registro original de la BD al entrar en modo edición
+let actividadCargada = null;
+
 // URL dinámica de la API (Vercel vs Local)
 const BASE_VERCEL_URL = 'https://actividades-fmax-9ysb.vercel.app';
 const BASE_URL = (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app'))
     ? ''
     : BASE_VERCEL_URL;
 
-// Helper para obtener la sesión del usuario
+// Helper para obtener la sesión activa del usuario
 function obtenerSesionUsuario() {
     try {
         return JSON.parse(localStorage.getItem('usuario_sesion')) || {};
@@ -37,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectAcQty = document.getElementById('act_ac_qty') || document.getElementById('act_ac');
     const inputValoresCobrados = document.getElementById('act_valores_cobrados');
 
-    // Etiquetas del Resumen
+    // Etiquetas del Resumen Económico
     const lblCantidad = document.getElementById('lbl_cantidad');
     const lblValorAct = document.getElementById('lbl_valor_act');
     const lblValorPred = document.getElementById('lbl_valor_pred');
@@ -46,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lblValorExc = document.getElementById('lbl_valor_exc');
     const lblTotal = document.getElementById('lbl_total');
 
-    // Asignar ID de Usuario y Fecha inicial
+    // Asignar ID de Usuario y Fecha inicial si es registro nuevo
     if (userIdInput) userIdInput.value = userSession.id || userSession.user_id || '';
     if (actFechaInput && !actFechaInput.value) {
         const hoy = new Date();
@@ -206,6 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Almacenar el objeto original recuperado de MySQL
+            actividadCargada = item;
+
             if (actIdInput) actIdInput.value = item.act_id || item.id || id;
             if (actClienteInput) actClienteInput.value = item.act_cliente || '';
             if (actFechaInput) actFechaInput.value = item.act_fecha ? String(item.act_fecha).split('T')[0] : '';
@@ -250,139 +256,152 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Función Unificada, Sanitizada y Dual de Guardado/Actualización
-async function guardarFormulario(event) {
-    if (event) event.preventDefault();
+    async function guardarFormulario(event) {
+        if (event) event.preventDefault();
 
-    const session = obtenerSesionUsuario();
-    const urlParamsNow = new URLSearchParams(window.location.search);
-    const idFromUrl = urlParamsNow.get('editId');
-    const idFromInput = actIdInput ? actIdInput.value.trim() : '';
+        const session = obtenerSesionUsuario();
+        const urlParamsNow = new URLSearchParams(window.location.search);
+        const idFromUrl = urlParamsNow.get('editId');
+        const idFromInput = actIdInput ? actIdInput.value.trim() : '';
 
-    const actId = idFromUrl || idFromInput;
-    const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
+        const actId = idFromUrl || idFromInput;
+        const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
 
-    const calcs = calculateAll();
-    const clienteVal = actClienteInput ? actClienteInput.value.trim() : '';
+        const calcs = calculateAll();
+        const clienteVal = actClienteInput ? actClienteInput.value.trim() : '';
 
-    const rawCobrado = inputValoresCobrados ? inputValoresCobrados.value : '0';
-    const valCobradoLimpio = parseFloat(String(rawCobrado).replace(',', '.')) || 0;
+        const rawCobrado = inputValoresCobrados ? inputValoresCobrados.value : '0';
+        const valCobradoLimpio = parseFloat(String(rawCobrado).replace(',', '.')) || 0;
 
-    const totalFinal = Number(calcs.actTotal) || 0;
-    const fibraFinal = actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0;
+        const totalFinal = Number(calcs.actTotal) || 0;
+        const fibraFinal = actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0;
 
-    // Payload completo con todos los nombres de columnas para la BD
-    const payload = {
-        act_id: esEdicion ? Number(actId) : null,
-        id: esEdicion ? Number(actId) : null,
+        // 1. PRESERVAR EL cuad_id ORIGINAL DE LA BASE DE DATOS EN EDICIÓN
+        let cuadIdSeguro = null;
+        if (esEdicion && actividadCargada && actividadCargada.cuad_id !== undefined && actividadCargada.cuad_id !== null) {
+            const parsedCuad = Number(actividadCargada.cuad_id);
+            cuadIdSeguro = (!isNaN(parsedCuad) && parsedCuad > 0) ? parsedCuad : null;
+        } else if (session.cuad_id && !isNaN(Number(session.cuad_id)) && Number(session.cuad_id) > 0) {
+            cuadIdSeguro = Number(session.cuad_id);
+        }
 
-        user_id: session.id || session.user_id || 0,
-        cuad_id: session.cuad_id || 0,
-        act_origen: 'ACTIVIDAD PROPIA',
+        // 2. PRESERVAR EL user_id ORIGINAL O DE SESIÓN
+        let userIdSeguro = null;
+        if (esEdicion && actividadCargada && actividadCargada.user_id) {
+            userIdSeguro = Number(actividadCargada.user_id);
+        } else if (session.id || session.user_id) {
+            userIdSeguro = Number(session.id || session.user_id);
+        }
 
-        act_fecha: actFechaInput ? (actFechaInput.value || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
-        fecha: actFechaInput ? (actFechaInput.value || '') : '',
+        // Payload completo con todos los nombres de columnas y aliases para la BD
+        const payload = {
+            act_id: esEdicion ? Number(actId) : null,
+            id: esEdicion ? Number(actId) : null,
 
-        act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
-        cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
+            user_id: userIdSeguro,
+            cuad_id: cuadIdSeguro,
+            act_origen: 'ACTIVIDAD PROPIA',
 
-        act_sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
-        sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
+            act_fecha: actFechaInput ? (actFechaInput.value || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+            fecha: actFechaInput ? (actFechaInput.value || '') : '',
 
-        act_tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
-        tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
+            act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
+            cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
 
-        act_forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
-        forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
+            act_sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
+            sector: actSectorSelect ? (actSectorSelect.value || 'NORTE') : 'NORTE',
 
-        // Metricas y Valores Calculados
-        act_cantidad: Number(calcs.actCantidad) || 1,
-        cantidad: Number(calcs.actCantidad) || 1,
+            act_tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
+            tipo: actTipoSelect ? (actTipoSelect.value || 'INSTALACION') : 'INSTALACION',
 
-        act_valor: Number(calcs.actValor) || 0,
-        valor: Number(calcs.actValor) || 0,
+            act_forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
+            forma: actFormaSelect ? (actFormaSelect.value || 'NORMAL') : 'NORMAL',
 
-        act_fibra: fibraFinal,
-        fibra: fibraFinal,
+            // Métricas y Valores Calculados
+            act_cantidad: Number(calcs.actCantidad) || 1,
+            cantidad: Number(calcs.actCantidad) || 1,
 
-        act_pred: Number(calcs.actPredQty) || 0,
-        pt_red: Number(calcs.actPredQty) || 0,
-        act_pred_valor: Number(calcs.actPredValor) || 0,
+            act_valor: Number(calcs.actValor) || 0,
+            valor: Number(calcs.actValor) || 0,
 
-        act_ac: Number(calcs.actAcQty) || 0,
-        ac: Number(calcs.actAcQty) || 0,
-        act_ac_valor: Number(calcs.actAcValor) || 0,
+            act_fibra: fibraFinal,
+            fibra: fibraFinal,
 
-        act_excedente: Number(calcs.actExcedenteM) || 0,
-        excedente: Number(calcs.actExcedenteM) || 0,
-        act_excedente_valor: Number(calcs.actExcedenteValor) || 0,
+            act_pred: Number(calcs.actPredQty) || 0,
+            pt_red: Number(calcs.actPredQty) || 0,
+            act_pred_valor: Number(calcs.actPredValor) || 0,
 
-        // Total
-        act_total: totalFinal,
-        total: totalFinal,
-        total_actividad: totalFinal,
+            act_ac: Number(calcs.actAcQty) || 0,
+            ac: Number(calcs.actAcQty) || 0,
+            act_ac_valor: Number(calcs.actAcValor) || 0,
 
-        act_detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
-        detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
+            act_excedente: Number(calcs.actExcedenteM) || 0,
+            excedente: Number(calcs.actExcedenteM) || 0,
+            act_excedente_valor: Number(calcs.actExcedenteValor) || 0,
 
-        act_valores_cobrados: valCobradoLimpio,
-        valores_cobrados: valCobradoLimpio
-    };
+            // Total General
+            act_total: totalFinal,
+            total: totalFinal,
+            total_actividad: totalFinal,
 
-    // Asegurar que no vayan valores NaN o undefined
-    Object.keys(payload).forEach(key => {
-        if (payload[key] === undefined || payload[key] === null) {
-            if (key === 'act_id' || key === 'id') {
-                payload[key] = esEdicion ? Number(actId) : null;
-            } else if (typeof payload[key] === 'number') {
+            act_detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
+            detalle: actDetalleInput ? (actDetalleInput.value || '') : '',
+
+            act_valores_cobrados: valCobradoLimpio,
+            valores_cobrados: valCobradoLimpio
+        };
+
+        // Sanitización estricta respetando los campos 'null' para no alterar las Foreign Keys
+        Object.keys(payload).forEach(key => {
+            if (payload[key] === undefined) {
+                payload[key] = null;
+            } else if (typeof payload[key] === 'number' && isNaN(payload[key])) {
                 payload[key] = 0;
-            } else {
-                payload[key] = '';
             }
-        } else if (typeof payload[key] === 'number' && isNaN(payload[key])) {
-            payload[key] = 0;
-        }
-    });
-
-    const targetApiUrl = esEdicion 
-        ? `${BASE_URL}/api/editar-actividad` 
-        : `${BASE_URL}/api/guardar-actividad`;
-        
-    const method = esEdicion ? 'PUT' : 'POST';
-    const btn = document.getElementById('btnSubmit') || document.querySelector('button[type="submit"]');
-
-    try {
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = esEdicion ? 'Actualizando...' : 'Guardando...';
-        }
-
-        const res = await fetch(targetApiUrl, {
-            method: method,
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(payload)
         });
 
-        const data = await res.json();
+        const targetApiUrl = esEdicion 
+            ? `${BASE_URL}/api/editar-actividad` 
+            : `${BASE_URL}/api/guardar-actividad`;
+            
+        const method = esEdicion ? 'PUT' : 'POST';
+        const btn = document.getElementById('btnSubmit') || document.querySelector('button[type="submit"]');
 
-        if (res.ok && (data.status === 'success' || data.affectedRows > 0 || data.message?.includes('exito'))) {
-            alert(esEdicion ? '✅ Actividad actualizada correctamente' : '✅ Actividad registrada correctamente');
-            window.location.href = 'actividades.html';
-        } else {
-            alert(`⚠️ Error al guardar: ${data.message || 'Error en la base de datos'}`);
-        }
-    } catch (err) {
-        console.error('Error al enviar:', err);
-        alert('❌ Error de conexión al intentar guardar.');
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = esEdicion ? 'Actualizar Actividad' : 'Guardar Actividad';
+        try {
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = esEdicion ? 'Actualizando...' : 'Guardando...';
+            }
+
+            console.log(`🚀 Enviando datos [${method}] a ${targetApiUrl}:`, payload);
+
+            const res = await fetch(targetApiUrl, {
+                method: method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (res.ok && (data.status === 'success' || data.affectedRows > 0 || data.message?.includes('exito'))) {
+                alert(esEdicion ? '✅ Actividad actualizada correctamente' : '✅ Actividad registrada correctamente');
+                window.location.href = 'actividades.html';
+            } else {
+                alert(`⚠️ Error al guardar: ${data.message || 'Error en la base de datos'}`);
+            }
+        } catch (err) {
+            console.error('Error al enviar:', err);
+            alert('❌ Error de conexión al intentar guardar.');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = esEdicion ? 'Actualizar Actividad' : 'Guardar Actividad';
+            }
         }
     }
-}
 
     window.guardarFormulario = guardarFormulario;
     window.guardarActividad = guardarFormulario;
