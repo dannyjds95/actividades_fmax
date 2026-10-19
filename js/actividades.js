@@ -301,19 +301,40 @@ function editarActividad(id) {
     window.location.href = `editar.html?id=${id}`;
 }
 
-async function eliminarActividad(id) {
-    if (confirm('¿Está seguro de que desea eliminar este registro?')) {
-        try {
-            const res = await fetch(`${BASE_URL}/api/eliminar-actividad?id=${id}`, { method: 'DELETE' });
-            const data = await res.json();
-            if (data.status === 'success') {
-                cargarActividades();
-            } else {
-                alert('No se pudo eliminar el registro.');
+// Función para eliminar un registro con confirmación
+async function eliminarActividad(idActividad) {
+    if (!idActividad) {
+        alert('ID de registro no válido.');
+        return;
+    }
+
+    // Confirmación previa antes de eliminar
+    const confirmacion = confirm(`¿Estás seguro de que deseas eliminar la actividad #${idActividad}? Esta acción no se puede deshacer.`);
+    if (!confirmacion) return;
+
+    try {
+        const res = await fetch(`${BASE_URL}/api/eliminar-actividad?id=${idActividad}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
             }
-        } catch (err) {
-            console.error('Error al eliminar:', err);
+        });
+
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            alert('✅ Registro eliminado con éxito.');
+            // Recargar la tabla y los totales inmediatamente
+            cargarActividades();
+        } else {
+            alert(`⚠️ Error: ${data.message || 'No se pudo eliminar el registro.'}`);
         }
+
+    } catch (err) {
+        console.error('Error al intentar eliminar actividad:', err);
+        alert('❌ Ocurrió un error al conectar con el servidor para eliminar el registro.');
     }
 }
 
