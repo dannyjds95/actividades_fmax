@@ -1,3 +1,8 @@
+const BASE_VERCEL_URL = 'https://actividades-fmax-9ysb.vercel.app';
+const BASE_URL = window.location.hostname.includes('vercel.app')
+    ? ''
+    : BASE_VERCEL_URL;
+
 document.addEventListener('DOMContentLoaded', () => {
     // Verificar sesión del usuario
     const userSession = JSON.parse(localStorage.getItem('usuario_sesion'));
