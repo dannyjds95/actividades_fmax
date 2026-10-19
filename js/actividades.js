@@ -106,10 +106,10 @@ async function cargarPeriodos(selectPeriodo) {
             if (selectPeriodo.options[selIndex]) {
                 selectPeriodo.selectedIndex = selIndex;
                 const optSel = selectPeriodo.options[selIndex];
-                
+
                 document.getElementById('fecha_desde').value = optSel.dataset.inicio || '';
                 document.getElementById('fecha_hasta').value = optSel.dataset.fin || '';
-                
+
                 cargarActividades();
             }
         }
@@ -154,7 +154,7 @@ async function cargarActividades() {
     try {
         const queryParams = new URLSearchParams({ inicio, fin, tipo, cliente, cobradas });
         const res = await fetch(`${BASE_URL}/api/obtener-actividades?${queryParams}`);
-        
+
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
         const data = await res.json();
@@ -165,13 +165,13 @@ async function cargarActividades() {
             // 🔍 Respaldo Frontend: Filtrado de seguridad en cliente si la API no filtra
             if (cliente !== '') {
                 const queryCliente = cliente.toLowerCase();
-                lista = lista.filter(item => 
+                lista = lista.filter(item =>
                     (item.act_cliente || '').toLowerCase().includes(queryCliente)
                 );
             }
 
             if (tipo !== '' && tipo !== 'TODOS') {
-                lista = lista.filter(item => 
+                lista = lista.filter(item =>
                     (item.act_tipo || '').toUpperCase() === tipo.toUpperCase()
                 );
             }
@@ -205,12 +205,12 @@ async function cargarActividades() {
             // 2. Renderizar filas y realizar sumatorias
             tbody.innerHTML = lista.map(item => {
                 const idReg = item.id || item.act_id || 0;
-                
+
                 const cantAct = parseFloat(item.act_cantidad || 1);
                 const excMetros = parseFloat(item.act_excedente || 0);
                 const excedenteMonto = parseFloat(item.act_excedente_valor || 0);
                 const excedenteValorFormatted = excedenteMonto.toFixed(2);
-                
+
                 const numPtRed = parseFloat(item.act_pred || item.act_pt_red || 0);
                 const numAc = parseFloat(item.act_ac || 0);
 
@@ -229,43 +229,46 @@ async function cargarActividades() {
                 sumTotalMonto += totalMontoNum;
                 sumValoresCobrados += cobradoNum;
 
-                const fechaFormateada = typeof formatFecha === 'function' 
-                    ? formatFecha(item.act_fecha) 
+                const fechaFormateada = typeof formatFecha === 'function'
+                    ? formatFecha(item.act_fecha)
                     : (item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
 
-                const claseBadge = typeof getBadgeClass === 'function' 
-                    ? getBadgeClass(item.act_tipo) 
+                const claseBadge = typeof getBadgeClass === 'function'
+                    ? getBadgeClass(item.act_tipo)
                     : 'badge-default';
 
+                // Dentro de lista.map() en cargarActividades():
                 return `
-                    <tr>
-                        <td class="col-fecha text-center">${fechaFormateada}</td>
-                        <td class="col-cliente">${item.act_cliente || 'N/A'}</td>
-                        <td class="text-center"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
-                        <td class="text-center">${item.act_forma || 'NORMAL'}</td>
-                        <td class="text-center">${item.act_fibra || 0} m</td>
-                        <td class="text-center">
-                            ${excMetros} m 
-                            ${excedenteMonto > 0 
-                                ? `<span class="badge-excedente">($${excedenteValorFormatted})</span>` 
-                                : `<span class="val-zero">($${excedenteValorFormatted})</span>`}
-                        </td>
-                        <td class="text-center">${numPtRed}</td>
-                        <td class="text-center">${numAc}</td>
-                        <td class="text-right"><b>$${totalMontoFormatted}</b></td>
-                        <td class="text-center">
-                            ${cobradoNum > 0 
-                                ? `<span class="badge-cobrado">$${valorCobradoFormatted}</span>` 
-                                : `<span class="val-zero">$${valorCobradoFormatted}</span>`}
-                        </td>
-                        <td class="text-center">
-                            <div class="action-buttons">
-                                <button class="btn-action btn-edit" onclick="editarActividad(${idReg})">Editar</button>
-                                <button class="btn-action btn-delete" onclick="eliminarActividad(${idReg})">Eliminar</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+    <tr>
+        <td class="col-fecha text-center">${fechaFormateada}</td>
+        <td class="col-cliente">${item.act_cliente || 'N/A'}</td>
+        <td class="text-center"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
+        <td class="text-center">${item.act_forma || 'NORMAL'}</td>
+        <td class="text-center">${item.act_fibra || 0} m</td>
+        <td class="text-center">
+            ${excMetros} m 
+            ${excedenteMonto > 0
+                        ? `<span class="badge-excedente">($${excedenteValorFormatted})</span>`
+                        : `<span class="val-zero">($${excedenteValorFormatted})</span>`}
+        </td>
+        <td class="text-center">${numPtRed}</td>
+        <td class="text-center">${numAc}</td>
+        <td class="text-right"><b>$${totalMontoFormatted}</b></td>
+        <td class="text-center">
+            ${cobradoNum > 0
+                        ? `<span class="badge-cobrado">$${valorCobradoFormatted}</span>`
+                        : `<span class="val-zero">$${valorCobradoFormatted}</span>`}
+        </td>
+        <td class="text-center">
+            <div class="action-buttons">
+                <!-- Botón Ver Detalle (Lupa) -->
+                <button class="btn-action btn-view" onclick="verDetalleActividad(${idReg})" title="Ver Detalle">🔍</button>
+                <button class="btn-action btn-edit" onclick="editarActividad(${idReg})">Editar</button>
+                <button class="btn-action btn-delete" onclick="eliminarActividad(${idReg})">Eliminar</button>
+            </div>
+        </td>
+    </tr>
+`;
             }).join('');
 
             // 3. Actualizar la tarjeta de resumen en el DOM
@@ -378,7 +381,7 @@ function abrirModalDetalle(tipoMetrica) {
         case 'excedente':
             tituloTexto = 'Actividades con Excedente';
             nombreColumnaMétrica = 'Excedente';
-            registrosFiltrados = (window.actividadesCargadas || []).filter(item => 
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
                 parseFloat(item.act_excedente || 0) > 0 || parseFloat(item.act_excedente_valor || 0) > 0
             );
             obtenerValorMétrica = (item) => {
@@ -391,7 +394,7 @@ function abrirModalDetalle(tipoMetrica) {
         case 'pt_red':
             tituloTexto = 'Actividades con Puntos de Red';
             nombreColumnaMétrica = 'Puntos de Red';
-            registrosFiltrados = (window.actividadesCargadas || []).filter(item => 
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
                 parseFloat(item.act_pred || item.act_pt_red || 0) > 0
             );
             obtenerValorMétrica = (item) => `<b>${item.act_pred || item.act_pt_red || 0}</b>`;
@@ -400,7 +403,7 @@ function abrirModalDetalle(tipoMetrica) {
         case 'ac':
             tituloTexto = 'Actividades con AC Instalados';
             nombreColumnaMétrica = 'AC Instalados';
-            registrosFiltrados = (window.actividadesCargadas || []).filter(item => 
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
                 parseFloat(item.act_ac || 0) > 0
             );
             obtenerValorMétrica = (item) => `<b>${item.act_ac || 0}</b>`;
@@ -409,7 +412,7 @@ function abrirModalDetalle(tipoMetrica) {
         case 'cobrados':
             tituloTexto = 'Actividades con Valores Cobrados';
             nombreColumnaMétrica = 'Valores Cobrados';
-            registrosFiltrados = (window.actividadesCargadas || []).filter(item => 
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
                 parseFloat(item.act_valores_cobrados || 0) > 0
             );
             obtenerValorMétrica = (item) => {
@@ -421,7 +424,7 @@ function abrirModalDetalle(tipoMetrica) {
         case 'monto_total':
             tituloTexto = 'Actividades con Monto Total';
             nombreColumnaMétrica = 'Monto Total';
-            registrosFiltrados = (window.actividadesCargadas || []).filter(item => 
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
                 parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)) > 0
             );
             obtenerValorMétrica = (item) => {
@@ -456,12 +459,12 @@ function abrirModalDetalle(tipoMetrica) {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center">No hay registros que coincidan con esta métrica.</td></tr>';
     } else {
         tbody.innerHTML = registrosFiltrados.map(item => {
-            const fechaFormateada = typeof formatFecha === 'function' 
-                ? formatFecha(item.act_fecha) 
+            const fechaFormateada = typeof formatFecha === 'function'
+                ? formatFecha(item.act_fecha)
                 : (item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
 
-            const claseBadge = typeof getBadgeClass === 'function' 
-                ? getBadgeClass(item.act_tipo) 
+            const claseBadge = typeof getBadgeClass === 'function'
+                ? getBadgeClass(item.act_tipo)
                 : 'badge-default';
 
             return `
@@ -487,4 +490,122 @@ function cerrarModalDetalle() {
 // Permitir cerrar modal con la tecla ESC
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') cerrarModalDetalle();
+});
+
+
+// Función para abrir y armar el modal de detalle completo
+function verDetalleActividad(idActividad) {
+    const item = (window.actividadesCargadas || []).find(act => (act.id || act.act_id) == idActividad);
+    if (!item) return;
+
+    const modal = document.getElementById('modal_ver_actividad');
+    const container = document.getElementById('actividad_detalle_body');
+    if (!modal || !container) return;
+
+    // Formateo de valores
+    const fecha = typeof formatFecha === 'function' ? formatFecha(item.act_fecha) : (item.act_fecha ? String(item.act_fecha).split('T')[0] : 'N/A');
+    const claseBadge = typeof getBadgeClass === 'function' ? getBadgeClass(item.act_tipo) : 'badge-default';
+    
+    const excMetros = parseFloat(item.act_excedente || 0);
+    const excMonto = parseFloat(item.act_excedente_valor || 0);
+    const ptRed = parseFloat(item.act_pred || item.act_pt_red || 0);
+    const numAc = parseFloat(item.act_ac || 0);
+    const cobrados = parseFloat(item.act_valores_cobrados || 0);
+    const totalMonto = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0));
+
+    // Nombre de cuadrilla (muestra nombre si existe en el objeto o el ID)
+    const cuadrillaNombre = item.cuad_nombre || (item.cuad_id ? `Cuadrilla #${item.cuad_id}` : 'No asignada');
+
+    // Construcción dinámica de campos condicionales
+    let camposOpcionalesHTML = '';
+
+    if (excMetros > 0 || excMonto > 0) {
+        camposOpcionalesHTML += `
+            <div class="detail-item">
+                <span class="detail-label">Excedente</span>
+                <span class="detail-value text-blue"><b>${excMetros} m</b> ($${excMonto.toFixed(2)})</span>
+            </div>`;
+    }
+
+    if (ptRed > 0) {
+        camposOpcionalesHTML += `
+            <div class="detail-item">
+                <span class="detail-label">Puntos de Red</span>
+                <span class="detail-value"><b>${ptRed}</b></span>
+            </div>`;
+    }
+
+    if (numAc > 0) {
+        camposOpcionalesHTML += `
+            <div class="detail-item">
+                <span class="detail-label">AC Instalados</span>
+                <span class="detail-value"><b>${numAc}</b></span>
+            </div>`;
+    }
+
+    if (cobrados > 0) {
+        camposOpcionalesHTML += `
+            <div class="detail-item highlight-green">
+                <span class="detail-label">Valores Cobrados</span>
+                <span class="detail-value text-green"><b>$${cobrados.toFixed(2)}</b></span>
+            </div>`;
+    }
+
+    container.innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-item">
+                <span class="detail-label">Fecha</span>
+                <span class="detail-value">${fecha}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Cuadrilla</span>
+                <span class="detail-value"><b>${cuadrillaNombre}</b></span>
+            </div>
+            <div class="detail-item col-span-2">
+                <span class="detail-label">Cliente</span>
+                <span class="detail-value strong">${item.act_cliente || 'N/A'}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Sector</span>
+                <span class="detail-value">${item.act_sector || 'N/A'}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Tipo</span>
+                <span class="detail-value"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Forma</span>
+                <span class="detail-value">${item.act_forma || 'NORMAL'}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Cantidad Fibra</span>
+                <span class="detail-value">${item.act_fibra || 0} m</span>
+            </div>
+
+            ${camposOpcionalesHTML}
+
+            <div class="detail-item highlight-blue col-span-2">
+                <span class="detail-label">Valor Actividad</span>
+                <span class="detail-value price-tag">$${totalMonto.toFixed(2)}</span>
+            </div>
+
+            ${item.act_detalle ? `
+            <div class="detail-item col-span-2 detail-box">
+                <span class="detail-label">Detalle / Observaciones</span>
+                <p class="detail-text">${item.act_detalle}</p>
+            </div>` : ''}
+        </div>
+    `;
+
+    modal.classList.add('active');
+}
+
+function cerrarModalVerActividad() {
+    const modal = document.getElementById('modal_ver_actividad');
+    if (modal) modal.classList.remove('active');
+}
+
+// Cerrar con Escape o clic en fondo
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrarModalVerActividad();
 });

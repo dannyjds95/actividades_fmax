@@ -665,3 +665,101 @@ select.form-control {
     background: #f8fafc;
     border-top: 1px solid #e2e8f0;
 }
+
+/* ===================================================
+   BOTÓN VER DETALLE & MODAL DE FICHA TÉCNICA
+   =================================================== */
+
+/* Botón Lupa */
+.btn-action.btn-view {
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-action.btn-view:hover {
+    background-color: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+}
+
+/* Modal Mediano */
+.modal-content.modal-md {
+    max-width: 580px;
+    width: 92%;
+}
+
+/* Grilla de Detalles */
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.col-span-2 {
+    grid-column: span 2;
+}
+
+.detail-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-value {
+    font-size: 14px;
+    color: #0f172a;
+}
+
+.detail-value.strong {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.detail-item.highlight-blue {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.detail-item.highlight-green {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.text-blue { color: #2563eb; }
+.text-green { color: #16a34a; }
+
+.price-tag {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1e40af;
+}
+
+.detail-box {
+    background: #ffffff;
+}
+
+.detail-text {
+    margin: 4px 0 0 0;
+    font-size: 13.5px;
+    color: #334155;
+    white-space: pre-line;
+}
