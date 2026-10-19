@@ -125,12 +125,14 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
 async function cargarPeriodos(selectPeriodo) {
     try {
         const res = await fetch(`${BASE_URL}/api/obtener-periodos`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
         const data = await res.json();
 
-        if (data.status === 'success' && data.periodos.length > 0) {
+        if (data.status === 'success' && Array.isArray(data.periodos) && data.periodos.length > 0) {
             selectPeriodo.innerHTML = '<option value="">Seleccione un período...</option>';
 
-            // 1. Obtener la fecha de hoy en formato YYYY-MM-DD
+            // 1. Obtener la fecha de hoy en formato ISO local (YYYY-MM-DD)
             const ahora = new Date();
             const year = ahora.getFullYear();
             const month = String(ahora.getMonth() + 1).padStart(2, '0');
@@ -139,12 +141,22 @@ async function cargarPeriodos(selectPeriodo) {
 
             let periodoActualIndex = -1;
 
+            // Función interna para asegurar siempre el formato YYYY-MM-DD en comparaciones y dataset
+            const obtenerFechaLimpia = (f) => {
+                if (!f) return '';
+                if (typeof formatFecha === 'function') {
+                    const formatted = formatFecha(f);
+                    if (formatted && formatted.includes('-')) return formatted;
+                }
+                return String(f).split('T')[0];
+            };
+
             // 2. Poblar el select y buscar qué período incluye la fecha de hoy
             data.periodos.forEach((p, index) => {
                 const option = document.createElement('option');
                 const id = p.id;
-                const inicio = formatFecha(p.fecha_inicio);
-                const fin = formatFecha(p.fecha_final);
+                const inicio = obtenerFechaLimpia(p.fecha_inicio);
+                const fin = obtenerFechaLimpia(p.fecha_final);
 
                 option.value = id;
                 option.textContent = `${inicio} a ${fin}`;
@@ -153,21 +165,28 @@ async function cargarPeriodos(selectPeriodo) {
                 selectPeriodo.appendChild(option);
 
                 // Comprobar si 'hoy' está dentro del rango (inicio <= hoy <= fin)
-                if (hoy >= inicio && hoy <= fin) {
+                if (inicio && fin && hoy >= inicio && hoy <= fin) {
                     periodoActualIndex = index + 1; // +1 por la opción inicial "Seleccione..."
                 }
             });
 
-            // 3. Seleccionar el período actual (o el primero por defecto si la fecha no coincide con ninguno)
+            // 3. Seleccionar el período actual (o el primero de la lista si hoy no cae en ninguno)
             const indexASeleccionar = periodoActualIndex !== -1 ? periodoActualIndex : 1;
 
             if (selectPeriodo.options[indexASeleccionar]) {
                 selectPeriodo.selectedIndex = indexASeleccionar;
                 const optSeleccionada = selectPeriodo.options[indexASeleccionar];
 
-                // Cargar métricas del período auto-seleccionado
-                cargarMetricas(optSeleccionada.dataset.inicio, optSeleccionada.dataset.fin);
-                cargarSeccionesSecundarias(optSeleccionada.dataset.inicio, optSeleccionada.dataset.fin);
+                const inicioSel = optSeleccionada.dataset.inicio;
+                const finSel = optSeleccionada.dataset.fin;
+
+                // Cargar métricas y dashboard del período seleccionado
+                if (typeof cargarMetricas === 'function') {
+                    cargarMetricas(inicioSel, finSel);
+                }
+                if (typeof cargarSeccionesSecundarias === 'function') {
+                    cargarSeccionesSecundarias(inicioSel, finSel);
+                }
             }
         }
     } catch (err) {

@@ -42,7 +42,8 @@ module.exports = async (req, res) => {
                 COALESCE(SUM(act_excedente), 0) AS excedente_m,
                 COALESCE(SUM(act_excedente_valor), 0) AS excedente_valor,
                 COALESCE(SUM(act_pred), 0) AS puntos_red,
-                COALESCE(SUM(act_ac), 0) AS equipos_ac
+                COALESCE(SUM(act_ac), 0) AS equipos_ac,
+                COALESCE(SUM(COALESCE(act_valores_cobrados, 0)), 0) AS valores_cobrados
             FROM actividad_detalle
             ${whereClause}
         `;
