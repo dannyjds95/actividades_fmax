@@ -359,3 +359,22 @@
     padding: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
+
+
+/* 1. Limitar el ancho de la tarjeta contenedora y centrarla */
+.table-card {
+    max-width: 850px;       /* Ajusta este valor (ej. 800px u 850px) para el ancho total */
+    margin: 24px auto 0;     /* Centra la tabla en la pantalla */
+    padding: 16px 20px;      /* Reduce el relleno interno de la tarjeta */
+}
+
+/* 2. Hacer las filas más delgadas (menos altura vertical) */
+.data-table th {
+    padding: 8px 12px;       /* Reduce espacio vertical en encabezados */
+    font-size: 12px;         /* Tamaño de letra ligeramente más pequeño */
+}
+
+.data-table td {
+    padding: 8px 12px;       /* Reduce espacio vertical en filas de datos */
+    font-size: 12px;
+}

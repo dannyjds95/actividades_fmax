@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (res.ok && data.status === 'success') {
                 alert('¡Actividad registrada correctamente!');
-                window.location.href = 'perfil.html';
+                window.location.href = 'dashboard.html';
             } else {
                 alert(data.message || 'Error al guardar la actividad');
             }

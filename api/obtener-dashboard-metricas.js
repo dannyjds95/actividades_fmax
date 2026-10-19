@@ -1,6 +1,8 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
+    // Cabeceras obligatorias CORS y tipo de contenido JSON
+    res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -11,10 +13,6 @@ module.exports = async (req, res) => {
     }
 
     const { inicio, fin } = req.query;
-
-    if (!inicio || !fin || inicio === 'undefined' || fin === 'undefined') {
-        return res.status(400).json({ status: 'error', message: 'Rango de fechas no válido' });
-    }
 
     let connection;
     try {
@@ -27,9 +25,18 @@ module.exports = async (req, res) => {
             ssl: { rejectUnauthorized: false }
         });
 
+        let whereClause = '';
+        let params = [];
+
+        // Aplica filtro de fechas solo si vienen definidos
+        if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
+            whereClause = ' WHERE act_fecha BETWEEN ? AND ?';
+            params = [inicio, fin];
+        }
+
         const query = `
             SELECT 
-                COALESCE(SUM(act_valor), 0) AS monto_facturado,
+                COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS monto_facturado,
                 COALESCE(SUM(act_cantidad), 0) AS total_actividades,
                 COUNT(*) AS registros_guardados,
                 COALESCE(SUM(act_excedente), 0) AS excedente_m,
@@ -37,18 +44,21 @@ module.exports = async (req, res) => {
                 COALESCE(SUM(act_pred), 0) AS puntos_red,
                 COALESCE(SUM(act_ac), 0) AS equipos_ac
             FROM actividad_detalle
-            WHERE act_fecha BETWEEN ? AND ?
+            ${whereClause}
         `;
 
-        const [rows] = await connection.execute(query, [inicio, fin]);
+        const [rows] = await connection.execute(query, params);
 
         return res.status(200).json({
             status: 'success',
-            metricas: rows[0]
+            metricas: rows[0] || {}
         });
     } catch (err) {
+        console.error('Error en obtener-dashboard-metricas:', err.message);
         return res.status(500).json({ status: 'error', message: err.message });
     } finally {
-        if (connection) await connection.end();
+        if (connection) {
+            try { await connection.end(); } catch (e) {}
+        }
     }
 };

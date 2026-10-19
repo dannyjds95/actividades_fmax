@@ -1,6 +1,7 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
+    // Configuración de cabeceras de respuesta (JSON y CORS)
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -34,10 +35,13 @@ module.exports = async (req, res) => {
         let actividadesData = [];
         let ultimosData = [];
 
-        // 1. Resumen por Cuadrilla
+        // 1. Resumen por Cuadrilla (Suma de act_total)
         try {
             const [q1] = await connection.execute(
-                `SELECT COUNT(*) AS total_trabajos, COALESCE(SUM(act_valor), 0) AS total_monto FROM actividad_detalle ${whereClause}`,
+                `SELECT 
+                    COUNT(*) AS total_trabajos, 
+                    COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS total_monto 
+                 FROM actividad_detalle ${whereClause}`,
                 params
             );
             if (q1.length > 0) cuadrillaData = q1[0];
@@ -45,25 +49,25 @@ module.exports = async (req, res) => {
             console.error('Error Q1:', e1.message);
         }
 
-// 2. Detalle de Actividades por Tipo
-try {
-    const [q2] = await connection.execute(
-        `SELECT 
-            COALESCE(act_tipo, 'GENERAL') AS tipo, 
-            COALESCE(SUM(act_cantidad), 0) AS cantidad,
-            COUNT(*) AS registros,
-            COALESCE(SUM(act_valor), 0) AS monto 
-         FROM actividad_detalle ${whereClause} 
-         GROUP BY act_tipo 
-         ORDER BY monto DESC`,
-        params
-    );
-    actividadesData = q2;
-} catch (e2) {
-    console.error('Error Q2:', e2.message);
-}
+        // 2. Detalle de Actividades por Tipo (Suma de act_cantidad y act_total)
+        try {
+            const [q2] = await connection.execute(
+                `SELECT 
+                    COALESCE(act_tipo, 'GENERAL') AS tipo, 
+                    COALESCE(SUM(act_cantidad), 0) AS cantidad,
+                    COUNT(*) AS registros,
+                    COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS monto 
+                 FROM actividad_detalle ${whereClause} 
+                 GROUP BY act_tipo 
+                 ORDER BY monto DESC`,
+                params
+            );
+            actividadesData = q2;
+        } catch (e2) {
+            console.error('Error Q2:', e2.message);
+        }
 
-        // 3. Últimos 10 Registros (Lectura completa flexible para evitar fallos de columnas)
+        // 3. Últimos 10 Registros (Lectura del valor act_total)
         try {
             const [q3] = await connection.execute(
                 `SELECT * FROM actividad_detalle ${whereClause} ORDER BY act_fecha DESC LIMIT 10`,
@@ -76,7 +80,7 @@ try {
                 cliente: row.act_cliente || row.cliente || row.nombre_cliente || row.nom_cliente || 'N/A',
                 tipo: row.act_tipo || row.tipo || 'GENERAL',
                 forma: row.act_forma || row.forma || row.forma_pago || 'NORMAL',
-                monto: row.act_valor || row.valor || row.monto || 0
+                monto: parseFloat(row.act_total !== null && row.act_total !== undefined ? row.act_total : (row.act_valor || row.valor || 0))
             }));
         } catch (e3) {
             console.error('Error Q3:', e3.message);
