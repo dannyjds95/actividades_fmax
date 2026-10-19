@@ -26,37 +26,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const fechaDesde = document.getElementById('fecha_desde');
     const fechaHasta = document.getElementById('fecha_hasta');
     const filterTipo = document.getElementById('filter_tipo');
-    const filterSector = document.getElementById('filter_sector');
+    const filterCliente = document.getElementById('filter_cliente'); // Actualizado: ID correcto
     const filterCobradas = document.getElementById('filter_cobradas');
 
     // Cargar selector de períodos y auto-seleccionar el período actual
-    cargarPeriodos(selectPeriodo);
+    if (typeof cargarPeriodos === 'function' && selectPeriodo) {
+        cargarPeriodos(selectPeriodo);
+    }
 
     // Evento al cambiar de período en el select
-    selectPeriodo.addEventListener('change', (e) => {
-        const opt = e.target.options[e.target.selectedIndex];
-        if (opt && opt.dataset.inicio && opt.dataset.fin) {
-            fechaDesde.value = opt.dataset.inicio;
-            fechaHasta.value = opt.dataset.fin;
-            cargarActividades();
-        }
-    });
+    if (selectPeriodo) {
+        selectPeriodo.addEventListener('change', (e) => {
+            const opt = e.target.options[e.target.selectedIndex];
+            if (opt && opt.dataset.inicio && opt.dataset.fin) {
+                if (fechaDesde) fechaDesde.value = opt.dataset.inicio;
+                if (fechaHasta) fechaHasta.value = opt.dataset.fin;
+                cargarActividades();
+            }
+        });
+    }
 
-    // Filtros dinámicos inmediatos
+    // Filtros dinámicos inmediatos para selectores y fechas
     [fechaDesde, fechaHasta, filterTipo, filterCobradas].forEach(el => {
         if (el) el.addEventListener('change', cargarActividades);
     });
 
-    // Filtro por sector/cliente con debounce
-    let timeoutSector;
-    if (filterSector) {
-        filterSector.addEventListener('input', () => {
-            clearTimeout(timeoutSector);
-            timeoutSector = setTimeout(cargarActividades, 300);
+    // Búsqueda por cliente en tiempo real con debounce (300ms)
+    let timeoutCliente;
+    if (filterCliente) {
+        filterCliente.addEventListener('input', () => {
+            clearTimeout(timeoutCliente);
+            timeoutCliente = setTimeout(cargarActividades, 300);
         });
+
+        // Prevenir recarga de página al presionar Enter en la casilla de cliente
+        const formulario = filterCliente.closest('form');
+        if (formulario) {
+            formulario.addEventListener('submit', (e) => e.preventDefault());
+        }
     }
 });
-
 // ===================================================
 // 3. CARGA DE DATOS (API)
 // ===================================================
