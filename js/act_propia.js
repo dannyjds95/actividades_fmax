@@ -1,3 +1,10 @@
+// Obtener la URL de la API de forma segura
+const getApiUrl = (endpoint) => {
+    const base = (typeof BASE_URL !== 'undefined' && BASE_URL) ? BASE_URL : '';
+    return `${base}${endpoint}`;
+};
+
+
 document.addEventListener('DOMContentLoaded', () => {
     // Verificar sesión del usuario
     const userSession = JSON.parse(localStorage.getItem('usuario_sesion'));
@@ -209,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Detectar si la URL contiene el parámetro 'editId'
+    // Detectar si venimos de 'actividades.html' en modo edición
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('editId');
 
@@ -218,33 +225,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Función para obtener y popular los datos en el formulario
+// Cargar y completar el formulario con la información del registro
 async function cargarDatosParaEditar(id) {
     try {
-        // Cambiar título de la página/formulario
-        const tituloHeader = document.querySelector('h2, h3, .title') || {};
+        // 1. Cambiar título del formulario
+        const tituloHeader = document.querySelector('h1, h2, h3, .title');
         if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
 
-        // Obtener la lista de actividades para buscar la seleccionada
-        const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
-        if (!response.ok) throw new Error('Error al consultar servidor');
-        
+        // 2. Petición segura a la API
+        const response = await fetch(getApiUrl('/api/obtener-actividades'));
+        if (!response.ok) {
+            throw new Error(`Error HTTP ${response.status}: No se pudo obtener la lista de actividades`);
+        }
+
         const data = await response.json();
         const actividades = data.actividades || [];
         const item = actividades.find(a => (a.act_id || a.id) == id);
 
         if (!item) {
-            alert('No se encontró la información de esta actividad.');
+            alert(`No se encontró el registro #${id} en la base de datos.`);
             return;
         }
 
-        // 2. Llenar los campos básicos del formulario
-        const setVal = (idEl, val) => {
-            const el = document.getElementById(idEl);
+        // 3. Helper para asignar valores por ID o Selector sin que falle si un elemento no existe
+        const setVal = (idOrSelector, val) => {
+            const el = document.getElementById(idOrSelector) || document.querySelector(idOrSelector);
             if (el) el.value = (val !== null && val !== undefined) ? val : '';
         };
 
+        // Asignar ID oculto
         setVal('act_id', item.act_id || item.id);
+
+        // Campos principales
         setVal('act_fecha', item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
         setVal('act_cliente', item.act_cliente);
         setVal('act_tipo', item.act_tipo);
@@ -253,27 +265,34 @@ async function cargarDatosParaEditar(id) {
         setVal('act_fibra', item.act_fibra || 0);
         setVal('act_detalle', item.act_detalle || '');
 
-        // 3. Seleccionar opciones en botones Radio (Puntos de red, AC, Cobrados)
-        const setRadio = (groupName, condition) => {
-            const radio = document.querySelector(`input[name="${groupName}"][value="${condition ? 'SI' : 'NO'}"]`);
+        // 4. Configurar botones Radio (Puntos de red, AC, Cobrados) si existen en el formulario
+        const predVal = parseFloat(item.act_pred || item.act_pt_red || 0);
+        const acVal = parseFloat(item.act_ac || 0);
+        const cobroVal = parseFloat(item.act_valores_cobrados || 0);
+
+        const setRadio = (name, isSi) => {
+            const targetVal = isSi ? 'SI' : 'NO';
+            const radio = document.querySelector(`input[name="${name}"][value="${targetVal}"]`);
             if (radio) {
                 radio.checked = true;
-                radio.dispatchEvent(new Event('change')); // Disparar eventos de visibilidad si los hay
+                radio.dispatchEvent(new Event('change')); // Dispara eventos de mostrar/ocultar campos
             }
         };
 
-        setRadio('radio_pred', (parseFloat(item.act_pred || item.act_pt_red || 0) > 0));
-        setRadio('radio_ac', (parseFloat(item.act_ac || 0) > 0));
-        setRadio('radio_cobro', (parseFloat(item.act_valores_cobrados || 0) > 0));
+        setRadio('radio_pred', predVal > 0);
+        setRadio('radio_ac', acVal > 0);
+        setRadio('radio_cobro', cobroVal > 0);
 
-        // Asignar cantidades secundarias si existen inputs para ello
-        setVal('act_pred', item.act_pred || item.act_pt_red || 0);
-        setVal('act_ac', item.act_ac || 0);
-        setVal('act_valores_cobrados', item.act_valores_cobrados || 0);
+        // Campos numéricos secundarios
+        setVal('act_pred', predVal);
+        setVal('act_ac', acVal);
+        setVal('act_valores_cobrados', cobroVal);
+
+        console.log('✅ Registro cargado para edición:', item);
 
     } catch (err) {
         console.error('Error al cargar datos de edición:', err);
-        alert('Ocurrió un error al cargar la información para editar.');
+        alert(`No se pudo cargar la actividad: ${err.message}`);
     }
 }
 
