@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Detectar si venimos de 'actividades.html' en modo edición
+    // Detectar si se ingresó a la página en modo edición desde actividades.html
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('editId');
 
@@ -223,17 +223,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Cargar y completar el formulario con la información del registro
+// Cargar y completar el formulario con la información del registro seleccionada
 async function cargarDatosParaEditar(id) {
     try {
-        // 1. Cambiar título del formulario
+        // Cambiar título del formulario
         const tituloHeader = document.querySelector('h1, h2, h3, .title');
         if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
 
-        // 2. Petición segura a la API
-        const response = await fetch(getApiUrl('/api/obtener-actividades'));
+        // Consulta a la API con la URL dinámica
+        const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
+        
         if (!response.ok) {
-            throw new Error(`Error HTTP ${response.status}: No se pudo obtener la lista de actividades`);
+            throw new Error(`Error HTTP ${response.status}: No se pudo obtener la información del servidor`);
         }
 
         const data = await response.json();
@@ -241,20 +242,18 @@ async function cargarDatosParaEditar(id) {
         const item = actividades.find(a => (a.act_id || a.id) == id);
 
         if (!item) {
-            alert(`No se encontró el registro #${id} en la base de datos.`);
+            alert(`No se encontró la actividad #${id} en la base de datos.`);
             return;
         }
 
-        // 3. Helper para asignar valores por ID o Selector sin que falle si un elemento no existe
+        // Helper para asignar valores en los inputs de forma segura
         const setVal = (idOrSelector, val) => {
             const el = document.getElementById(idOrSelector) || document.querySelector(idOrSelector);
             if (el) el.value = (val !== null && val !== undefined) ? val : '';
         };
 
-        // Asignar ID oculto
+        // Copiar ID oculto y valores principales
         setVal('act_id', item.act_id || item.id);
-
-        // Campos principales
         setVal('act_fecha', item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
         setVal('act_cliente', item.act_cliente);
         setVal('act_tipo', item.act_tipo);
@@ -263,7 +262,7 @@ async function cargarDatosParaEditar(id) {
         setVal('act_fibra', item.act_fibra || 0);
         setVal('act_detalle', item.act_detalle || '');
 
-        // 4. Configurar botones Radio (Puntos de red, AC, Cobrados) si existen en el formulario
+        // Configurar selección en botones Radio (Puntos de red, AC, Cobrados)
         const predVal = parseFloat(item.act_pred || item.act_pt_red || 0);
         const acVal = parseFloat(item.act_ac || 0);
         const cobroVal = parseFloat(item.act_valores_cobrados || 0);
@@ -273,7 +272,7 @@ async function cargarDatosParaEditar(id) {
             const radio = document.querySelector(`input[name="${name}"][value="${targetVal}"]`);
             if (radio) {
                 radio.checked = true;
-                radio.dispatchEvent(new Event('change')); // Dispara eventos de mostrar/ocultar campos
+                radio.dispatchEvent(new Event('change'));
             }
         };
 
@@ -281,12 +280,12 @@ async function cargarDatosParaEditar(id) {
         setRadio('radio_ac', acVal > 0);
         setRadio('radio_cobro', cobroVal > 0);
 
-        // Campos numéricos secundarios
+        // Llenar campos numéricos
         setVal('act_pred', predVal);
         setVal('act_ac', acVal);
         setVal('act_valores_cobrados', cobroVal);
 
-        console.log('✅ Registro cargado para edición:', item);
+        console.log('✅ Actividad cargada para editar:', item);
 
     } catch (err) {
         console.error('Error al cargar datos de edición:', err);
