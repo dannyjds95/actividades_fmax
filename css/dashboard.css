@@ -75,95 +75,135 @@
    ========================================== */
 .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 16px;
-    margin-bottom: 24px;    
+    width: 100%;
+    max-width: 1250px;
+    margin: 20px auto;
 }
 
 /* ESTILO BASE DE TARJETAS */
-.metric-card {
+.card-metric {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-left: 5px solid #2563eb; /* Borde azul uniforme */
-    border-radius: 16px;
-    padding: 20px 24px;
-    min-height: 130px;
-    box-sizing: border-box;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    border-radius: 12px;
+    padding: 16px 18px;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 20px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    gap: 14px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.metric-card:hover {
+.card-metric:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
+
+/* Borde de acento izquierdo */
+.card-metric.border-green  { border-left: 5px solid #10b981; }
+.card-metric.border-blue   { border-left: 5px solid #2563eb; }
+.card-metric.border-amber  { border-left: 5px solid #f59e0b; }
+.card-metric.border-purple { border-left: 5px solid #8b5cf6; }
+.card-metric.border-teal   { border-left: 5px solid #06b6d4; }
 
 /* ELEMENTOS INTERNOS DE TARJETA */
 .card-icon {
-    width: 52px;
-    height: 52px;
-    background-color: #f1f5f9;
-    border-radius: 12px;
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    flex-shrink: 0;
 }
 
-.card-info {
+.bg-light-green  { background-color: #ecfdf5; }
+.bg-light-blue   { background-color: #eff6ff; }
+.bg-light-amber  { background-color: #fffbeb; }
+.bg-light-purple { background-color: #f5f3ff; }
+.bg-light-teal   { background-color: #ecfeff; }
+
+.card-content {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    width: 100%;
 }
 
-.card-info.text-center {
-    align-items: center;
-    text-align: center;
-}
-
-/* TIPOGRAFÍA Y ETIQUETAS */
-.card-label, 
-.card-sublabel {
-    font-size: 13px;
+.card-metric .card-title {
+    font-size: 11px;
     font-weight: 700;
-    color: #475569;
-    letter-spacing: 0.5px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.card-metric .card-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+    margin: 2px 0;
+}
+
+.card-metric .card-subtext {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
     text-transform: uppercase;
 }
 
-.card-value {
-    font-size: 26px;
-    font-weight: 800;
-    color: #0f172a;
-    margin: 4px 0 0 0;
-    line-height: 1.1;
+.card-metric .card-subtext-green {
+    color: #16a34a;
 }
 
-.card-value-large {
-    font-size: 34px;
-    font-weight: 800;
-    color: #0f172a;
-    margin: 2px 0;
-    line-height: 1;
-}
-
-.card-subtext {
-    font-size: 13px;
-    font-weight: 700;
-    color: #16a34a; /* Verde para montos/excedentes */
-    margin-top: 4px;
-}
-
-/* RESPONSIVE DESIGN */
-@media (max-width: 768px) {
+/* 2. Tablets o Pantallas Medianas (3 tarjetas por fila arriba y las sobrantes abajo) */
+@media (max-width: 1024px) {
     .metrics-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* 3. Celulares estándar (2 tarjetas por fila) */
+@media (max-width: 680px) {
+    .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px; /* Reducimos levemente el espacio entre tarjetas */
+    }
+
+    /* Ajuste de tamaño interno para que el contenido encaje perfecto en 2 columnas */
+    .card-metric {
+        padding: 12px 10px;
+        gap: 8px;
+    }
+
+    .card-icon {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+    }
+
+    .card-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .card-metric .card-title {
+        font-size: 9.5px;
+    }
+
+    .card-metric .card-value {
+        font-size: 18px;
+    }
+
+    .card-metric .card-subtext {
+        font-size: 10px;
+    }
+}
+
+/* 4. Celulares muy pequeños (1 tarjeta por fila) */
+@media (max-width: 380px) {
+    .metrics-grid {
+        grid-template-columns: repeat(1, 1fr);
     }
 }
 
