@@ -29,34 +29,40 @@ module.exports = async (req, res) => {
 
         // 2. Filtro de Rango de Fechas
         if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
-            conditions.push('act_fecha BETWEEN ? AND ?');
+            conditions.push('a.act_fecha BETWEEN ? AND ?');
             params.push(inicio, fin);
         }
 
         // 3. Filtro por Tipo (INSTALACION, TRASLADO, VISITA)
         if (tipo && tipo !== 'TODOS' && tipo.trim() !== '') {
-            conditions.push('act_tipo = ?');
+            conditions.push('a.act_tipo = ?');
             params.push(tipo);
         }
 
         // 4. Búsqueda por Nombre de Cliente (Soporta 'cliente' o 'sector')
         const terminoCliente = (cliente || sector || '').trim();
         if (terminoCliente !== '') {
-            conditions.push('act_cliente LIKE ?');
+            conditions.push('a.act_cliente LIKE ?');
             params.push(`%${terminoCliente}%`);
         }
 
         // 5. Filtro por Valores Cobrados
         if (cobradas === 'si') {
-            conditions.push('CAST(COALESCE(act_valores_cobrados, 0) AS DECIMAL(10,2)) > 0');
+            conditions.push('CAST(COALESCE(a.act_valores_cobrados, 0) AS DECIMAL(10,2)) > 0');
         } else if (cobradas === 'no') {
-            conditions.push('CAST(COALESCE(act_valores_cobrados, 0) AS DECIMAL(10,2)) = 0');
+            conditions.push('CAST(COALESCE(a.act_valores_cobrados, 0) AS DECIMAL(10,2)) = 0');
         }
 
         const whereClause = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
 
-        // Consulta sobre la tabla actividad_detalle
-        const query = `SELECT * FROM actividad_detalle ${whereClause} ORDER BY act_fecha DESC`;
+        // 🔍 Consulta con LEFT JOIN para obtener el campo 'cuad_nombre' de la tabla 'cuadrilla'
+        const query = `
+            SELECT a.*, c.cuad_nombre 
+            FROM actividad_detalle a 
+            LEFT JOIN cuadrilla c ON a.cuad_id = c.cuad_id 
+            ${whereClause} 
+            ORDER BY a.act_fecha DESC
+        `;
 
         const [rows] = await connection.execute(query, params);
 

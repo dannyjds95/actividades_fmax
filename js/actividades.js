@@ -505,7 +505,7 @@ function verDetalleActividad(idActividad) {
     // Formateo de valores
     const fecha = typeof formatFecha === 'function' ? formatFecha(item.act_fecha) : (item.act_fecha ? String(item.act_fecha).split('T')[0] : 'N/A');
     const claseBadge = typeof getBadgeClass === 'function' ? getBadgeClass(item.act_tipo) : 'badge-default';
-    
+
     const excMetros = parseFloat(item.act_excedente || 0);
     const excMonto = parseFloat(item.act_excedente_valor || 0);
     const ptRed = parseFloat(item.act_pred || item.act_pt_red || 0);
@@ -565,29 +565,33 @@ function verDetalleActividad(idActividad) {
                 <span class="detail-label">Cliente</span>
                 <span class="detail-value strong">${item.act_cliente || 'N/A'}</span>
             </div>
-            <div class="detail-item">
-                <span class="detail-label">Sector</span>
-                <span class="detail-value">${item.act_sector || 'N/A'}</span>
-            </div>
-            <div class="detail-item">
+
+                        <div class="detail-item">
                 <span class="detail-label">Tipo</span>
                 <span class="detail-value"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></span>
             </div>
+
             <div class="detail-item">
                 <span class="detail-label">Forma</span>
                 <span class="detail-value">${item.act_forma || 'NORMAL'}</span>
+            </div>
+
+
+                        <div class="detail-item">
+                <span class="detail-label">Sector</span>
+                <span class="detail-value">${item.act_sector || 'N/A'}</span>
             </div>
             <div class="detail-item">
                 <span class="detail-label">Cantidad Fibra</span>
                 <span class="detail-value">${item.act_fibra || 0} m</span>
             </div>
 
-            ${camposOpcionalesHTML}
-
             <div class="detail-item highlight-blue col-span-2">
                 <span class="detail-label">Valor Actividad</span>
                 <span class="detail-value price-tag">$${totalMonto.toFixed(2)}</span>
             </div>
+
+            ${camposOpcionalesHTML}
 
             ${item.act_detalle ? `
             <div class="detail-item col-span-2 detail-box">
