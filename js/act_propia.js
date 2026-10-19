@@ -236,88 +236,96 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Función Unificada de Guardado
-    async function guardarFormulario(event) {
-        if (event) event.preventDefault();
+// Función Unificada de Guardado / Edición
+async function guardarFormulario(event) {
+    if (event) event.preventDefault();
 
-        const urlParamsNow = new URLSearchParams(window.location.search);
-        const idFromUrl = urlParamsNow.get('editId');
-        const idFromInput = actIdInput ? actIdInput.value.trim() : '';
+    const urlParamsNow = new URLSearchParams(window.location.search);
+    const idFromUrl = urlParamsNow.get('editId');
+    const idFromInput = actIdInput ? actIdInput.value.trim() : '';
 
-        const actId = idFromUrl || idFromInput;
-        const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
+    const actId = idFromUrl || idFromInput;
+    const esEdicion = Boolean(actId && actId !== 'null' && actId !== 'undefined' && actId !== '');
 
-        const calcs = calculateAll();
-        const clienteVal = actClienteInput ? actClienteInput.value.trim() : '';
+    const calcs = calculateAll();
+    const clienteVal = actClienteInput ? actClienteInput.value.trim() : '';
 
-        const payload = {
-            act_id: esEdicion ? Number(actId) : null,
-            id: esEdicion ? Number(actId) : null,
-            user_id: userSession.id || userSession.user_id,
-            act_origen: 'ACTIVIDAD PROPIA',
-            act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
-            act_fecha: actFechaInput ? actFechaInput.value : '',
-            cuad_id: userSession.cuad_id,
-            act_sector: actSectorSelect ? actSectorSelect.value : '',
-            act_tipo: actTipoSelect ? actTipoSelect.value : '',
-            act_forma: actFormaSelect ? actFormaSelect.value : '',
-            act_cantidad: calcs.actCantidad,
-            act_valor: calcs.actValor,
-            act_fibra: actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0,
-            act_pred: calcs.actPredQty,
-            act_pred_valor: calcs.actPredValor,
-            act_ac: calcs.actAcQty,
-            act_ac_valor: calcs.actAcValor,
-            act_excedente: calcs.actExcedenteM,
-            act_excedente_valor: calcs.actExcedenteValor,
-            act_total: calcs.actTotal,
-            act_detalle: actDetalleInput ? actDetalleInput.value : '',
-            act_valores_cobrados: inputValoresCobrados ? (parseFloat(inputValoresCobrados.value) || 0) : 0
-        };
+    // 1. Crear el payload asignando valores por defecto seguros (evitar 'undefined')
+    const payload = {
+        act_id: esEdicion ? Number(actId) : null,
+        id: esEdicion ? Number(actId) : null,
+        user_id: userSession?.id || userSession?.user_id || null,
+        cuad_id: userSession?.cuad_id || 1, // Fallback si no existe en localStorage
+        act_origen: 'ACTIVIDAD PROPIA',
+        act_cliente: clienteVal !== '' ? clienteVal : 'NO DEFINIDO',
+        act_fecha: actFechaInput ? actFechaInput.value : '',
+        act_sector: actSectorSelect ? actSectorSelect.value : 'NORTE',
+        act_tipo: actTipoSelect ? actTipoSelect.value : 'INSTALACION',
+        act_forma: actFormaSelect ? actFormaSelect.value : 'NORMAL',
+        act_cantidad: calcs.actCantidad || 1,
+        act_valor: calcs.actValor || 0,
+        act_fibra: actFibraInput ? (parseInt(actFibraInput.value, 10) || 0) : 0,
+        act_pred: calcs.actPredQty || 0,
+        act_pred_valor: calcs.actPredValor || 0,
+        act_ac: calcs.actAcQty || 0,
+        act_ac_valor: calcs.actAcValor || 0,
+        act_excedente: calcs.actExcedenteM || 0,
+        act_excedente_valor: calcs.actExcedenteValor || 0,
+        act_total: calcs.actTotal || 0,
+        act_detalle: actDetalleInput ? actDetalleInput.value : '',
+        act_valores_cobrados: inputValoresCobrados ? (parseFloat(inputValoresCobrados.value) || 0) : 0
+    };
 
-        const targetApiUrl = esEdicion 
-            ? `${BASE_URL}/api/editar-actividad` 
-            : `${BASE_URL}/api/guardar-actividad`;
-            
-        const method = esEdicion ? 'PUT' : 'POST';
+    // 2. HIGIENE DE DATOS: Convertir cualquier propiedad que haya quedado 'undefined' a 'null'
+    Object.keys(payload).forEach(key => {
+        if (payload[key] === undefined) {
+            payload[key] = null;
+        }
+    });
 
-        const btn = document.getElementById('btnSubmit') || document.querySelector('button[type="submit"]');
+    const targetApiUrl = esEdicion 
+        ? `${BASE_URL}/api/editar-actividad` 
+        : `${BASE_URL}/api/guardar-actividad`;
+        
+    const method = esEdicion ? 'PUT' : 'POST';
 
-        try {
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = esEdicion ? 'Actualizando...' : 'Guardando...';
-            }
+    const btn = document.getElementById('btnSubmit') || document.querySelector('button[type="submit"]');
 
-            console.log(`🚀 Enviando datos [${method}] a ${targetApiUrl}:`, payload);
+    try {
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = esEdicion ? 'Actualizando...' : 'Guardando...';
+        }
 
-            const res = await fetch(targetApiUrl, {
-                method: method,
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+        console.log(`🚀 Enviando datos sanitizados [${method}] a ${targetApiUrl}:`, payload);
 
-            const data = await res.json();
+        const res = await fetch(targetApiUrl, {
+            method: method,
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
 
-            if (res.ok && (data.status === 'success' || data.affectedRows > 0 || data.message?.includes('exito'))) {
-                alert(esEdicion ? '✅ Actividad actualizada correctamente' : '✅ Actividad registrada correctamente');
-                window.location.href = 'actividades.html';
-            } else {
-                alert(`⚠️ Error al procesar: ${data.message || 'Error en el servidor'}`);
-            }
-        } catch (err) {
-            console.error('Error de red:', err);
-            alert('❌ Error de conexión con el servidor.');
-        } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = esEdicion ? 'Actualizar Actividad' : 'Guardar Actividad';
-            }
+        const data = await res.json();
+
+        if (res.ok && (data.status === 'success' || data.affectedRows > 0 || data.message?.includes('exito'))) {
+            alert(esEdicion ? '✅ Actividad actualizada correctamente' : '✅ Actividad registrada correctamente');
+            window.location.href = 'actividades.html';
+        } else {
+            alert(`⚠️ Error al procesar: ${data.message || 'Error en la base de datos'}`);
+        }
+    } catch (err) {
+        console.error('Error de red:', err);
+        alert('❌ Error de conexión con el servidor.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = esEdicion ? 'Actualizar Actividad' : 'Guardar Actividad';
         }
     }
+}
 
     // Exponer función de guardado a nivel global
     window.guardarFormulario = guardarFormulario;
