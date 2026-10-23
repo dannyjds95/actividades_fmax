@@ -720,6 +720,7 @@ function cerrarModal() {
 }
 
 // Función para Generar un Reporte PDF Elegante con los Filtros Visibles
+// Función para Generar el Reporte PDF capturando dinámicamente la tabla visible
 function generarReportePDF() {
     if (!window.jspdf || !window.jspdf.jsPDF) {
         alert("⚠️ La librería jsPDF aún se está cargando. Por favor, reintenta en un momento.");
@@ -727,82 +728,104 @@ function generarReportePDF() {
     }
 
     const { jsPDF } = window.jspdf;
-    // Formato horizontal (landscape) para que todas las columnas de la tabla quepan holgadamente
+    // Formato horizontal (landscape) para mayor espacio de columnas
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-    // 1. Obtención de datos de Filtros e Información de Sesión
+    // 1. Obtener datos de la Sesión y Filtros
     const userSession = JSON.parse(localStorage.getItem('usuario_sesion')) || {};
     const usuarioNombre = userSession.nombre || userSession.usuario || 'Técnico';
-    const fechaDesde = document.getElementById('fecha_desde')?.value || document.querySelector('input[type="date"]:first-of-type')?.value || '---';
-    const fechaHasta = document.getElementById('fecha_hasta')?.value || document.querySelector('input[type="date"]:last-of-type')?.value || '---';
-    const tipoFiltro = document.getElementById('filtro_tipo')?.value || 'TODOS';
-    const cobroFiltro = document.getElementById('filtro_cobrado')?.value || 'TODAS';
-    const busquedaCliente = document.getElementById('input_buscar')?.value || '';
+    
+    const fechaDesdeInput = document.querySelector('input[type="date"]:first-of-type, #fecha_desde');
+    const fechaHastaInput = document.querySelector('input[type="date"]:last-of-type, #fecha_hasta');
+    const fechaDesde = fechaDesdeInput ? fechaDesdeInput.value : '---';
+    const fechaHasta = fechaHastaInput ? fechaHastaInput.value : '---';
 
-    // 2. ENCABEZADO CORPORATIVO
-    // Banda superior en azul oscuro
-    doc.setFillColor(15, 23, 42); // #0f172a (Primary Navy)
+    // 2. EXTRAER CELDAS DE LA TABLA VISIBLE EN PANTALLA
+    const tableBody = [];
+    // Busca cualquier fila dentro del tbody existente en la página
+    const filasTabla = document.querySelectorAll('tbody tr');
+
+    let totalActidadesCount = 0;
+    let sumaMontoTotal = 0;
+    let sumaPuntosRed = 0;
+    let sumaEquiposAC = 0;
+    let sumaValoresCobrados = 0;
+
+    filasTabla.forEach(row => {
+        // Ignorar filas ocultas por filtros o mensajes de "sin datos"
+        if (row.style.display === 'none' || row.cells.length < 5) return;
+
+        // Limpiar el texto de cada celda quitando saltos de línea y espacios extra
+        const cols = Array.from(row.cells).map(cell => {
+            // Clonar celda para quitar botones o elementos no deseados si existieran
+            const clone = cell.cloneNode(true);
+            const buttons = clone.querySelectorAll('button, a, .btn');
+            buttons.forEach(b => b.remove());
+            return clone.textContent.trim().replace(/\s+/g, ' ');
+        });
+
+        // Mapear celdas correspondientes a la tabla
+        const fecha = cols[0] || '';
+        const cliente = cols[1] || '';
+        const tipo = cols[2] || '';
+        const forma = cols[3] || '';
+        const fibra = cols[4] || '0 m';
+        const excedente = cols[5] || '0 m ($0.00)';
+        const ptRed = cols[6] || '0';
+        const ac = cols[7] || '0';
+        const total = cols[8] || '$0.00';
+        const cobrados = cols[9] || '$0.00';
+
+        tableBody.push([fecha, cliente, tipo, forma, fibra, excedente, ptRed, ac, total, cobrados]);
+
+        // Acumular totales para el resumen
+        totalActidadesCount++;
+        sumaPuntosRed += parseInt(ptRed, 10) || 0;
+        sumaEquiposAC += parseInt(ac, 10) || 0;
+        
+        // Convertir formato moneda a número ($20.00 -> 20.00)
+        const parseMoneda = (txt) => parseFloat(String(txt).replace(/[^0-9.-]+/g, "")) || 0;
+        sumaMontoTotal += parseMoneda(total);
+        sumaValoresCobrados += parseMoneda(cobrados);
+    });
+
+    // 3. ENCABEZADO CORPORATIVO
+    doc.setFillColor(15, 23, 42); // #0f172a (Azul Oscuro)
     doc.rect(0, 0, 297, 24, 'F');
 
-    // Título Principal
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.text('REPORTE DE ACTIVIDADES DE CAMPO', 14, 13);
 
-    // Subtítulo / Sistema
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.text('SISTEMA DE GESTIÓN TÉCNICA - FMAX', 283, 13, { align: 'right' });
 
-    // Metadatos debajo del header
+    // Metadatos
     doc.setTextColor(51, 65, 85);
     doc.setFontSize(9);
-    
     const fechaImpresion = new Date().toLocaleString('es-EC');
     doc.text(`Generado por: ${usuarioNombre}`, 14, 30);
     doc.text(`Fecha de Emisión: ${fechaImpresion}`, 283, 30, { align: 'right' });
+    doc.text(`Período: ${fechaDesde} al ${fechaHasta}`, 14, 35);
 
-    let periodoTxt = `Período: ${fechaDesde} al ${fechaHasta}`;
-    if (tipoFiltro !== 'TODOS') periodoTxt += ` | Tipo: ${tipoFiltro}`;
-    if (cobroFiltro !== 'TODAS') periodoTxt += ` | Cobros: ${cobroFiltro}`;
-    if (busquedaCliente) periodoTxt += ` | Filtro Cliente: "${busquedaCliente}"`;
-    doc.text(periodoTxt, 14, 35);
-
-    // 3. TARJETAS DE RESUMEN (KPIs Visibles)
-    // Extraer valores de las tarjetas en pantalla si existen
-    const obtenerTextoCard = (selector, defaultVal) => {
-        const el = document.querySelector(selector);
-        return el ? el.textContent.trim() : defaultVal;
-    };
-
-    const kpiTotalAct = obtenerTextoCard('.kpi-total-act, #lbl_total_act', '0');
-    const kpiMontoTotal = obtenerTextoCard('.kpi-monto-total, #lbl_monto_total', '$0.00');
-    const kpiExcedente = obtenerTextoCard('.kpi-excedente, #lbl_excedente', '0 m');
-    const kpiPred = obtenerTextoCard('.kpi-pred, #lbl_pred', '0');
-    const kpiAc = obtenerTextoCard('.kpi-ac, #lbl_ac', '0');
-    const kpiCobrados = obtenerTextoCard('.kpi-cobrados, #lbl_cobrados', '$0.00');
-
-    // Dibujar recuadro con métricas
-    doc.setFillColor(248, 250, 252); // #f8fafc
-    doc.setDrawColor(226, 232, 240); // #e2e8f0
+    // 4. DIBUJAR TARJETAS DE RESUMEN CON VALORES CALCULADOS
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
     doc.roundedRect(14, 39, 269, 16, 2, 2, 'FD');
 
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(71, 85, 105);
+    const kpis = [
+        { label: 'TOTAL ACTIVIDADES', val: String(totalActidadesCount) },
+        { label: 'MONTO TOTAL', val: `$${sumaMontoTotal.toFixed(2)}` },
+        { label: 'EXCEDENTE FIBRA', val: '0 m ($0.00)' },
+        { label: 'PUNTOS DE RED', val: String(sumaPuntosRed) },
+        { label: 'EQUIPOS AC', val: String(sumaEquiposAC) },
+        { label: 'VALORES COBRADOS', val: `$${sumaValoresCobrados.toFixed(2)}` }
+    ];
 
     const startX = 20;
     const stepX = 43;
-
-    const kpis = [
-        { label: 'TOTAL ACTIVIDADES', val: kpiTotalAct },
-        { label: 'MONTO TOTAL', val: kpiMontoTotal },
-        { label: 'EXCEDENTE FIBRA', val: kpiExcedente },
-        { label: 'PUNTOS DE RED', val: kpiPred },
-        { label: 'EQUIPOS AC', val: kpiAc },
-        { label: 'VALORES COBRADOS', val: kpiCobrados }
-    ];
 
     kpis.forEach((kpi, idx) => {
         const posX = startX + (idx * stepX);
@@ -816,32 +839,7 @@ function generarReportePDF() {
         doc.text(kpi.val, posX, 50);
     });
 
-    // 4. EXTRAER Y FORMATAR FILAS DE LA TABLA
-    const tableBody = [];
-    const filasTabla = document.querySelectorAll('#tablaActividades tbody tr, #tabla_registros tbody tr');
-
-    filasTabla.forEach(row => {
-        // Ignorar filas de "No se encontraron registros" o invisibles
-        if (row.style.display === 'none' || row.cells.length < 5) return;
-
-        const cols = Array.from(row.cells).map(cell => cell.textContent.trim());
-
-        // Mapear celdas asegurando que no incluya botones de acción
-        tableBody.push([
-            cols[0] || '', // Fecha
-            cols[1] || '', // Cliente
-            cols[2] || '', // Tipo
-            cols[3] || '', // Forma
-            cols[4] || '', // Fibra
-            cols[5] || '', // Excedente
-            cols[6] || '', // Pt. Red
-            cols[7] || '', // AC
-            cols[8] || '', // Total
-            cols[9] || ''  // V. Cobrados
-        ]);
-    });
-
-    // 5. RENDERIZADO DE TABLA CON JSPDF-AUTOTABLE
+    // 5. RENDERIZAR TABLA CON JSPDF-AUTOTABLE
     doc.autoTable({
         startY: 59,
         head: [['FECHA', 'CLIENTE', 'TIPO', 'FORMA', 'FIBRA', 'EXCEDENTE', 'PT. RED', 'AC', 'TOTAL', 'V. COBRADOS']],
@@ -855,30 +853,29 @@ function generarReportePDF() {
             valign: 'middle'
         },
         headStyles: {
-            fillColor: [15, 23, 42],     // #0f172a
+            fillColor: [15, 23, 42],
             textColor: [255, 255, 255],
             fontStyle: 'bold',
             fontSize: 8,
             halign: 'left'
         },
         columnStyles: {
-            0: { cellWidth: 22, halign: 'center' }, // Fecha
-            1: { cellWidth: 70 },                  // Cliente
-            2: { cellWidth: 26, halign: 'center' }, // Tipo
-            3: { cellWidth: 32, halign: 'left' },   // Forma
-            4: { cellWidth: 18, halign: 'center' }, // Fibra
-            5: { cellWidth: 28, halign: 'center' }, // Excedente
-            6: { cellWidth: 16, halign: 'center' }, // Pt. Red
-            7: { cellWidth: 14, halign: 'center' }, // AC
-            8: { cellWidth: 22, halign: 'right', fontStyle: 'bold' }, // Total
-            9: { cellWidth: 22, halign: 'right' }   // V. Cobrados
+            0: { cellWidth: 22, halign: 'center' },
+            1: { cellWidth: 70 },
+            2: { cellWidth: 26, halign: 'center' },
+            3: { cellWidth: 32, halign: 'left' },
+            4: { cellWidth: 18, halign: 'center' },
+            5: { cellWidth: 28, halign: 'center' },
+            6: { cellWidth: 16, halign: 'center' },
+            7: { cellWidth: 14, halign: 'center' },
+            8: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
+            9: { cellWidth: 22, halign: 'right' }
         },
         alternateRowStyles: {
-            fillColor: [248, 250, 252] // Zebra striping limpio
+            fillColor: [248, 250, 252]
         },
         margin: { left: 14, right: 14, bottom: 18 },
-        didDrawPage: function (data) {
-            // Pie de página en cada hoja
+        didDrawPage: function () {
             const strPage = `Página ${doc.internal.getNumberOfPages()}`;
             doc.setFontSize(8);
             doc.setTextColor(148, 163, 184);
@@ -887,9 +884,8 @@ function generarReportePDF() {
         }
     });
 
-    // 6. DESCARGAR EL ARCHIVO PDF
-    const nombreArchivo = `Reporte_Actividades_${fechaDesde}_al_${fechaHasta}.pdf`;
-    doc.save(nombreArchivo);
+    // 6. DESCARGAR ARCHIVO
+    doc.save(`Reporte_Actividades_${fechaDesde}_al_${fechaHasta}.pdf`);
 }
 
 // Vincular al botón de Reporte PDF
