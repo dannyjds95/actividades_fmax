@@ -902,6 +902,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // Función para Generar el Reporte Excel Dividido en Secciones (Instalaciones y Traslados)
+// Función para Generar el Reporte Excel solo con Valores Cobrados (> 0)
 async function generarReporteExcel() {
     if (!window.ExcelJS) {
         alert("⚠️ La librería ExcelJS aún se está cargando. Por favor, reintenta en un momento.");
@@ -911,7 +912,7 @@ async function generarReporteExcel() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('REPORTES');
 
-    // 1. Configuración global de ancho de columnas
+    // 1. Configuración de ancho de columnas
     worksheet.columns = [
         { key: 'index', width: 8 },      // Columna A (#)
         { key: 'fecha', width: 22 },     // Columna B (FECHA)
@@ -928,7 +929,7 @@ async function generarReporteExcel() {
         right: { style: 'thin', color: { argb: 'FF000000' } }
     };
 
-    // Azul institucional para Instalaciones (#DCE6F1)
+    // Azul pastel para Instalaciones (#DCE6F1)
     const fillAzul = {
         type: 'pattern',
         pattern: 'solid',
@@ -953,18 +954,22 @@ async function generarReporteExcel() {
         if (row.style.display === 'none' || row.cells.length < 5) return;
 
         const cols = Array.from(row.cells).map(cell => cell.textContent.trim().replace(/\s+/g, ' '));
+        
+        // Extraer valor cobrado
+        const rawValor = row.getAttribute('data-cobrado') || row.dataset.cobrado || cols[9] || '0';
+        const valorCobrado = parseFloat(String(rawValor).replace(/[^0-9.-]+/g, "")) || 0;
+
+        // 🎯 FILTRO CLAVE: Omitir registros si no tienen valor cobrado (> 0)
+        if (valorCobrado <= 0) return;
+
         const fecha = cols[0] || '';
         const cliente = cols[1] || '';
-
-        // Obtener metadatos desde los atributos data-
         let tipo = (row.getAttribute('data-tipo') || cols[2] || '').toUpperCase();
+        
         let detalleTexto = row.getAttribute('data-detalle') || row.dataset.detalle || '---';
         if (!detalleTexto || detalleTexto === 'undefined' || detalleTexto === 'null') {
             detalleTexto = '---';
         }
-
-        const rawValor = row.getAttribute('data-cobrado') || row.dataset.cobrado || cols[9] || '0';
-        const valorCobrado = parseFloat(String(rawValor).replace(/[^0-9.-]+/g, "")) || 0;
 
         const itemData = { fecha, cliente, detalle: detalleTexto, valor: valorCobrado };
 
@@ -977,9 +982,15 @@ async function generarReporteExcel() {
         }
     });
 
-    // 3. FUNCIÓN AUXILIAR PARA CONSTRUIR CADA TABLA EN EXCEL
+    // Validar si hay al menos un registro con cobro para exportar
+    if (instalaciones.length === 0 && traslados.length === 0 && otrasActividades.length === 0) {
+        alert("⚠️ No hay registros con valores cobrados (> $0.00) para exportar.");
+        return;
+    }
+
+    // 3. FUNCIÓN AUXILIAR PARA DIBUJAR CADA SECCIÓN
     function construirSeccion(titulo, headerFechaLabel, totalLabel, listaDatos, fillEstilo) {
-        // Dejar espacio de 2 filas si ya existen secciones previas
+        // Añadir espacio si ya existe una tabla previa
         if (worksheet.lastRow && worksheet.lastRow.number > 0) {
             worksheet.addRow([]);
             worksheet.addRow([]);
@@ -987,7 +998,7 @@ async function generarReporteExcel() {
 
         const startRowIndex = worksheet.lastRow ? worksheet.lastRow.number + 1 : 1;
 
-        // Banner Superior de la Sección
+        // Banner Superior
         worksheet.mergeCells(`A${startRowIndex}:E${startRowIndex}`);
         const titleCell = worksheet.getCell(`A${startRowIndex}`);
         titleCell.value = titulo;
@@ -999,7 +1010,7 @@ async function generarReporteExcel() {
             worksheet.getCell(`${col}${startRowIndex}`).border = borderStyle;
         });
 
-        // Fila de Encabezados
+        // Encabezados
         const headers = ['#', headerFechaLabel, 'CLIENTE', 'DETALLE DE LO COBRADO', 'VALOR\nCOBRADO'];
         const headerRow = worksheet.addRow(headers);
         headerRow.height = 28;
@@ -1010,48 +1021,36 @@ async function generarReporteExcel() {
             cell.border = borderStyle;
         });
 
-        // Filas de Datos
+        // Filas de Datos con Cobro
         let sumaSeccion = 0;
 
-        if (listaDatos.length === 0) {
-            // Si no hay registros, insertar una fila vacía con bordes
-            const emptyRow = worksheet.addRow(['', '', '', '', 0]);
-            emptyRow.height = 22;
-            emptyRow.getCell(5).numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
-            emptyRow.eachCell({ includeEmpty: true }, (cell) => {
+        listaDatos.forEach((item, idx) => {
+            sumaSeccion += item.valor;
+
+            const dataRow = worksheet.addRow([
+                idx + 1,
+                item.fecha,
+                item.cliente,
+                item.detalle,
+                item.valor
+            ]);
+
+            dataRow.height = 22;
+
+            dataRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }; // #
+            dataRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' }; // Fecha
+            dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' }; // Cliente
+            dataRow.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }; // Detalle
+
+            const cellValor = dataRow.getCell(5);
+            cellValor.alignment = { horizontal: 'right', vertical: 'middle' };
+            cellValor.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
+
+            dataRow.eachCell({ includeEmpty: true }, (cell) => {
                 cell.font = { name: 'Calibri', size: 10 };
                 cell.border = borderStyle;
             });
-        } else {
-            listaDatos.forEach((item, idx) => {
-                sumaSeccion += item.valor;
-
-                const dataRow = worksheet.addRow([
-                    idx + 1,
-                    item.fecha,
-                    item.cliente,
-                    item.detalle,
-                    item.valor
-                ]);
-
-                dataRow.height = 22;
-
-                // Alineaciones
-                dataRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }; // #
-                dataRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' }; // Fecha
-                dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' }; // Cliente
-                dataRow.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }; // Detalle
-
-                const cellValor = dataRow.getCell(5);
-                cellValor.alignment = { horizontal: 'right', vertical: 'middle' };
-                cellValor.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
-
-                dataRow.eachCell({ includeEmpty: true }, (cell) => {
-                    cell.font = { name: 'Calibri', size: 10 };
-                    cell.border = borderStyle;
-                });
-            });
-        }
+        });
 
         // Fila Final de Suma Total
         const totalRowIndex = worksheet.lastRow.number + 1;
@@ -1079,25 +1078,27 @@ async function generarReporteExcel() {
         worksheet.getRow(totalRowIndex).height = 24;
     }
 
-    // 4. GENERAR SECCIÓN DE INSTALACIONES
-    construirSeccion(
-        'INSTALACIONES',
-        'FECHA DE\nINSTALACIÓN',
-        'TOTAL DE INSTALACIÓN',
-        instalaciones,
-        fillAzul
-    );
+    // 4. GENERAR SOLO LAS SECCIONES QUE TENGAN REGISTROS COBRADOS
+    if (instalaciones.length > 0) {
+        construirSeccion(
+            'INSTALACIONES',
+            'FECHA DE\nINSTALACIÓN',
+            'TOTAL DE INSTALACIÓN',
+            instalaciones,
+            fillAzul
+        );
+    }
 
-    // 5. GENERAR SECCIÓN DE TRASLADOS
-    construirSeccion(
-        'TRASLADOS',
-        'FECHA DE\nTRASLADOS',
-        'TOTAL DE TRASLADOS',
-        traslados,
-        fillVerde
-    );
+    if (traslados.length > 0) {
+        construirSeccion(
+            'TRASLADOS',
+            'FECHA DE\nTRASLADOS',
+            'TOTAL DE TRASLADOS',
+            traslados,
+            fillVerde
+        );
+    }
 
-    // Si existen otras actividades (Visitas, Conectores, etc.)
     if (otrasActividades.length > 0) {
         construirSeccion(
             'OTRAS ACTIVIDADES',
@@ -1108,8 +1109,16 @@ async function generarReporteExcel() {
         );
     }
 
-    // 6. DESCARGAR EL ARCHIVO EXCEL
+    // 5. DESCARGAR EL ARCHIVO EXCEL
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `Reporte_Actividades_${new Date().toISOString().split('T')[0]}.xlsx`);
+    saveAs(blob, `Reporte_Valores_Cobrados_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
+
+// Vincular al botón de Reporte Excel
+document.addEventListener('DOMContentLoaded', () => {
+    const btnExportExcel = document.getElementById('btnExportExcel');
+    if (btnExportExcel) {
+        btnExportExcel.addEventListener('click', generarReporteExcel);
+    }
+});
