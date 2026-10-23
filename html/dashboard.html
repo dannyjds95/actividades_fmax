@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Actividades</title>
     <link rel="icon" type="image/png" href="../image/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
@@ -20,7 +20,8 @@
         <!-- MENÚ LATERAL (SIDEBAR) -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;"onerror="this.style.display='none'">
+                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;"
+                    onerror="this.style.display='none'">
                 <h2 id="userName">FMAX</h2>
             </div>
 
@@ -51,7 +52,7 @@
             </div>
         </aside>
 
-<!-- ÁREA PRINCIPAL -->
+        <!-- ÁREA PRINCIPAL -->
         <main class="main-content">
             <!-- ENCABEZADO SUPERIOR (TOPBAR) -->
             <header class="topbar">
@@ -78,7 +79,7 @@
                 </div>
 
                 <div class="metrics-grid">
-                    
+
                     <!-- 1. Total Actividades -->
                     <div class="card-metric border-blue">
                         <div class="card-icon bg-light-blue">
@@ -189,7 +190,8 @@
             <!-- Card: Tabla Últimos Registros -->
             <div class="table-card">
                 <div class="table-header-bar">
-                    <h3>Últimos Registros <a href="#" class="link-see-all">Ver todos &rarr;</a></h3>
+                    <h3>Últimos Registros</h3>
+                    <a href="actividades.html" class="link-see-all">Ver todos &rarr;</a>
                 </div>
 
                 <div class="table-container">
@@ -205,8 +207,10 @@
                         </thead>
                         <tbody id="tbl_ultimos_registros">
                             <tr>
-                                <td colspan="6" style="text-align:center; color:var(--text-muted);">Cargando registros
-                                    recientes...</td>
+                                <!-- Se corrige colspan de 6 a 5 porque la tabla solo tiene 5 columnas -->
+                                <td colspan="5" style="text-align:center; color:var(--text-muted); padding: 20px;">
+                                    Cargando registros recientes...
+                                </td>
                             </tr>
                         </tbody>
                     </table>

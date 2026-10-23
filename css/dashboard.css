@@ -201,9 +201,96 @@
 }
 
 /* 4. Celulares muy pequeños (1 tarjeta por fila) */
-@media (max-width: 380px) {
-    .metrics-grid {
-        grid-template-columns: repeat(1, 1fr);
+/* ==========================================
+   AJUSTES RESPONSIVE PARA DISPOSITIVOS MÓVILES
+   ========================================== */
+@media (max-width: 768px) {
+    /* 1. Bloquear el desbordamiento horizontal global */
+    html, body {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        margin: 0;
+        padding: 0;
+    }
+
+    .main-content, .dashboard-container {
+        padding: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 2. Botón superior centrado y ancho completo */
+    .top-actions, .header-actions {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
+    .btn-primary, .btn-registrar {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 12px !important;
+    }
+
+    /* 3. Grid de Tarjetas KPI (2 columnas equilibradas) */
+    .kpi-container, .cards-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* La 5ta tarjeta (Valores Cobrados) ocupa el ancho completo de las 2 columnas */
+    .kpi-card:nth-child(5),
+    .kpi-card:last-child:nth-child(odd) {
+        grid-column: span 2 !important;
+    }
+
+    .kpi-card {
+        padding: 12px 10px !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    .kpi-card .kpi-value {
+        font-size: 16px !important;
+    }
+
+    .kpi-card .kpi-title {
+        font-size: 10px !important;
+    }
+
+    /* 4. Scroll horizontal interno fluido para la Tabla */
+    .table-responsive {
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* Ancho mínimo recomendado para que las columnas no se aplasten */
+    .table-dashboard {
+        min-width: 540px !important; 
+        width: 100% !important;
+    }
+
+    .table-dashboard th, 
+    .table-dashboard td {
+        padding: 10px 8px !important;
+        font-size: 12px !important;
+        white-space: nowrap; /* Evita saltos de línea innecesarios en fechas y badges */
+    }
+
+    /* Permitir envolver el nombre del cliente si es muy largo */
+    .table-dashboard td.col-cliente,
+    .table-dashboard td:nth-child(2) {
+        white-space: normal !important;
+        max-width: 160px;
+        font-weight: 500;
     }
 }
 
