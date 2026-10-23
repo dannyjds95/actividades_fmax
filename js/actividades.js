@@ -220,6 +220,10 @@ async function cargarActividades() {
                 const cobradoNum = parseFloat(item.act_valores_cobrados || 0);
                 const valorCobradoFormatted = cobradoNum.toFixed(2);
 
+                // Sanitización del detalle para no romper comillas HTML
+                const detalleLimpio = String(item.act_detalle || item.detalle || '')
+                    .replace(/"/g, '&quot;');
+
                 // Sumatorias acumuladas
                 sumActividades += cantAct;
                 sumExcedenteMetros += excMetros;
@@ -237,9 +241,9 @@ async function cargarActividades() {
                     ? getBadgeClass(item.act_tipo)
                     : 'badge-default';
 
-                // Dentro de lista.map() en cargarActividades():
+                // 🎯 ATENCIÓN: Se agregan 'data-detalle' y 'data-cobrado' a la etiqueta <tr>
                 return `
-    <tr>
+    <tr data-detalle="${detalleLimpio}" data-cobrado="${valorCobradoFormatted}">
         <td class="col-fecha text-center">${fechaFormateada}</td>
         <td class="col-cliente">${item.act_cliente || 'N/A'}</td>
         <td class="text-center"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
@@ -926,7 +930,7 @@ async function generarReporteExcel() {
     const fillAzulClaro = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFDCE6F1' } // Azul suave idéntico a la imagen
+        fgColor: { argb: 'FFDCE6F1' } // Azul suave institucional
     };
 
     // 2. FILA 1: TÍTULO SUPERIOR FUSIONADO
@@ -936,9 +940,7 @@ async function generarReporteExcel() {
     titleCell.font = { name: 'Calibri', size: 11, bold: true };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     titleCell.fill = fillAzulClaro;
-    titleCell.border = borderStyle;
 
-    // Aplicar borde a la celda fusionada
     ['A1', 'B1', 'C1', 'D1', 'E1'].forEach(cellRef => {
         worksheet.getCell(cellRef).border = borderStyle;
     });
@@ -954,14 +956,14 @@ async function generarReporteExcel() {
         cell.border = borderStyle;
     });
 
-    // 4. EXTRAER FILAS DESDE LA TABLA O DATASET DE ACTIVIDADES
+    // 4. EXTRAER FILAS DESDE LA TABLA
     let sumaTotalCobrado = 0;
     let contador = 1;
 
-    // Intentar leer array global si existe, o extraer directamente del DOM visible
     const filasTabla = document.querySelectorAll('tbody tr');
 
     filasTabla.forEach(row => {
+        // Ignorar filas invisibles o mensajes informativos
         if (row.style.display === 'none' || row.cells.length < 5) return;
 
         const cols = Array.from(row.cells).map(cell => cell.textContent.trim().replace(/\s+/g, ' '));
@@ -969,13 +971,15 @@ async function generarReporteExcel() {
         const fecha = cols[0] || '';
         const cliente = cols[1] || '';
         
-        // Extraer Detalle/Observaciones y Valor Cobrado
-        // Si tienes la variable original en JS usa item.act_detalle, o extrae de la celda
-        const detalleTexto = cols[10] || cols[9] || 'ins'; // Detalle del cobro
+        // 🎯 CORRECCIÓN CLAVE: Obtener el detalle oculto de la BD en lugar de la celda de botones
+        let detalleTexto = row.getAttribute('data-detalle') || row.dataset.detalle || '';
+        if (!detalleTexto || detalleTexto === 'undefined' || detalleTexto === 'null') {
+            detalleTexto = '---';
+        }
         
-        // Limpiar el texto del valor cobrado para obtener el número exacto ($23.00 -> 23.00)
-        const rawValor = cols[9] || cols[8] || '0';
-        const valorCobrado = parseFloat(rawValor.replace(/[^0-9.-]+/g, "")) || 0;
+        // 🎯 CORRECCIÓN CLAVE: Obtener el valor cobrado desde el atributo oculto o la celda
+        const rawValor = row.getAttribute('data-cobrado') || row.dataset.cobrado || cols[9] || '0';
+        const valorCobrado = parseFloat(String(rawValor).replace(/[^0-9.-]+/g, "")) || 0;
 
         sumaTotalCobrado += valorCobrado;
 
@@ -996,7 +1000,7 @@ async function generarReporteExcel() {
         dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' }; // Cliente
         dataRow.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }; // Detalle
         
-        // Formato Moneda para Valor Cobrado ($ 8,34)
+        // Formato Moneda para Valor Cobrado ($ 8.34)
         const cellValor = dataRow.getCell(5);
         cellValor.alignment = { horizontal: 'right', vertical: 'middle' };
         cellValor.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
