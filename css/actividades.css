@@ -173,9 +173,10 @@
     max-width: 300px;
     white-space: normal;
     word-break: break-word;
-    font-weight: 600;
+    font-weight: 400;    /* 👈 Cambiado de 600 a 400 (o 'normal') para quitar la negrita */
+    font-size: 12px;     /* 👈 Agregado para hacer el texto más pequeño */
     color: #0f172a;
-    line-height: 1.4;
+    line-height: 1.3;    /* 👈 Ligero ajuste para que el interlineado se adapte al tamaño */
 }
 
 .col-fecha {
@@ -640,15 +641,15 @@ select.form-control {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 12px 20px;
     border-bottom: 1px solid #e2e8f0;
     background: #ffffff;
 }
 
 .modal-header h3 {
     margin: 0;
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 400;
     color: #0f172a;
 }
 
@@ -725,13 +726,13 @@ select.form-control {
 }
 
 .detail-value {
-    font-size: 14px;
+    font-size: 12px;
     color: #0f172a;
 }
 
 .detail-value.strong {
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 400;
 }
 
 .detail-item.highlight-blue {
@@ -815,4 +816,61 @@ select.form-control {
 #modal_ver_actividad .modal-body::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 4px;
+}
+
+/* Estructura de la barra superior */
+.top-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* Contenedor derecho de botones */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Estilo base de los botones */
+.btn-report {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Botón PDF (Tono Rojo) */
+.btn-pdf {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+.btn-pdf:hover {
+    background-color: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+}
+
+/* Botón Excel (Tono Verde) */
+.btn-excel {
+    background-color: #f0fdf4;
+    color: #16a34a;
+    border-color: #bbf7d0;
+}
+
+.btn-excel:hover {
+    background-color: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
 }

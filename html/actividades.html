@@ -44,7 +44,7 @@
                 </a>
             </nav>
 
-             <div class="sidebar-footer">
+            <div class="sidebar-footer">
                 <button type="button" id="btnLogout" class="nav-item btn-logout-sidebar">
                     <span class="nav-icon">🚪</span>
                     <span class="nav-label">Cerrar Sesión</span>
@@ -53,180 +53,205 @@
         </aside>
 
         <main class="main-content">
-    <!-- ENCABEZADO SUPERIOR (TOPBAR) -->
-    <header class="topbar">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Abrir menú">
-                ☰
-            </button>
-        </div>
-    </header>
-
-    <!-- Contenedor Principal de Filtros y Resumen -->
-    <div class="filter-card">
-        <!-- 1. Período y Acciones Principales -->
-        <div class="header-action-card">
-            <div class="periodo-container">
-                <label for="select_periodo" class="label-periodo">Período de Facturación</label>
-                <select id="select_periodo" class="form-control select-periodo">
-                    <option value="">Cargando períodos...</option>
-                </select>
-            </div>
-
-            <div class="action-buttons-group">
-                <button id="btn_vaciar_filtros" class="btn btn-secondary" onclick="vaciarFiltros()">
-                    🧹 Vaciar Filtros
-                </button>
-                    <button class="btn-primary" onclick="location.href='act_propia.html'">
-                        📄 Registrar Actividad
+            <!-- ENCABEZADO SUPERIOR (TOPBAR) -->
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Abrir menú">
+                        ☰
                     </button>
-            </div>
-        </div>
 
-        <!-- 2. Filtros de Búsqueda -->
-        <div class="filter-grid" style="margin-top: 15px;">
-            <div class="filter-group">
-                <label for="fecha_desde">Desde</label>
-                <input type="date" id="fecha_desde" class="form-control">
-            </div>
+                    <div class="header-actions">
+                        <button id="btnExportPDF" class="btn-report btn-pdf" type="button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            Reporte PDF
+                        </button>
 
-            <div class="filter-group">
-                <label for="fecha_hasta">Hasta</label>
-                <input type="date" id="fecha_hasta" class="form-control">
-            </div>
+                        <button id="btnExportExcel" class="btn-report btn-excel" type="button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="9" y1="3" x2="9" y2="21"></line>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="3" y1="15" x2="21" y2="15"></line>
+                            </svg>
+                            Reporte Excel
+                        </button>
 
-            <div class="filter-group">
-                <label for="filter_tipo">Tipo de Actividad</label>
-                <select id="filter_tipo" class="form-control">
-                    <option value="">TODOS</option>
-                    <option value="INSTALACION">INSTALACIÓN</option>
-                    <option value="TRASLADO">TRASLADO</option>
-                    <option value="VISITA">VISITA</option>
-                </select>
-            </div>
+                    </div>
+            </header>
 
-            <div class="filter-group">
-                <label for="filter_cliente">Cliente</label>
-                <input type="text" id="filter_cliente" class="form-control" placeholder="Buscar por cliente...">
-            </div>
+            <!-- Contenedor Principal de Filtros y Resumen -->
+            <div class="filter-card">
+                <!-- 1. Período y Acciones Principales -->
+                <div class="header-action-card">
+                    <div class="periodo-container">
+                        <label for="select_periodo" class="label-periodo">Período de Facturación</label>
+                        <select id="select_periodo" class="form-control select-periodo">
+                            <option value="">Cargando períodos...</option>
+                        </select>
+                    </div>
 
-            <div class="filter-group">
-                <label for="filter_cobradas">Valores Cobrados</label>
-                <select id="filter_cobradas" class="form-control">
-                    <option value="">TODAS</option>
-                    <option value="si">ACTIVIDADES COBRADAS</option>
-                    <option value="no">ACTIVIDADES GRATIS</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- 3. Tarjetas de Resumen Interactivas -->
-        <div class="summary-card" style="margin-top: 15px;">
-            <div class="summary-grid">
-                <div class="summary-item clickable" onclick="abrirModalDetalle('totales')">
-                    <span class="summary-label">Total Actividades</span>
-                    <span class="summary-value" id="sum_total_actividades">0</span>
+                    <div class="action-buttons-group">
+                        <button id="btn_vaciar_filtros" class="btn btn-secondary" onclick="vaciarFiltros()">
+                            🧹 Vaciar Filtros
+                        </button>
+                        <button class="btn-primary" onclick="location.href='act_propia.html'">
+                            📄 Registrar Actividad
+                        </button>
+                    </div>
                 </div>
 
-                <div class="summary-item clickable" onclick="abrirModalDetalle('monto_total')">
-                    <span class="summary-label">Monto Total</span>
-                    <span class="summary-value" id="sum_total_monto">$0.00</span>
+                <!-- 2. Filtros de Búsqueda -->
+                <div class="filter-grid" style="margin-top: 15px;">
+                    <div class="filter-group">
+                        <label for="fecha_desde">Desde</label>
+                        <input type="date" id="fecha_desde" class="form-control">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="fecha_hasta">Hasta</label>
+                        <input type="date" id="fecha_hasta" class="form-control">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filter_tipo">Tipo de Actividad</label>
+                        <select id="filter_tipo" class="form-control">
+                            <option value="">TODOS</option>
+                            <option value="INSTALACION">INSTALACIÓN</option>
+                            <option value="TRASLADO">TRASLADO</option>
+                            <option value="VISITA">VISITA</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filter_cliente">Cliente</label>
+                        <input type="text" id="filter_cliente" class="form-control" placeholder="Buscar por cliente...">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filter_cobradas">Valores Cobrados</label>
+                        <select id="filter_cobradas" class="form-control">
+                            <option value="">TODAS</option>
+                            <option value="si">ACTIVIDADES COBRADAS</option>
+                            <option value="no">ACTIVIDADES GRATIS</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="summary-item clickable" onclick="abrirModalDetalle('excedente')">
-                    <span class="summary-label">Excedente</span>
-                    <span class="summary-value val-blue" id="sum_total_excedente">0 m ($0.00)</span>
-                </div>
+                <!-- 3. Tarjetas de Resumen Interactivas -->
+                <div class="summary-card" style="margin-top: 15px;">
+                    <div class="summary-grid">
+                        <div class="summary-item clickable">
+                            <span class="summary-label">Total Actividades</span>
+                            <span class="summary-value" id="sum_total_actividades">0</span>
+                        </div>
 
-                <div class="summary-item clickable" onclick="abrirModalDetalle('pt_red')">
-                    <span class="summary-label">Puntos de Red</span>
-                    <span class="summary-value" id="sum_puntos_red">0</span>
-                </div>
+                        <div class="summary-item clickable">
+                            <span class="summary-label">Monto Total</span>
+                            <span class="summary-value" id="sum_total_monto">$0.00</span>
+                        </div>
 
-                <div class="summary-item clickable" onclick="abrirModalDetalle('ac')">
-                    <span class="summary-label">AC Instalados</span>
-                    <span class="summary-value" id="sum_cantidad_ac">0</span>
-                </div>
+                        <div class="summary-item clickable" onclick="abrirModalDetalle('excedente')">
+                            <span class="summary-label">Excedente</span>
+                            <span class="summary-value val-blue" id="sum_total_excedente">0 m ($0.00)</span>
+                        </div>
 
-                <div class="summary-item clickable" onclick="abrirModalDetalle('cobrados')">
-                    <span class="summary-label">Valores Cobrados</span>
-                    <span class="summary-value val-green" id="sum_valores_cobrados">$0.00</span>
+                        <div class="summary-item clickable" onclick="abrirModalDetalle('pt_red')">
+                            <span class="summary-label">Puntos de Red</span>
+                            <span class="summary-value" id="sum_puntos_red">0</span>
+                        </div>
+
+                        <div class="summary-item clickable" onclick="abrirModalDetalle('ac')">
+                            <span class="summary-label">AC Instalados</span>
+                            <span class="summary-value" id="sum_cantidad_ac">0</span>
+                        </div>
+
+                        <div class="summary-item clickable" onclick="abrirModalDetalle('cobrados')">
+                            <span class="summary-label">Valores Cobrados</span>
+                            <span class="summary-value val-green" id="sum_valores_cobrados">$0.00</span>
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Tabla de Datos -->
+            <div class="table-card" style="margin-top: 20px;">
+                <div class="table-header">
+                    <h3>Registros de Actividades</h3>
+                    <span id="txt_total_registros" class="badge-count">0 registros</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>FECHA</th>
+                                <th>CLIENTE</th>
+                                <th>TIPO</th>
+                                <th>FORMA</th>
+                                <th>FIBRA</th>
+                                <th>EXCEDENTE</th>
+                                <th>PT. RED</th>
+                                <th>AC</th>
+                                <th>TOTAL</th>
+                                <th>V. COBRADOS</th>
+                                <th>ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl_actividades_body">
+                            <tr>
+                                <td colspan="11" class="text-center">Cargando actividades...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+
+    <!-- Modal Pop-up para el Detalle de Métricas -->
+    <div id="modal_detalle_metrica" class="modal-overlay">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 id="modal_detalle_titulo">Detalle de Actividades</h3>
+                <button type="button" class="btn-close" onclick="cerrarModalDetalle()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <table class="table-custom">
+                    <!-- Cabecera dinámica -->
+                    <thead id="tbl_detalle_metrica_head"></thead>
+                    <!-- Registros dinámicos -->
+                    <tbody id="tbl_detalle_metrica_body"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-action" onclick="cerrarModalDetalle()">Cerrar</button>
             </div>
         </div>
     </div>
 
-    <!-- Tabla de Datos -->
-    <div class="table-card" style="margin-top: 20px;">
-        <div class="table-header">
-            <h3>Registros de Actividades</h3>
-            <span id="txt_total_registros" class="badge-count">0 registros</span>
-        </div>
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>FECHA</th>
-                        <th>CLIENTE</th>
-                        <th>TIPO</th>
-                        <th>FORMA</th>
-                        <th>FIBRA</th>
-                        <th>EXCEDENTE</th>
-                        <th>PT. RED</th>
-                        <th>AC</th>
-                        <th>TOTAL</th>
-                        <th>V. COBRADOS</th>
-                        <th>ACCIONES</th>
-                    </tr>
-                </thead>
-                <tbody id="tbl_actividades_body">
-                    <tr>
-                        <td colspan="11" class="text-center">Cargando actividades...</td>
-                    </tr>
-                </tbody>
-            </table>
+    <!-- Modal Detalle Individual de Actividad -->
+    <div id="modal_ver_actividad" class="modal-overlay">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h3>Detalles de la Actividad</h3>
+                <button type="button" class="btn-close" onclick="cerrarModalVerActividad()">&times;</button>
+            </div>
+            <div class="modal-body" id="actividad_detalle_body">
+                <!-- Contenido dinámico desde JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-action" onclick="cerrarModalVerActividad()">Cerrar</button>
+            </div>
         </div>
     </div>
-</main>
-    </div>
-
-
-<!-- Modal Pop-up para el Detalle de Métricas -->
-<div id="modal_detalle_metrica" class="modal-overlay">
-    <div class="modal-content modal-lg">
-        <div class="modal-header">
-            <h3 id="modal_detalle_titulo">Detalle de Actividades</h3>
-            <button type="button" class="btn-close" onclick="cerrarModalDetalle()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <table class="table-custom">
-                <!-- Cabecera dinámica -->
-                <thead id="tbl_detalle_metrica_head"></thead>
-                <!-- Registros dinámicos -->
-                <tbody id="tbl_detalle_metrica_body"></tbody>
-            </table>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-action" onclick="cerrarModalDetalle()">Cerrar</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Detalle Individual de Actividad -->
-<div id="modal_ver_actividad" class="modal-overlay">
-    <div class="modal-content modal-md">
-        <div class="modal-header">
-            <h3>Detalles de la Actividad</h3>
-            <button type="button" class="btn-close" onclick="cerrarModalVerActividad()">&times;</button>
-        </div>
-        <div class="modal-body" id="actividad_detalle_body">
-            <!-- Contenido dinámico desde JavaScript -->
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-action" onclick="cerrarModalVerActividad()">Cerrar</button>
-        </div>
-    </div>
-</div>
 
 
 
@@ -234,6 +259,9 @@
     <script src="../js/auth.js"></script>
     <script src="../js/layout.js"></script>
     <script src="../js/actividades.js"></script>
+    <!-- Librerías jsPDF para exportación elegante a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 </body>
 
 </html>

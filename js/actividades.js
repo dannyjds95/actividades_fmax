@@ -718,3 +718,185 @@ function cerrarModal() {
     const modal = document.getElementById('modal_actividad');
     if (modal) modal.classList.remove('active');
 }
+
+// Función para Generar un Reporte PDF Elegante con los Filtros Visibles
+function generarReportePDF() {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert("⚠️ La librería jsPDF aún se está cargando. Por favor, reintenta en un momento.");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    // Formato horizontal (landscape) para que todas las columnas de la tabla quepan holgadamente
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    // 1. Obtención de datos de Filtros e Información de Sesión
+    const userSession = JSON.parse(localStorage.getItem('usuario_sesion')) || {};
+    const usuarioNombre = userSession.nombre || userSession.usuario || 'Técnico';
+    const fechaDesde = document.getElementById('fecha_desde')?.value || document.querySelector('input[type="date"]:first-of-type')?.value || '---';
+    const fechaHasta = document.getElementById('fecha_hasta')?.value || document.querySelector('input[type="date"]:last-of-type')?.value || '---';
+    const tipoFiltro = document.getElementById('filtro_tipo')?.value || 'TODOS';
+    const cobroFiltro = document.getElementById('filtro_cobrado')?.value || 'TODAS';
+    const busquedaCliente = document.getElementById('input_buscar')?.value || '';
+
+    // 2. ENCABEZADO CORPORATIVO
+    // Banda superior en azul oscuro
+    doc.setFillColor(15, 23, 42); // #0f172a (Primary Navy)
+    doc.rect(0, 0, 297, 24, 'F');
+
+    // Título Principal
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('REPORTE DE ACTIVIDADES DE CAMPO', 14, 13);
+
+    // Subtítulo / Sistema
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('SISTEMA DE GESTIÓN TÉCNICA - FMAX', 283, 13, { align: 'right' });
+
+    // Metadatos debajo del header
+    doc.setTextColor(51, 65, 85);
+    doc.setFontSize(9);
+    
+    const fechaImpresion = new Date().toLocaleString('es-EC');
+    doc.text(`Generado por: ${usuarioNombre}`, 14, 30);
+    doc.text(`Fecha de Emisión: ${fechaImpresion}`, 283, 30, { align: 'right' });
+
+    let periodoTxt = `Período: ${fechaDesde} al ${fechaHasta}`;
+    if (tipoFiltro !== 'TODOS') periodoTxt += ` | Tipo: ${tipoFiltro}`;
+    if (cobroFiltro !== 'TODAS') periodoTxt += ` | Cobros: ${cobroFiltro}`;
+    if (busquedaCliente) periodoTxt += ` | Filtro Cliente: "${busquedaCliente}"`;
+    doc.text(periodoTxt, 14, 35);
+
+    // 3. TARJETAS DE RESUMEN (KPIs Visibles)
+    // Extraer valores de las tarjetas en pantalla si existen
+    const obtenerTextoCard = (selector, defaultVal) => {
+        const el = document.querySelector(selector);
+        return el ? el.textContent.trim() : defaultVal;
+    };
+
+    const kpiTotalAct = obtenerTextoCard('.kpi-total-act, #lbl_total_act', '0');
+    const kpiMontoTotal = obtenerTextoCard('.kpi-monto-total, #lbl_monto_total', '$0.00');
+    const kpiExcedente = obtenerTextoCard('.kpi-excedente, #lbl_excedente', '0 m');
+    const kpiPred = obtenerTextoCard('.kpi-pred, #lbl_pred', '0');
+    const kpiAc = obtenerTextoCard('.kpi-ac, #lbl_ac', '0');
+    const kpiCobrados = obtenerTextoCard('.kpi-cobrados, #lbl_cobrados', '$0.00');
+
+    // Dibujar recuadro con métricas
+    doc.setFillColor(248, 250, 252); // #f8fafc
+    doc.setDrawColor(226, 232, 240); // #e2e8f0
+    doc.roundedRect(14, 39, 269, 16, 2, 2, 'FD');
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(71, 85, 105);
+
+    const startX = 20;
+    const stepX = 43;
+
+    const kpis = [
+        { label: 'TOTAL ACTIVIDADES', val: kpiTotalAct },
+        { label: 'MONTO TOTAL', val: kpiMontoTotal },
+        { label: 'EXCEDENTE FIBRA', val: kpiExcedente },
+        { label: 'PUNTOS DE RED', val: kpiPred },
+        { label: 'EQUIPOS AC', val: kpiAc },
+        { label: 'VALORES COBRADOS', val: kpiCobrados }
+    ];
+
+    kpis.forEach((kpi, idx) => {
+        const posX = startX + (idx * stepX);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.text(kpi.label, posX, 44);
+
+        doc.setFontSize(10);
+        doc.setTextColor(15, 23, 42);
+        doc.text(kpi.val, posX, 50);
+    });
+
+    // 4. EXTRAER Y FORMATAR FILAS DE LA TABLA
+    const tableBody = [];
+    const filasTabla = document.querySelectorAll('#tablaActividades tbody tr, #tabla_registros tbody tr');
+
+    filasTabla.forEach(row => {
+        // Ignorar filas de "No se encontraron registros" o invisibles
+        if (row.style.display === 'none' || row.cells.length < 5) return;
+
+        const cols = Array.from(row.cells).map(cell => cell.textContent.trim());
+
+        // Mapear celdas asegurando que no incluya botones de acción
+        tableBody.push([
+            cols[0] || '', // Fecha
+            cols[1] || '', // Cliente
+            cols[2] || '', // Tipo
+            cols[3] || '', // Forma
+            cols[4] || '', // Fibra
+            cols[5] || '', // Excedente
+            cols[6] || '', // Pt. Red
+            cols[7] || '', // AC
+            cols[8] || '', // Total
+            cols[9] || ''  // V. Cobrados
+        ]);
+    });
+
+    // 5. RENDERIZADO DE TABLA CON JSPDF-AUTOTABLE
+    doc.autoTable({
+        startY: 59,
+        head: [['FECHA', 'CLIENTE', 'TIPO', 'FORMA', 'FIBRA', 'EXCEDENTE', 'PT. RED', 'AC', 'TOTAL', 'V. COBRADOS']],
+        body: tableBody,
+        theme: 'grid',
+        styles: {
+            font: 'helvetica',
+            fontSize: 8,
+            cellPadding: 2.5,
+            textColor: [30, 41, 59],
+            valign: 'middle'
+        },
+        headStyles: {
+            fillColor: [15, 23, 42],     // #0f172a
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 8,
+            halign: 'left'
+        },
+        columnStyles: {
+            0: { cellWidth: 22, halign: 'center' }, // Fecha
+            1: { cellWidth: 70 },                  // Cliente
+            2: { cellWidth: 26, halign: 'center' }, // Tipo
+            3: { cellWidth: 32, halign: 'left' },   // Forma
+            4: { cellWidth: 18, halign: 'center' }, // Fibra
+            5: { cellWidth: 28, halign: 'center' }, // Excedente
+            6: { cellWidth: 16, halign: 'center' }, // Pt. Red
+            7: { cellWidth: 14, halign: 'center' }, // AC
+            8: { cellWidth: 22, halign: 'right', fontStyle: 'bold' }, // Total
+            9: { cellWidth: 22, halign: 'right' }   // V. Cobrados
+        },
+        alternateRowStyles: {
+            fillColor: [248, 250, 252] // Zebra striping limpio
+        },
+        margin: { left: 14, right: 14, bottom: 18 },
+        didDrawPage: function (data) {
+            // Pie de página en cada hoja
+            const strPage = `Página ${doc.internal.getNumberOfPages()}`;
+            doc.setFontSize(8);
+            doc.setTextColor(148, 163, 184);
+            doc.text(strPage, 283, 202, { align: 'right' });
+            doc.text('Documento generado automáticamente - Confidencial', 14, 202);
+        }
+    });
+
+    // 6. DESCARGAR EL ARCHIVO PDF
+    const nombreArchivo = `Reporte_Actividades_${fechaDesde}_al_${fechaHasta}.pdf`;
+    doc.save(nombreArchivo);
+}
+
+// Vincular al botón de Reporte PDF
+document.addEventListener('DOMContentLoaded', () => {
+    const btnExportPDF = document.getElementById('btnExportPDF');
+    if (btnExportPDF) {
+        btnExportPDF.addEventListener('click', generarReportePDF);
+    }
+});
+
