@@ -636,6 +636,13 @@ select.form-control {
     }
 }
 
+/* Ajuste de texto de cliente dentro de las tablas de los modales/pop-ups */
+.modal-content table td:nth-child(2) {
+    font-size: 11px !important;    /* 👈 Reduce el tamaño de la letra */
+    font-weight: 400 !important;   /* 👈 Cambia de negrita (600/bold) a normal */
+    color: #334155;                /* 👈 Tono oscuro legible pero suave */
+}
+
 /* Cabecera y cuerpo del modal */
 .modal-header {
     display: flex;
