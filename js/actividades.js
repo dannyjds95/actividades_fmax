@@ -220,9 +220,9 @@ async function cargarActividades() {
                 const cobradoNum = parseFloat(item.act_valores_cobrados || 0);
                 const valorCobradoFormatted = cobradoNum.toFixed(2);
 
-                // Sanitización del detalle para no romper comillas HTML
-                const detalleLimpio = String(item.act_detalle || item.detalle || '')
-                    .replace(/"/g, '&quot;');
+                // Sanitización de atributos HTML
+                const detalleLimpio = String(item.act_detalle || item.detalle || '').replace(/"/g, '&quot;');
+                const tipoLimpio = String(item.act_tipo || 'INSTALACION').replace(/"/g, '&quot;');
 
                 // Sumatorias acumuladas
                 sumActividades += cantAct;
@@ -241,9 +241,9 @@ async function cargarActividades() {
                     ? getBadgeClass(item.act_tipo)
                     : 'badge-default';
 
-                // 🎯 ATENCIÓN: Se agregan 'data-detalle' y 'data-cobrado' a la etiqueta <tr>
+                // 🎯 SE AÑADE 'data-tipo' A LA ETIQUETA <tr> PARA SEPARAR INSTALACIONES Y TRASLADOS EN EXCEL
                 return `
-    <tr data-detalle="${detalleLimpio}" data-cobrado="${valorCobradoFormatted}">
+    <tr data-detalle="${detalleLimpio}" data-cobrado="${valorCobradoFormatted}" data-tipo="${tipoLimpio}">
         <td class="col-fecha text-center">${fechaFormateada}</td>
         <td class="col-cliente">${item.act_cliente || 'N/A'}</td>
         <td class="text-center"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
@@ -901,156 +901,215 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// Función para Generar el Reporte Excel con Estilo Idéntico a la Plantilla
+// Función para Generar el Reporte Excel Dividido en Secciones (Instalaciones y Traslados)
 async function generarReporteExcel() {
     if (!window.ExcelJS) {
-        alert("⚠️ La librería ExcelJS aún se está cargando. Por favor, intenta de nuevo en un segundo.");
+        alert("⚠️ La librería ExcelJS aún se está cargando. Por favor, reintenta en un momento.");
         return;
     }
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('INSTALACIONES');
+    const worksheet = workbook.addWorksheet('REPORTES');
 
-    // 1. Configuración de Ancho de Columnas
+    // 1. Configuración global de ancho de columnas
     worksheet.columns = [
         { key: 'index', width: 8 },      // Columna A (#)
-        { key: 'fecha', width: 22 },     // Columna B (FECHA DE INSTALACIÓN)
+        { key: 'fecha', width: 22 },     // Columna B (FECHA)
         { key: 'cliente', width: 45 },   // Columna C (CLIENTE)
         { key: 'detalle', width: 35 },   // Columna D (DETALLE DE LO COBRADO)
         { key: 'valor', width: 18 }      // Columna E (VALOR COBRADO)
     ];
 
-    // Estilos reutilizables
+    // Estilos de bordes y paletas de colores
     const borderStyle = {
         top: { style: 'thin', color: { argb: 'FF000000' } },
         left: { style: 'thin', color: { argb: 'FF000000' } },
         bottom: { style: 'thin', color: { argb: 'FF000000' } },
         right: { style: 'thin', color: { argb: 'FF000000' } }
     };
-    const fillAzulClaro = {
+
+    // Azul institucional para Instalaciones (#DCE6F1)
+    const fillAzul = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFDCE6F1' } // Azul suave institucional
+        fgColor: { argb: 'FFDCE6F1' }
     };
 
-    // 2. FILA 1: TÍTULO SUPERIOR FUSIONADO
-    worksheet.mergeCells('A1:E1');
-    const titleCell = worksheet.getCell('A1');
-    titleCell.value = 'INSTALACIONES';
-    titleCell.font = { name: 'Calibri', size: 11, bold: true };
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    titleCell.fill = fillAzulClaro;
+    // Verde pastel para Traslados (#E2EFDA)
+    const fillVerde = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE2EFDA' }
+    };
 
-    ['A1', 'B1', 'C1', 'D1', 'E1'].forEach(cellRef => {
-        worksheet.getCell(cellRef).border = borderStyle;
-    });
-
-    // 3. FILA 2: ENCABEZADOS DE COLUMNA
-    const headers = ['#', 'FECHA DE\nINSTALACIÓN', 'CLIENTE', 'DETALLE DE LO COBRADO', 'VALOR\nCOBRADO'];
-    const headerRow = worksheet.addRow(headers);
-    headerRow.height = 28;
-
-    headerRow.eachCell((cell) => {
-        cell.font = { name: 'Calibri', size: 10, bold: true };
-        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        cell.border = borderStyle;
-    });
-
-    // 4. EXTRAER FILAS DESDE LA TABLA
-    let sumaTotalCobrado = 0;
-    let contador = 1;
+    // 2. CLASIFICAR LAS FILAS VISIBLES DE LA TABLA
+    const instalaciones = [];
+    const traslados = [];
+    const otrasActividades = [];
 
     const filasTabla = document.querySelectorAll('tbody tr');
 
     filasTabla.forEach(row => {
-        // Ignorar filas invisibles o mensajes informativos
         if (row.style.display === 'none' || row.cells.length < 5) return;
 
         const cols = Array.from(row.cells).map(cell => cell.textContent.trim().replace(/\s+/g, ' '));
-        
         const fecha = cols[0] || '';
         const cliente = cols[1] || '';
-        
-        // 🎯 CORRECCIÓN CLAVE: Obtener el detalle oculto de la BD en lugar de la celda de botones
-        let detalleTexto = row.getAttribute('data-detalle') || row.dataset.detalle || '';
+
+        // Obtener metadatos desde los atributos data-
+        let tipo = (row.getAttribute('data-tipo') || cols[2] || '').toUpperCase();
+        let detalleTexto = row.getAttribute('data-detalle') || row.dataset.detalle || '---';
         if (!detalleTexto || detalleTexto === 'undefined' || detalleTexto === 'null') {
             detalleTexto = '---';
         }
-        
-        // 🎯 CORRECCIÓN CLAVE: Obtener el valor cobrado desde el atributo oculto o la celda
+
         const rawValor = row.getAttribute('data-cobrado') || row.dataset.cobrado || cols[9] || '0';
         const valorCobrado = parseFloat(String(rawValor).replace(/[^0-9.-]+/g, "")) || 0;
 
-        sumaTotalCobrado += valorCobrado;
+        const itemData = { fecha, cliente, detalle: detalleTexto, valor: valorCobrado };
 
-        // Agregar Fila de Datos
-        const dataRow = worksheet.addRow([
-            contador,
-            fecha,
-            cliente,
-            detalleTexto,
-            valorCobrado
-        ]);
+        if (tipo.includes('INSTALAC')) {
+            instalaciones.push(itemData);
+        } else if (tipo.includes('TRASLAD')) {
+            traslados.push(itemData);
+        } else {
+            otrasActividades.push(itemData);
+        }
+    });
 
-        dataRow.height = 22;
+    // 3. FUNCIÓN AUXILIAR PARA CONSTRUIR CADA TABLA EN EXCEL
+    function construirSeccion(titulo, headerFechaLabel, totalLabel, listaDatos, fillEstilo) {
+        // Dejar espacio de 2 filas si ya existen secciones previas
+        if (worksheet.lastRow && worksheet.lastRow.number > 0) {
+            worksheet.addRow([]);
+            worksheet.addRow([]);
+        }
 
-        // Estilos de Celdas de Datos
-        dataRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }; // #
-        dataRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' }; // Fecha
-        dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' }; // Cliente
-        dataRow.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }; // Detalle
-        
-        // Formato Moneda para Valor Cobrado ($ 8.34)
-        const cellValor = dataRow.getCell(5);
-        cellValor.alignment = { horizontal: 'right', vertical: 'middle' };
-        cellValor.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
+        const startRowIndex = worksheet.lastRow ? worksheet.lastRow.number + 1 : 1;
 
-        // Bordes a la fila
-        dataRow.eachCell({ includeEmpty: true }, (cell) => {
-            cell.font = { name: 'Calibri', size: 10 };
+        // Banner Superior de la Sección
+        worksheet.mergeCells(`A${startRowIndex}:E${startRowIndex}`);
+        const titleCell = worksheet.getCell(`A${startRowIndex}`);
+        titleCell.value = titulo;
+        titleCell.font = { name: 'Calibri', size: 11, bold: true };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        titleCell.fill = fillEstilo;
+
+        ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+            worksheet.getCell(`${col}${startRowIndex}`).border = borderStyle;
+        });
+
+        // Fila de Encabezados
+        const headers = ['#', headerFechaLabel, 'CLIENTE', 'DETALLE DE LO COBRADO', 'VALOR\nCOBRADO'];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.height = 28;
+
+        headerRow.eachCell((cell) => {
+            cell.font = { name: 'Calibri', size: 10, bold: true };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
             cell.border = borderStyle;
         });
 
-        contador++;
-    });
+        // Filas de Datos
+        let sumaSeccion = 0;
 
-    // 5. FILA FINAL DE TOTAL FUSIONADA (Suma Total)
-    const totalRowIndex = worksheet.lastRow ? worksheet.lastRow.number + 1 : 3;
-    
-    worksheet.mergeCells(`A${totalRowIndex}:D${totalRowIndex}`);
-    const labelTotalCell = worksheet.getCell(`A${totalRowIndex}`);
-    labelTotalCell.value = 'TOTAL DE INSTALACIÓN';
-    labelTotalCell.font = { name: 'Calibri', size: 10, bold: true };
-    labelTotalCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    labelTotalCell.fill = fillAzulClaro;
+        if (listaDatos.length === 0) {
+            // Si no hay registros, insertar una fila vacía con bordes
+            const emptyRow = worksheet.addRow(['', '', '', '', 0]);
+            emptyRow.height = 22;
+            emptyRow.getCell(5).numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
+            emptyRow.eachCell({ includeEmpty: true }, (cell) => {
+                cell.font = { name: 'Calibri', size: 10 };
+                cell.border = borderStyle;
+            });
+        } else {
+            listaDatos.forEach((item, idx) => {
+                sumaSeccion += item.valor;
 
-    // Asignar bordes a las celdas de la etiqueta fusionada
-    ['A', 'B', 'C', 'D'].forEach(col => {
-        worksheet.getCell(`${col}${totalRowIndex}`).border = borderStyle;
-        worksheet.getCell(`${col}${totalRowIndex}`).fill = fillAzulClaro;
-    });
+                const dataRow = worksheet.addRow([
+                    idx + 1,
+                    item.fecha,
+                    item.cliente,
+                    item.detalle,
+                    item.valor
+                ]);
 
-    // Celda con el Monto Total Sumado
-    const valueTotalCell = worksheet.getCell(`E${totalRowIndex}`);
-    valueTotalCell.value = sumaTotalCobrado;
-    valueTotalCell.font = { name: 'Calibri', size: 10, bold: true };
-    valueTotalCell.alignment = { horizontal: 'right', vertical: 'middle' };
-    valueTotalCell.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
-    valueTotalCell.fill = fillAzulClaro;
-    valueTotalCell.border = borderStyle;
+                dataRow.height = 22;
 
-    worksheet.getRow(totalRowIndex).height = 24;
+                // Alineaciones
+                dataRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }; // #
+                dataRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' }; // Fecha
+                dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' }; // Cliente
+                dataRow.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }; // Detalle
 
-    // 6. GENERAR Y DESCARGAR EL ARCHIVO EXCEL
+                const cellValor = dataRow.getCell(5);
+                cellValor.alignment = { horizontal: 'right', vertical: 'middle' };
+                cellValor.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
+
+                dataRow.eachCell({ includeEmpty: true }, (cell) => {
+                    cell.font = { name: 'Calibri', size: 10 };
+                    cell.border = borderStyle;
+                });
+            });
+        }
+
+        // Fila Final de Suma Total
+        const totalRowIndex = worksheet.lastRow.number + 1;
+
+        worksheet.mergeCells(`A${totalRowIndex}:D${totalRowIndex}`);
+        const labelTotalCell = worksheet.getCell(`A${totalRowIndex}`);
+        labelTotalCell.value = totalLabel;
+        labelTotalCell.font = { name: 'Calibri', size: 10, bold: true };
+        labelTotalCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        labelTotalCell.fill = fillEstilo;
+
+        ['A', 'B', 'C', 'D'].forEach(col => {
+            worksheet.getCell(`${col}${totalRowIndex}`).border = borderStyle;
+            worksheet.getCell(`${col}${totalRowIndex}`).fill = fillEstilo;
+        });
+
+        const valueTotalCell = worksheet.getCell(`E${totalRowIndex}`);
+        valueTotalCell.value = sumaSeccion;
+        valueTotalCell.font = { name: 'Calibri', size: 10, bold: true };
+        valueTotalCell.alignment = { horizontal: 'right', vertical: 'middle' };
+        valueTotalCell.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
+        valueTotalCell.fill = fillEstilo;
+        valueTotalCell.border = borderStyle;
+
+        worksheet.getRow(totalRowIndex).height = 24;
+    }
+
+    // 4. GENERAR SECCIÓN DE INSTALACIONES
+    construirSeccion(
+        'INSTALACIONES',
+        'FECHA DE\nINSTALACIÓN',
+        'TOTAL DE INSTALACIÓN',
+        instalaciones,
+        fillAzul
+    );
+
+    // 5. GENERAR SECCIÓN DE TRASLADOS
+    construirSeccion(
+        'TRASLADOS',
+        'FECHA DE\nTRASLADOS',
+        'TOTAL DE TRASLADOS',
+        traslados,
+        fillVerde
+    );
+
+    // Si existen otras actividades (Visitas, Conectores, etc.)
+    if (otrasActividades.length > 0) {
+        construirSeccion(
+            'OTRAS ACTIVIDADES',
+            'FECHA DE\nACTIVIDAD',
+            'TOTAL DE OTRAS ACTIVIDADES',
+            otrasActividades,
+            fillAzul
+        );
+    }
+
+    // 6. DESCARGAR EL ARCHIVO EXCEL
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `Reporte_Instalaciones_${new Date().toISOString().split('T')[0]}.xlsx`);
+    saveAs(blob, `Reporte_Actividades_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
-
-// Vincular al botón de Reporte Excel
-document.addEventListener('DOMContentLoaded', () => {
-    const btnExportExcel = document.getElementById('btnExportExcel');
-    if (btnExportExcel) {
-        btnExportExcel.addEventListener('click', generarReporteExcel);
-    }
-});
