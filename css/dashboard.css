@@ -434,3 +434,119 @@ html, body {
         font-size: 16px;
     }
 }
+
+/* ==========================================
+   TARJETA CENTRADA: DETALLE DE ACTIVIDADES
+   ========================================== */
+
+.section-centered-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 20px 0;
+    box-sizing: border-box;
+}
+
+/* Tarjeta contenedora blanca */
+.section-centered-container .card-dashboard {
+    width: 100%;
+    max-width: 700px; /* Ancho máximo elegante y centrado */
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    box-sizing: border-box;
+}
+
+.card-header-bar {
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+/* Lista contenedora */
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Elementos generados por JS */
+.activity-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 10px;
+    border-radius: 10px;
+    border-bottom: 1px solid #f8fafc;
+    transition: background-color 0.2s ease;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-item:hover {
+    background-color: #f8fafc;
+}
+
+/* Lado izquierdo (Badge + Cantidad) */
+.activity-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.activity-qty {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Lado derecho (Monto Azul) */
+.activity-amount {
+    font-size: 17px;
+    font-weight: 800;
+    color: #2563eb;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+}
+
+/* Badges redondeados */
+.badge-tipo {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.badge-instalacion { background-color: #dbeafe; color: #1e40af; }
+.badge-traslado    { background-color: #fef3c7; color: #b45309; }
+.badge-visita      { background-color: #dcfce7; color: #15803d; }
+.badge-default     { background-color: #f1f5f9; color: #475569; }
+
+/* Responsive para celulares */
+@media (max-width: 600px) {
+    .section-centered-container .card-dashboard {
+        padding: 16px;
+    }
+    
+    .activity-item {
+        padding: 10px 6px;
+    }
+    
+    .activity-amount {
+        font-size: 15px;
+    }
+}
