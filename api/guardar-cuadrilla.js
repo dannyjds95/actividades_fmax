@@ -1,11 +1,16 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
+    // Cabeceras CORS completas para peticiones desde Live Server (127.0.0.1)
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    );
 
+    // Responder OK inmediatamente al preflight (OPTIONS)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -32,13 +37,11 @@ module.exports = async (req, res) => {
         });
 
         if (cuad_id) {
-            // Actualizar cuadrilla existente
             await connection.execute(
                 `UPDATE cuadrilla SET cuad_nombre = ?, cuad_sector = ? WHERE cuad_id = ?`,
                 [cuad_nombre, cuad_sector || null, cuad_id]
             );
         } else {
-            // Crear nueva cuadrilla
             await connection.execute(
                 `INSERT INTO cuadrilla (cuad_nombre, cuad_sector, fecha_creacion) VALUES (?, ?, NOW())`,
                 [cuad_nombre, cuad_sector || null]
@@ -49,7 +52,7 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Error DB:', error);
-        return res.status(500).json({ status: 'error', message: error.message || 'Error al procesar en la base de datos' });
+        return res.status(500).json({ status: 'error', message: error.message || 'Error en la base de datos' });
     } finally {
         if (connection) await connection.end();
     }
