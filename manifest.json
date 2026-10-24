@@ -3,7 +3,7 @@
   "name": "Gestión de Actividades FMAX",
   "icons": [
     {
-      "src": "image/logo.png",
+      "src": "../image/logo.png",
       "sizes": "192x192 512x512",
       "type": "image/png",
       "purpose": "any maskable"
