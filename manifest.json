@@ -3,14 +3,14 @@
   "name": "Gestión de Actividades",
   "icons": [
     {
-      "src": "./actividades_fmax/image/logo.png",
+      "src": "/actividades_fmax/image/logo.png",
       "sizes": "192x192 512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "start_url": "./actividades_fmax/index.html",
-  "scope": "./actividades_fmax/",
+  "start_url": "/actividades_fmax/index.html",
+  "scope": "/actividades_fmax/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#2563eb",
