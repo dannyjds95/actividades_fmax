@@ -341,7 +341,7 @@
    2. TARJETA INFERIOR (GRILLA DE FILTROS)
    =================================================== */
 .filter-card {
-    background: #ffffff;
+    background: #ebebeb;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 18px 20px;
@@ -498,7 +498,7 @@ select.form-control {
    TARJETA DE RESUMEN / TOTALES FILTRADOS
    =================================================== */
 .summary-card {
-    background: #ffffff;
+    background: #f3f3f3;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 16px 20px;
