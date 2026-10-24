@@ -19,7 +19,8 @@
         <!-- MENÚ LATERAL (SIDEBAR) -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;" onerror="this.style.display='none'">
+                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;"
+                    onerror="this.style.display='none'">
                 <h2 id="userName">FMAX</h2>
             </div>
 
@@ -54,7 +55,8 @@
             <!-- ENCABEZADO SUPERIOR -->
             <header class="topbar">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Toggle Sidebar">☰</button>
+                    <button type="button" id="toggleSidebar" class="toggle-sidebar-btn"
+                        aria-label="Toggle Sidebar">☰</button>
                     <h2 style="color: var(--primary-color); margin: 0;">Panel de Administración</h2>
                 </div>
 
@@ -78,17 +80,21 @@
                 <div id="alert" class="alert hidden" style="max-width: 1000px; margin: 0 auto 1rem auto;"></div>
 
                 <!-- PESTAÑAS DE NAVEGACIÓN -->
-                <div class="tabs-container" style="max-width: 1000px; margin: 0 auto 1.5rem auto; display: flex; gap: 10px;">
+                <div class="tabs-container"
+                    style="max-width: 1000px; margin: 0 auto 1.5rem auto; display: flex; gap: 10px;">
                     <button type="button" id="tabCuadrillas" class="tab-btn active-tab">🛠️ Cuadrillas</button>
                     <button type="button" id="tabUsuarios" class="tab-btn">👥 Usuarios</button>
                 </div>
 
                 <!-- ==================== SECCIÓN 1: CRUD CUADRILLAS ==================== -->
                 <section id="secCuadrillas" class="admin-section" style="max-width: 1000px; margin: 0 auto;">
-                    <div class="card" style="background: var(--card-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div class="card"
+                        style="background: var(--card-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md);">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                             <h3 style="margin: 0; color: var(--primary-color);">Gestión de Cuadrillas</h3>
-                            <button type="button" id="btnNuevaCuadrilla" class="btn btn-primary">+ Nueva Cuadrilla</button>
+                            <button type="button" id="btnNuevaCuadrilla" class="btn btn-primary">+ Nueva
+                                Cuadrilla</button>
                         </div>
 
                         <div class="table-responsive">
@@ -98,12 +104,14 @@
                                         <th>ID</th>
                                         <th>Nombre de Cuadrilla</th>
                                         <th>Sector</th>
-                                        <th>Fecha Creación</th>
                                         <th style="text-align: center;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyCuadrillas">
-                                    <tr><td colspan="5" style="text-align: center; padding: 1rem;">Cargando cuadrillas...</td></tr>
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; padding: 1rem;">Cargando
+                                            cuadrillas...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -112,8 +120,10 @@
 
                 <!-- ==================== SECCIÓN 2: CRUD USUARIOS ==================== -->
                 <section id="secUsuarios" class="admin-section hidden" style="max-width: 1000px; margin: 0 auto;">
-                    <div class="card" style="background: var(--card-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div class="card"
+                        style="background: var(--card-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md);">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                             <h3 style="margin: 0; color: var(--primary-color);">Gestión de Usuarios</h3>
                             <button type="button" id="btnNuevoUsuario" class="btn btn-primary">+ Nuevo Usuario</button>
                         </div>
@@ -132,7 +142,10 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyUsuarios">
-                                    <tr><td colspan="7" style="text-align: center; padding: 1rem;">Cargando usuarios...</td></tr>
+                                    <tr>
+                                        <td colspan="7" style="text-align: center; padding: 1rem;">Cargando usuarios...
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>

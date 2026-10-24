@@ -19,9 +19,10 @@ module.exports = async (req, res) => {
             ssl: { rejectUnauthorized: false }
         });
 
-        // 🎯 Incluimos cuad_sector y fecha_creacion
         const [cuadrillas] = await connection.execute(
-            `SELECT cuad_id, cuad_nombre, cuad_sector, fecha_creacion FROM cuadrilla ORDER BY cuad_id ASC`
+            `SELECT cuad_id, cuad_nombre, COALESCE(cuad_sector, 'Sin Sector') AS cuad_sector 
+             FROM cuadrilla 
+             ORDER BY cuad_id ASC`
         );
 
         return res.status(200).json({ status: 'success', cuadrillas });

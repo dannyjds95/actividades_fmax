@@ -43,44 +43,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // CUADRILLAS
     // ==========================================
-    async function cargarCuadrillas() {
-        const tbody = document.getElementById('tbodyCuadrillas');
-        const selectModalUser = document.getElementById('usr_cuad_id');
+async function cargarCuadrillas() {
+    const tbody = document.getElementById('tbodyCuadrillas');
+    const selectModalUser = document.getElementById('usr_cuad_id');
 
-        try {
-            const res = await fetch(API_CUADRILLAS);
-            if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+    try {
+        const res = await fetch(API_CUADRILLAS);
+        if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
 
-            const data = await res.json();
+        const data = await res.json();
 
-            if (data.status === 'success' && Array.isArray(data.cuadrillas)) {
-                listaCuadrillas = data.cuadrillas;
+        if (data.status === 'success' && Array.isArray(data.cuadrillas)) {
+            listaCuadrillas = data.cuadrillas;
 
-                tbody.innerHTML = listaCuadrillas.map(c => `
-                    <tr>
-                        <td><strong>#${c.cuad_id}</strong></td>
-                        <td>${c.cuad_nombre}</td>
-                        <td>${c.cuad_sector || 'N/A'}</td>
-                        <td>${c.fecha_creacion ? c.fecha_creacion.split('T')[0] : 'N/A'}</td>
-                        <td style="text-align: center;">
-                            <button class="btn-action edit" onclick="editarCuadrilla(${c.cuad_id})">✏️</button>
-                            <button class="btn-action delete" onclick="eliminarCuadrilla(${c.cuad_id})">🗑️</button>
-                        </td>
-                    </tr>
-                `).join('');
+            tbody.innerHTML = listaCuadrillas.map(c => `
+                <tr>
+                    <td><strong>#${c.cuad_id}</strong></td>
+                    <td>${c.cuad_nombre}</td>
+                    <td>${c.cuad_sector || 'Sin Sector'}</td>
+                    <td style="text-align: center;">
+                        <button class="btn-action edit" onclick="editarCuadrilla(${c.cuad_id})">✏️</button>
+                        <button class="btn-action delete" onclick="eliminarCuadrilla(${c.cuad_id})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
 
-                if (selectModalUser) {
-                    selectModalUser.innerHTML = '<option value="">Seleccione...</option>' +
-                        listaCuadrillas.map(c => `<option value="${c.cuad_id}">${c.cuad_nombre}</option>`).join('');
-                }
-            } else {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay cuadrillas registradas.</td></tr>';
+            if (selectModalUser) {
+                selectModalUser.innerHTML = '<option value="">Seleccione...</option>' +
+                    listaCuadrillas.map(c => `<option value="${c.cuad_id}">${c.cuad_nombre}</option>`).join('');
             }
-        } catch (err) {
-            console.error(err);
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error al cargar cuadrillas.</td></tr>';
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay cuadrillas registradas.</td></tr>';
         }
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Error al cargar cuadrillas.</td></tr>';
     }
+}
 
     // Modal Cuadrilla
     const modalCuadrilla = document.getElementById('modalCuadrilla');
