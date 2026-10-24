@@ -14,8 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let listaCuadrillas = [];
     let listaUsuarios = [];
+    let usuariosCargados = false;
 
-    // Control de Pestañas
+    // Cargar cuadrillas inmediatamente
+    cargarCuadrillas();
+
+    // Cambiar de pestaña (Carga usuarios solo cuando se presione la pestaña Usuarios)
     if (tabCuadrillas && tabUsuarios) {
         tabCuadrillas.addEventListener('click', () => {
             tabCuadrillas.classList.add('active-tab');
@@ -29,11 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
             tabCuadrillas.classList.remove('active-tab');
             secUsuarios.classList.remove('hidden');
             secCuadrillas.classList.add('hidden');
+
+            if (!usuariosCargados) {
+                cargarUsuarios();
+            }
         });
     }
-
-    cargarCuadrillas();
-    cargarUsuarios();
 
     // ==========================================
     // CUADRILLAS
@@ -77,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Modal Guardar Cuadrilla
+    // Modal Cuadrilla
     const modalCuadrilla = document.getElementById('modalCuadrilla');
     const btnNuevaCuadrilla = document.getElementById('btnNuevaCuadrilla');
 
@@ -117,9 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(body)
             });
 
-            if (!res.ok) {
-                throw new Error(`El endpoint backend respondió con error ${res.status}. Asegúrate de desplegar api/guardar-cuadrilla.js en Vercel.`);
-            }
+            if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
 
             const data = await res.json();
 
@@ -132,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.error(err);
-            showAlert(err.message || 'Error al conectar con el servidor', 'alert-error');
+            showAlert('Error al conectar con el servidor', 'alert-error');
         }
     });
 
@@ -165,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
 
             if (data.status === 'success' && Array.isArray(data.usuarios)) {
+                usuariosCargados = true;
                 listaUsuarios = data.usuarios;
                 tbody.innerHTML = listaUsuarios.map(u => `
                     <tr>
@@ -184,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay usuarios registrados.</td></tr>';
             }
         } catch (err) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">Módulo de usuarios pendiente de despliegue en backend.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">Endpoint de usuarios aún no desplegado en Vercel.</td></tr>';
         }
     }
 

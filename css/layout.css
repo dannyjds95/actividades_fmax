@@ -367,3 +367,51 @@ body.sidebar-collapsed .main-content {
     margin-left: 70px;
     width: calc(100% - 70px);
 }
+
+/* ==========================================
+   CORRECCIÓN RESPONSIVA PARA MÓVILES (≤ 768px)
+   ========================================== */
+
+@media (max-width: 768px) {
+    /* 1. Forzar al contenedor principal a ocupar todo el ancho sin márgenes */
+    .main-content,
+    .sidebar.collapsed + .main-content,
+    .app-layout:has(.sidebar.collapsed) .main-content,
+    .app-layout.sidebar-collapsed .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    /* 2. Ocultar el menú lateral fuera de pantalla por defecto */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 260px;
+        height: 100vh;
+        transform: translateX(-100%); /* Oculto a la izquierda */
+        transition: transform 0.3s ease-in-out;
+        z-index: 1100;
+    }
+
+    /* 3. Desplegar el menú cuando esté activo al presionar ☰ */
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 4. Ajustes del área de contenido para evitar desbordamientos */
+    .content-body {
+        padding: 12px !important;
+    }
+
+    /* 5. Asegurar que las tarjetas tomen el ancho completo */
+    .card, 
+    .form-section, 
+    .table-responsive {
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+}
