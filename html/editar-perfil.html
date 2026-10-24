@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Perfil - Actividades FMAX</title>
+    <link rel="icon" type="image/png" href="../image/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/Formularios.css">
     <link rel="stylesheet" href="../css/layout.css">
@@ -12,126 +13,194 @@
 </head>
 
 <body>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    
+    <div class="app-layout">
+        <!-- MENÚ LATERAL (SIDEBAR) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;"
+                    onerror="this.style.display='none'">
+                <h2 id="userName">FMAX</h2>
+            </div>
 
-    <div class="edit-profile-container">
-        <!-- Cabecera -->
-        <div class="page-header">
-            <a href="perfil.html" class="back-link">&larr; Volver al Perfil</a>
-            <p class="page-subtitle">Modifica los datos personales y asignación de tarifas del usuario.</p>
-        </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="actividades.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Actividades</span>
+                </a>
+                <a href="perfil.html" class="nav-item active">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Mi Perfil</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Configuración</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button type="button" id="btnLogout" class="nav-item btn-logout-sidebar">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-label">Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
 
-        <!-- Mensaje de Alerta -->
-        <div id="alert" class="alert hidden"></div>
-
-        <form id="editForm">
-            <!-- Sección 1: Datos Personales -->
-            <div class="form-section">
-                <div class="section-header">
-                    <span class="section-icon">👤</span>
-                    <h3>Datos Personales</h3>
+        <!-- ÁREA PRINCIPAL -->
+        <main class="main-content">
+            <!-- ENCABEZADO SUPERIOR -->
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Toggle Sidebar">
+                        ☰
+                    </button>
+                    <h2 style="color: var(--primary-color); margin: 0;">Editar Perfil</h2>
                 </div>
 
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="nombre">Nombre Completo</label>
-                        <input type="text" id="nombre" placeholder="Ej. Daniel Cuñez" required>
-                    </div>
+                <div class="user-menu-container">
+                    <button type="button" id="userMenuBtn" class="user-menu-btn">
+                        <span id="userName">Perfil</span>
+                        <span class="arrow">▼</span>
+                    </button>
 
-                    <div class="form-group">
-                        <label for="cedula">Cédula de Identidad</label>
-                        <input type="text" id="cedula" placeholder="Ej. 1712345678" required>
+                    <div id="userDropdown" class="dropdown-menu hidden">
+                        <a href="perfil.html" class="dropdown-item">Mi perfil</a>
+                        <a href="editar-perfil.html" class="dropdown-item">Editar Información</a>
+                        <a href="cambiar-credenciales.html" class="dropdown-item">Cambiar contraseña</a>
+                        <hr class="dropdown-divider">
+                        <button type="button" id="btnLogout" class="dropdown-item btn-logout">Cerrar sesión</button>
                     </div>
+                </div>
+            </header>
 
-                    <div class="form-group">
-                        <label for="telefono">Teléfono</label>
-                        <input type="text" id="telefono" placeholder="Ej. 0998877665">
-                    </div>
+            <!-- CUERPO DE LA PÁGINA -->
+            <div class="content-body">
+                <div class="edit-profile-container">
 
-                    <!-- 🎯 Desplegable de Cargo -->
-                    <div class="form-group">
-                        <label for="cargo">Cargo</label>
-                        <select id="cargo" class="custom-select" required>
-                            <option value="">Seleccione un cargo...</option>
-                            <option value="TECNICO">TECNICO</option>
-                            <option value="AYUDANTE">AYUDANTE</option>
-                        </select>
-                    </div>
+                    <!-- Mensaje de Alerta -->
+                    <div id="alert" class="alert hidden"></div>
 
-                    <!-- 🎯 Desplegable de Cuadrilla (Carga desde BD) -->
-                    <div class="form-group">
-                        <label for="cuad_id">Cuadrilla Asignada</label>
-                        <select id="cuad_id" class="custom-select" required>
-                            <option value="">Cargando cuadrillas...</option>
-                        </select>
-                    </div>
+                    <form id="editForm">
+                        <!-- Sección 1: Datos Personales -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <span class="section-icon">👤</span>
+                                <h3>Datos Personales</h3>
+                            </div>
 
-                    <div class="form-group full-width">
-                        <label for="direccion">Dirección</label>
-                        <input type="text" id="direccion" placeholder="Ej. Av. Principal 123">
-                    </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="nombre">Nombre Completo</label>
+                                    <input type="text" id="nombre" placeholder="Ej. Daniel Cuñez" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cedula">Cédula de Identidad</label>
+                                    <input type="text" id="cedula" placeholder="Ej. 1712345678" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="telefono">Teléfono</label>
+                                    <input type="text" id="telefono" placeholder="Ej. 0998877665">
+                                </div>
+
+                                <!-- Desplegable de Cargo -->
+                                <div class="form-group">
+                                    <label for="cargo">Cargo</label>
+                                    <select id="cargo" class="custom-select" required>
+                                        <option value="">Seleccione un cargo...</option>
+                                        <option value="TECNICO">TECNICO</option>
+                                        <option value="AYUDANTE">AYUDANTE</option>
+                                    </select>
+                                </div>
+
+                                <!-- Desplegable de Cuadrilla -->
+                                <div class="form-group">
+                                    <label for="cuad_id">Cuadrilla Asignada</label>
+                                    <select id="cuad_id" class="custom-select" required>
+                                        <option value="">Cargando cuadrillas...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="direccion">Dirección</label>
+                                    <input type="text" id="direccion" placeholder="Ej. Av. Principal 123">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sección 2: Valores y Tarifas -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <span class="section-icon">💵</span>
+                                <h3>Valores y Tarifas</h3>
+                            </div>
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="valor_act">Valor Actividad</label>
+                                    <div class="input-prefix-wrapper">
+                                        <span class="input-prefix">$</span>
+                                        <input type="number" step="0.01" id="valor_act" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="valor_visita">Valor Visita</label>
+                                    <div class="input-prefix-wrapper">
+                                        <span class="input-prefix">$</span>
+                                        <input type="number" step="0.01" id="valor_visita" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="valor_pred">Valor Punto de Red</label>
+                                    <div class="input-prefix-wrapper">
+                                        <span class="input-prefix">$</span>
+                                        <input type="number" step="0.01" id="valor_pred" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="valor_ac">Valor Instalación AC</label>
+                                    <div class="input-prefix-wrapper">
+                                        <span class="input-prefix">$</span>
+                                        <input type="number" step="0.01" id="valor_ac" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="valor_exc">Valor Excedente</label>
+                                    <div class="input-prefix-wrapper">
+                                        <span class="input-prefix">$</span>
+                                        <input type="number" step="0.01" id="valor_exc" placeholder="0.00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="form-actions">
+                            <a href="perfil.html" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
-            <!-- Sección 2: Valores y Tarifas -->
-            <div class="form-section">
-                <div class="section-header">
-                    <span class="section-icon">💵</span>
-                    <h3>Valores y Tarifas</h3>
-                </div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="valor_act">Valor Actividad</label>
-                        <div class="input-prefix-wrapper">
-                            <span class="input-prefix">$</span>
-                            <input type="number" step="0.01" id="valor_act" placeholder="0.00">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="valor_visita">Valor Visita</label>
-                        <div class="input-prefix-wrapper">
-                            <span class="input-prefix">$</span>
-                            <input type="number" step="0.01" id="valor_visita" placeholder="0.00">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="valor_pred">Valor Punto de Red</label>
-                        <div class="input-prefix-wrapper">
-                            <span class="input-prefix">$</span>
-                            <input type="number" step="0.01" id="valor_pred" placeholder="0.00">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="valor_ac">Valor Instalación AC</label>
-                        <div class="input-prefix-wrapper">
-                            <span class="input-prefix">$</span>
-                            <input type="number" step="0.01" id="valor_ac" placeholder="0.00">
-                        </div>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="valor_exc">Valor Excedente</label>
-                        <div class="input-prefix-wrapper">
-                            <span class="input-prefix">$</span>
-                            <input type="number" step="0.01" id="valor_exc" placeholder="0.00">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Botones de Acción -->
-            <div class="form-actions">
-                <a href="perfil.html" class="btn btn-secondary">Cancelar</a>
-                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-            </div>
-        </form>
+            <!-- PIE DE PÁGINA -->
+            <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); margin-top: auto;">
+                <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
+            </footer>
+        </main>
     </div>
-    <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted);">
-        <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
-    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="../js/auth.js"></script>
     <script src="../js/editar-perfil.js"></script>
     <script src="../js/layout.js"></script>
 </body>

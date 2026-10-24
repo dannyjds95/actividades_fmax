@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración - Actividades FMAX</title>
+    <link rel="icon" type="image/png" href="../image/logo.png">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/Formularios.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <div class="app-layout">
+        <!-- MENÚ LATERAL (SIDEBAR) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;" onerror="this.style.display='none'">
+                <h2 id="userName">FMAX</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="actividades.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Actividades</span>
+                </a>
+                <a href="perfil.html" class="nav-item">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Mi Perfil</span>
+                </a>
+                <a href="administracion.html" class="nav-item active">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Administración</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button type="button" id="btnLogout" class="nav-item btn-logout-sidebar">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-label">Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL -->
+        <main class="main-content">
+            <!-- ENCABEZADO SUPERIOR -->
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Toggle Sidebar">☰</button>
+                    <h2 style="color: var(--primary-color); margin: 0;">Panel de Administración</h2>
+                </div>
+
+                <div class="user-menu-container">
+                    <button type="button" id="userMenuBtn" class="user-menu-btn">
+                        <span id="headerUserName">Perfil</span>
+                        <span class="arrow">▼</span>
+                    </button>
+                    <div id="userDropdown" class="dropdown-menu hidden">
+                        <a href="perfil.html" class="dropdown-item">Mi perfil</a>
+                        <a href="editar-perfil.html" class="dropdown-item">Editar Información</a>
+                        <a href="cambiar-credenciales.html" class="dropdown-item">Cambiar contraseña</a>
+                        <hr class="dropdown-divider">
+                        <button type="button" class="dropdown-item btn-logout">Cerrar sesión</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- CUERPO DE LA PÁGINA -->
+            <div class="content-body">
+                <div id="alert" class="alert hidden" style="max-width: 1000px; margin: 0 auto 1rem auto;"></div>
+
+                <!-- PESTAÑAS DE NAVEGACIÓN -->
+                <div class="tabs-container" style="max-width: 1000px; margin: 0 auto 1.5rem auto; display: flex; gap: 10px;">
+                    <button type="button" id="tabCuadrillas" class="tab-btn active-tab">🛠️ Cuadrillas</button>
+                    <button type="button" id="tabUsuarios" class="tab-btn">👥 Usuarios</button>
+                </div>
+
+                <!-- ==================== SECCIÓN 1: CRUD CUADRILLAS ==================== -->
+                <section id="secCuadrillas" class="admin-section" style="max-width: 1000px; margin: 0 auto;">
+                    <div class="card" style="background: var(--card-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h3 style="margin: 0; color: var(--primary-color);">Gestión de Cuadrillas</h3>
+                            <button type="button" id="btnNuevaCuadrilla" class="btn btn-primary">+ Nueva Cuadrilla</button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="custom-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre de Cuadrilla</th>
+                                        <th>Sector</th>
+                                        <th>Fecha Creación</th>
+                                        <th style="text-align: center;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyCuadrillas">
+                                    <tr><td colspan="5" style="text-align: center; padding: 1rem;">Cargando cuadrillas...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== SECCIÓN 2: CRUD USUARIOS ==================== -->
+                <section id="secUsuarios" class="admin-section hidden" style="max-width: 1000px; margin: 0 auto;">
+                    <div class="card" style="background: var(--card-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h3 style="margin: 0; color: var(--primary-color);">Gestión de Usuarios</h3>
+                            <button type="button" id="btnNuevoUsuario" class="btn btn-primary">+ Nuevo Usuario</button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="custom-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Usuario</th>
+                                        <th>Cargo</th>
+                                        <th>Cuadrilla</th>
+                                        <th>Estado</th>
+                                        <th style="text-align: center;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyUsuarios">
+                                    <tr><td colspan="7" style="text-align: center; padding: 1rem;">Cargando usuarios...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); margin-top: auto;">
+                <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
+            </footer>
+        </main>
+    </div>
+
+    <!-- ==================== MODAL CUADRILLA ==================== -->
+    <div id="modalCuadrilla" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 id="modalCuadrillaTitle">Nueva Cuadrilla</h3>
+            <form id="formCuadrilla">
+                <input type="hidden" id="cuad_id_edit">
+                <div class="form-group">
+                    <label for="cuad_nombre_input">Nombre de la Cuadrilla</label>
+                    <input type="text" id="cuad_nombre_input" placeholder="Ej. WILMER CHICANGO" required>
+                </div>
+                <div class="form-group">
+                    <label for="cuad_sector_input">Sector Asignado</label>
+                    <input type="text" id="cuad_sector_input" placeholder="Ej. Sector Norte" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary btn-close-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL USUARIO ==================== -->
+    <div id="modalUsuario" class="modal-overlay hidden">
+        <div class="modal-card modal-large">
+            <h3 id="modalUsuarioTitle">Nuevo Usuario</h3>
+            <form id="formUsuario">
+                <input type="hidden" id="user_id_edit">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="usr_nombre">Nombre Completo</label>
+                        <input type="text" id="usr_nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="usr_ci">Cédula</label>
+                        <input type="text" id="usr_ci" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="usr_usuario">Usuario Acceso</label>
+                        <input type="text" id="usr_usuario" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="usr_password">Contraseña</label>
+                        <input type="password" id="usr_password" placeholder="Solo completar si cambia/crea">
+                    </div>
+                    <div class="form-group">
+                        <label for="usr_cargo">Cargo</label>
+                        <select id="usr_cargo" required>
+                            <option value="TECNICO">TECNICO</option>
+                            <option value="AYUDANTE">AYUDANTE</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="usr_cuad_id">Cuadrilla</label>
+                        <select id="usr_cuad_id" required>
+                            <option value="">Seleccione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="usr_empresa">Empresa</label>
+                        <select id="usr_empresa" required>
+                            <option value="1">Soluciones Tecnológicas S.A.</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="usr_telefono">Teléfono</label>
+                        <input type="text" id="usr_telefono">
+                    </div>
+                </div>
+                <div class="modal-actions" style="margin-top: 1rem;">
+                    <button type="button" class="btn btn-secondary btn-close-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="../js/auth.js"></script>
+    <script src="../js/administracion.js"></script>
+    <script src="../js/layout.js"></script>
+</body>
+
+</html>

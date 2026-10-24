@@ -230,3 +230,140 @@
     justify-content: center;
     padding: 12px 0;
 }
+
+/* ==========================================
+   ELIMINAR ESPACIO SUPERIOR (RESET DE MARGENES)
+   ========================================== */
+
+/* 1. Elimina el margen por defecto del navegador */
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box;
+}
+
+/* 2. Asegura que el contenedor principal pegue a la parte superior */
+.app-layout {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 100vh;
+}
+
+/* 3. Elimina margenes superiores en el contenido y la barra superior */
+.main-content {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.topbar {
+    margin-top: 0 !important;
+    border-radius: 0 !important; /* Asegura bordes rectos pegados al techo */
+}
+
+/* ==========================================
+   MENÚ LATERAL FIJO Y CONTENIDO SCROLLABLE
+   ========================================== */
+
+/* 1. Estructura principal flex */
+.app-layout {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* 2. Sidebar fijo en la pantalla */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px; /* Ancho de tu menú lateral */
+    height: 100vh; /* Ocupa todo el alto de la ventana */
+    overflow-y: auto; /* Permite desplazamiento interno si el menú es largo */
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+/* 3. Área principal empujada hacia la derecha */
+.main-content {
+    margin-left: 260px; /* Coincide exactamente con el ancho del sidebar */
+    width: calc(100% - 260px);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+/* 4. Mantiene la barra superior fija o alineada al tope */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    background: #ffffff;
+}
+
+/* 5. Adaptación para dispositivos móviles */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+/* ==========================================
+   ESTRUCTURA DE SIDEBAR Y MAIN CONTENT
+   ========================================== */
+
+/* Estado normal (Expandido) */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    z-index: 1000;
+    transition: width 0.3s ease; /* Transición suave al encoger */
+}
+
+.main-content {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    min-height: 100vh;
+    transition: margin-left 0.3s ease, width 0.3s ease; /* Se adapta cuando el sidebar cambia */
+}
+
+/* ==========================================
+   ESTADO COLAPSADO / RETRAÍDO
+   ========================================== */
+
+/* Cuando la clase .collapsed está en el sidebar */
+.sidebar.collapsed {
+    width: 70px;
+}
+
+/* Ajuste automático de main-content al colapsar */
+.sidebar.collapsed + .main-content,
+.app-layout:has(.sidebar.collapsed) .main-content {
+    margin-left: 70px;
+    width: calc(100% - 70px);
+}
+
+/* Respaldo: Si la clase colapsada se añade en app-layout o body */
+.app-layout.sidebar-collapsed .sidebar,
+body.sidebar-collapsed .sidebar {
+    width: 70px;
+}
+
+.app-layout.sidebar-collapsed .main-content,
+body.sidebar-collapsed .main-content {
+    margin-left: 70px;
+    width: calc(100% - 70px);
+}
