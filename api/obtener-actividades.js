@@ -3,15 +3,14 @@ const mysql = require('mysql2/promise');
 module.exports = async (req, res) => {
     // Cabeceras CORS y Content-Type
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // 1. Extraer 'cliente' (o 'sector' como alternativa) de la URL
-    const { inicio, fin, tipo, cliente, sector, cobradas } = req.query;
+    // 1. Extraer parámetros de filtrado (incluyendo datos de sesión: user_id y user_cargo)
+    const { inicio, fin, tipo, cliente, sector, cobradas, user_id, user_cargo } = req.query;
 
     let connection;
     try {
@@ -27,26 +26,41 @@ module.exports = async (req, res) => {
         let conditions = [];
         let params = [];
 
-        // 2. Filtro de Rango de Fechas
+        // 2. Filtro de Seguridad por Usuario / Cargo
+        if (user_cargo !== 'ADMINISTRADOR' && user_cargo !== 'SUPERVISOR') {
+            // Usuarios normales (Técnicos, Ayudantes): solo ven sus propias actividades
+            if (user_id && user_id !== 'null' && user_id !== 'undefined') {
+                conditions.push('a.user_id = ?');
+                params.push(user_id);
+            }
+        } else {
+            // Administradores y Supervisores: ven todo, o filtran por un usuario opcional
+            if (user_id && user_id !== 'TODOS' && user_id !== 'null' && user_id !== 'undefined') {
+                conditions.push('a.user_id = ?');
+                params.push(user_id);
+            }
+        }
+
+        // 3. Filtro de Rango de Fechas
         if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
             conditions.push('a.act_fecha BETWEEN ? AND ?');
             params.push(inicio, fin);
         }
 
-        // 3. Filtro por Tipo (INSTALACION, TRASLADO, VISITA)
+        // 4. Filtro por Tipo (INSTALACION, TRASLADO, VISITA)
         if (tipo && tipo !== 'TODOS' && tipo.trim() !== '') {
             conditions.push('a.act_tipo = ?');
             params.push(tipo);
         }
 
-        // 4. Búsqueda por Nombre de Cliente (Soporta 'cliente' o 'sector')
+        // 5. Búsqueda por Nombre de Cliente (Soporta 'cliente' o 'sector')
         const terminoCliente = (cliente || sector || '').trim();
         if (terminoCliente !== '') {
             conditions.push('a.act_cliente LIKE ?');
             params.push(`%${terminoCliente}%`);
         }
 
-        // 5. Filtro por Valores Cobrados
+        // 6. Filtro por Valores Cobrados
         if (cobradas === 'si') {
             conditions.push('CAST(COALESCE(a.act_valores_cobrados, 0) AS DECIMAL(10,2)) > 0');
         } else if (cobradas === 'no') {
@@ -55,7 +69,7 @@ module.exports = async (req, res) => {
 
         const whereClause = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
 
-        // 🔍 Consulta con LEFT JOIN para obtener el campo 'cuad_nombre' de la tabla 'cuadrilla'
+        // 🔍 Consulta SQL con LEFT JOIN para obtener el campo 'cuad_nombre'
         const query = `
             SELECT a.*, c.cuad_nombre 
             FROM actividad_detalle a 

@@ -3,7 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertDiv = document.getElementById('alert');
     const btnSubmit = loginForm ? loginForm.querySelector('button[type="submit"]') : null;
 
-    const API_URL = 'https://actividades-fmax-9ysb.vercel.app/api/login'; 
+    // Base URL adaptativa
+    const isVercel = window.location.hostname.includes('vercel.app');
+    const BASE_URL = isVercel ? '' : 'https://actividades-fmax-9ysb.vercel.app';
+    const API_URL = `${BASE_URL}/api/login`; 
 
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
@@ -42,13 +45,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.ok && data.status === 'success') {
                     showAlert(data.message || '¡Inicio de sesión exitoso!', 'alert-success');
 
-                    localStorage.setItem('usuario_sesion', JSON.stringify(data.user));
+                    // Obtener objeto de usuario (soporta propiedad user o usuario)
+                    const usuario = data.user || data.usuario || {};
+
+                    // Guardar en localStorage para consultas posteriores
+                    localStorage.setItem('usuario_sesion', JSON.stringify(usuario));
+                    if (usuario.user_id) {
+                        localStorage.setItem('user_id', usuario.user_id);
+                    }
+                    if (usuario.user_cargo) {
+                        localStorage.setItem('user_cargo', usuario.user_cargo);
+                    }
 
                     setTimeout(() => {
-                        window.location.href = 'html/dashboard.html';
+                        // Redirección adaptativa según la ubicación de login.html
+                        const inSubfolder = window.location.pathname.includes('/html/');
+                        window.location.href = inSubfolder ? 'dashboard.html' : 'html/dashboard.html';
                     }, 1000);
                 } else {
-                    showAlert(data.message || 'Error al iniciar sesión.', 'alert-error');
+                    showAlert(data.message || 'Credenciales incorrectas.', 'alert-error');
                 }
 
             } catch (err) {

@@ -142,7 +142,22 @@ async function cargarActividades() {
 
     if (!tbody) return;
 
-    // 1. Obtener valores de los filtros
+    // 1. Obtener datos de sesión guardados en localStorage
+    let userId = localStorage.getItem('user_id') || '';
+    let userCargo = localStorage.getItem('user_cargo') || '';
+
+    // Respaldo: intentar leer desde el objeto 'usuario_sesion'
+    if (!userId || !userCargo) {
+        try {
+            const sesion = JSON.parse(localStorage.getItem('usuario_sesion') || '{}');
+            userId = userId || sesion.user_id || sesion.id || '';
+            userCargo = userCargo || sesion.user_cargo || sesion.cargo || '';
+        } catch (e) {
+            console.warn('No se pudo parsear usuario_sesion', e);
+        }
+    }
+
+    // 2. Obtener valores de los filtros de la interfaz
     const inicio = document.getElementById('fecha_desde')?.value || '';
     const fin = document.getElementById('fecha_hasta')?.value || '';
     const tipo = document.getElementById('filter_tipo')?.value || '';
@@ -152,7 +167,17 @@ async function cargarActividades() {
     tbody.innerHTML = '<tr><td colspan="11" class="text-center">Buscando registros...</td></tr>';
 
     try {
-        const queryParams = new URLSearchParams({ inicio, fin, tipo, cliente, cobradas });
+        // 3. Incluir user_id y user_cargo en los parámetros de la URL
+        const queryParams = new URLSearchParams({ 
+            inicio, 
+            fin, 
+            tipo, 
+            cliente, 
+            cobradas,
+            user_id: userId,
+            user_cargo: userCargo
+        });
+
         const res = await fetch(`${BASE_URL}/api/obtener-actividades?${queryParams}`);
 
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -162,7 +187,7 @@ async function cargarActividades() {
         if (data.status === 'success' && Array.isArray(data.actividades)) {
             let lista = data.actividades;
 
-            // 🔍 Respaldo Frontend: Filtrado de seguridad en cliente si la API no filtra
+            // 🔍 Respaldo Frontend: Filtrado de cliente si la API no lo realiza directamente
             if (cliente !== '') {
                 const queryCliente = cliente.toLowerCase();
                 lista = lista.filter(item =>
@@ -182,7 +207,7 @@ async function cargarActividades() {
                 lista = lista.filter(item => parseFloat(item.act_valores_cobrados || 0) === 0);
             }
 
-            // 📌 Almacenar la lista activa para los pop-ups de las tarjetas de métricas
+            // 📌 Almacenar la lista activa para las tarjetas de métricas o exportación
             window.actividadesCargadas = lista;
 
             if (txtTotal) txtTotal.textContent = `${lista.length} registros`;
@@ -202,7 +227,7 @@ async function cargarActividades() {
             let sumTotalMonto = 0;
             let sumValoresCobrados = 0;
 
-            // 2. Renderizar filas y realizar sumatorias
+            // 4. Renderizar filas y realizar sumatorias
             tbody.innerHTML = lista.map(item => {
                 const idReg = item.id || item.act_id || 0;
 
@@ -241,7 +266,6 @@ async function cargarActividades() {
                     ? getBadgeClass(item.act_tipo)
                     : 'badge-default';
 
-                // 🎯 SE AÑADE 'data-tipo' A LA ETIQUETA <tr> PARA SEPARAR INSTALACIONES Y TRASLADOS EN EXCEL
                 return `
     <tr data-detalle="${detalleLimpio}" data-cobrado="${valorCobradoFormatted}" data-tipo="${tipoLimpio}">
         <td class="col-fecha text-center">${fechaFormateada}</td>
@@ -252,16 +276,16 @@ async function cargarActividades() {
         <td class="text-center">
             ${excMetros} m 
             ${excedenteMonto > 0
-                        ? `<span class="badge-excedente">($${excedenteValorFormatted})</span>`
-                        : `<span class="val-zero">($${excedenteValorFormatted})</span>`}
+                ? `<span class="badge-excedente">($${excedenteValorFormatted})</span>`
+                : `<span class="val-zero">($${excedenteValorFormatted})</span>`}
         </td>
         <td class="text-center">${numPtRed}</td>
         <td class="text-center">${numAc}</td>
         <td class="text-right"><b>$${totalMontoFormatted}</b></td>
         <td class="text-center">
             ${cobradoNum > 0
-                        ? `<span class="badge-cobrado">$${valorCobradoFormatted}</span>`
-                        : `<span class="val-zero">$${valorCobradoFormatted}</span>`}
+                ? `<span class="badge-cobrado">$${valorCobradoFormatted}</span>`
+                : `<span class="val-zero">$${valorCobradoFormatted}</span>`}
         </td>
         <td class="text-center">
             <div class="action-buttons">
@@ -275,7 +299,7 @@ async function cargarActividades() {
 `;
             }).join('');
 
-            // 3. Actualizar la tarjeta de resumen en el DOM
+            // 5. Actualizar la tarjeta de resumen en el DOM
             actualizarResumenTotales(
                 sumActividades,
                 sumExcedenteMetros,
