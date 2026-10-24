@@ -1,7 +1,7 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
-    // Cabeceras CORS completas para peticiones desde Live Server (127.0.0.1)
+    // Cabeceras CORS
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     );
 
-    // Responder OK inmediatamente al preflight (OPTIONS)
+    // Responder 200 OK a la verificación previa (OPTIONS)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -37,11 +37,13 @@ module.exports = async (req, res) => {
         });
 
         if (cuad_id) {
+            // Actualizar cuadrilla existente
             await connection.execute(
                 `UPDATE cuadrilla SET cuad_nombre = ?, cuad_sector = ? WHERE cuad_id = ?`,
                 [cuad_nombre, cuad_sector || null, cuad_id]
             );
         } else {
+            // Insertar nueva cuadrilla
             await connection.execute(
                 `INSERT INTO cuadrilla (cuad_nombre, cuad_sector, fecha_creacion) VALUES (?, ?, NOW())`,
                 [cuad_nombre, cuad_sector || null]
