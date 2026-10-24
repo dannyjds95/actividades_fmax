@@ -31,11 +31,12 @@ module.exports = async (req, res) => {
             ssl: { rejectUnauthorized: false }
         });
 
-        // Consulta uniendo la tabla usuarios con empresa para obtener emp_razon
+        // 🎯 Consulta SQL uniendo la tabla usuarios con empresa y cuadrilla
         const [rows] = await connection.execute(
-            `SELECT u.*, e.emp_razon 
+            `SELECT u.*, e.emp_razon, c.cuad_nombre 
              FROM usuarios u 
              LEFT JOIN empresa e ON u.id_empresa = e.emp_id 
+             LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id 
              WHERE u.user_usuario = ? AND u.user_password = ? AND u.user_estado = 1`,
             [user_usuario, user_password]
         );
@@ -51,7 +52,9 @@ module.exports = async (req, res) => {
             nombre: rawUser.user_nombre,
             user_usuario: rawUser.user_usuario,
             cargo: rawUser.user_cargo,
-            empresa: rawUser.emp_razon || 'No especificada', // <-- Muestra la razón social en lugar del ID
+            empresa: rawUser.emp_razon || 'No especificada',
+            cuadrilla: rawUser.cuad_nombre || 'No especificada',      // 👈 Nombre asignado
+            cuad_nombre: rawUser.cuad_nombre || 'No especificada',    // 👈 Nombre por redundancia
             cedula: rawUser.user_ci || 'Sin registro',
             telefono: rawUser.user_telefono || 'Sin registro',
             direccion: rawUser.user_direccion || 'Sin registro',

@@ -24,14 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // 1. Datos Personales
-        setFieldText('profileNombre', usuario.nombre);
-        setFieldText('profileUsuario', usuario.user_usuario || usuario.usuario);
-        setFieldText('profileCargo', usuario.cargo);
+        setFieldText('profileNombre', usuario.nombre || usuario.user_nombre);
+        
+        // Asignación de Cuadrilla (Soporta la propiedad 'cuadrilla' y 'cuad_nombre' provenientes del backend)
+        setFieldText('profileCuadrilla', usuario.cuadrilla || usuario.cuad_nombre || usuario.nom_cuadrilla || usuario.nombre_cuadrilla);
+        
+        setFieldText('profileCargo', usuario.cargo || usuario.user_cargo);
         setFieldText('profileEmpresa', usuario.empresa);
-        setFieldText('profileCedula', usuario.cedula);
-        setFieldText('profileTelefono', usuario.telefono);
-        setFieldText('profileDireccion', usuario.direccion);
-        setFieldText('profileSector', usuario.sector);
+        setFieldText('profileCedula', usuario.cedula || usuario.user_ci);
+        setFieldText('profileTelefono', usuario.telefono || usuario.user_telefono);
+        setFieldText('profileDireccion', usuario.direccion || usuario.user_direccion);
+        setFieldText('profileSector', usuario.sector || usuario.user_sector);
 
         // 2. Valores de Actividades
         setFieldCurrency('profileValorAct', usuario.valor_act);
