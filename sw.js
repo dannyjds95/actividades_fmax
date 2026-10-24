@@ -1,9 +1,9 @@
-const CACHE_NAME = 'actividades-v2';
+const CACHE_NAME = 'actividades-v3';
 const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './image/logo.png'
+  '/actividades_fmax/',
+  '/actividades_fmax/index.html',
+  '/actividades_fmax/manifest.json',
+  '/actividades_fmax/image/logo.png'
 ];
 
 self.addEventListener('install', (event) => {

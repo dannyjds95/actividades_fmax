@@ -14,15 +14,18 @@
     <meta name="theme-color" content="#2563eb">
 
     <!-- Registro del Service Worker -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registrado con éxito', reg))
-                    .catch(err => console.error('Error al registrar Service Worker', err));
-            });
-        }
-    </script>
+<link rel="icon" type="image/png" href="/actividades_fmax/image/logo.png">
+<link rel="apple-touch-icon" href="/actividades_fmax/image/logo.png">
+<link rel="manifest" href="/actividades_fmax/manifest.json">
+<meta name="theme-color" content="#2563eb">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/actividades_fmax/sw.js', { scope: '/actividades_fmax/' });
+    });
+  }
+</script>
 </head>
 
 <body>
