@@ -1,15 +1,19 @@
 {
   "short_name": "Actividades",
-  "name": "Gestión de Actividades FMAX",
+  "name": "Gestión de Actividades",
   "icons": [
     {
-      "src": "../image/logo.png",
-      "sizes": "192x192 512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "https://cdn-icons-png.flaticon.com/512/3209/3209865.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3209/3209865.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ],
-  "start_url": "./index.html",
+  "start_url": "/index.html",
   "background_color": "#0f172a",
   "theme_color": "#2563eb",
   "display": "standalone",
