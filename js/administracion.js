@@ -2,12 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const isVercel = window.location.hostname.includes('vercel.app');
     const BASE_URL = isVercel ? '' : 'https://actividades-fmax-9ysb.vercel.app';
 
-    // Endpoints de la API
+    // Endpoints Unificados de la API
     const API_CUADRILLAS = `${BASE_URL}/api/cuadrillas`;
-    
     const API_USUARIOS = `${BASE_URL}/api/admin-usuarios`;
-    const API_GUARDAR_USUARIO = `${BASE_URL}/api/admin-guardar-usuario`;
-    const API_ELIMINAR_USUARIO = `${BASE_URL}/api/admin-eliminar-usuario`;
 
     const tabCuadrillas = document.getElementById('tabCuadrillas');
     const tabUsuarios = document.getElementById('tabUsuarios');
@@ -44,14 +41,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 1. MÓDULO CUADRILLAS (Endpoint unificado)
+    // 1. MÓDULO CUADRILLAS
     // ==========================================
     async function cargarCuadrillas() {
         const tbody = document.getElementById('tbodyCuadrillas');
         const selectModalUser = document.getElementById('usr_cuad_id');
 
         try {
-            const res = await fetch(API_CUADRILLAS); // Petición GET
+            const res = await fetch(API_CUADRILLAS);
             if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
 
             const data = await res.json();
@@ -121,7 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                // Se envía POST al endpoint único /api/cuadrillas
                 const res = await fetch(API_CUADRILLAS, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -150,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.eliminarCuadrilla = async (id) => {
         if (!confirm('¿Deseas eliminar esta cuadrilla?')) return;
         try {
-            // Se envía DELETE al endpoint único /api/cuadrillas?id=X
             const res = await fetch(`${API_CUADRILLAS}?id=${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Endpoint no encontrado');
             const data = await res.json();
@@ -166,12 +161,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ==========================================
-    // 2. MÓDULO USUARIOS
+    // 2. MÓDULO USUARIOS (Endpoint Unificado API_USUARIOS)
     // ==========================================
     async function cargarUsuarios() {
         const tbody = document.getElementById('tbodyUsuarios');
         try {
-            const res = await fetch(API_USUARIOS);
+            const res = await fetch(API_USUARIOS); // Petición GET
             if (!res.ok) throw new Error('API no disponible');
 
             const data = await res.json();
@@ -197,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay usuarios registrados.</td></tr>';
             }
         } catch (err) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">Endpoint de usuarios pendiente de despliegue en Vercel.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">Error al cargar usuarios.</td></tr>';
         }
     }
 
@@ -230,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalUsuario.classList.remove('hidden');
     };
 
+    // Guardar / Editar Usuario (Petición POST a API_USUARIOS)
     const formUsuario = document.getElementById('formUsuario');
     if (formUsuario) {
         formUsuario.addEventListener('submit', async (e) => {
@@ -250,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const res = await fetch(API_GUARDAR_USUARIO, {
+                const res = await fetch(API_USUARIOS, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -273,14 +269,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Eliminar Usuario (Petición DELETE a API_USUARIOS)
     window.eliminarUsuario = async (id) => {
-        if (!confirm('¿Deseas desactivar o eliminar este usuario?')) return;
+        if (!confirm('¿Deseas eliminar este usuario?')) return;
         try {
-            const res = await fetch(`${API_ELIMINAR_USUARIO}?id=${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_USUARIOS}?id=${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Endpoint no encontrado');
             const data = await res.json();
             if (data.status === 'success') {
-                showAlert('Usuario eliminado/desactivado', 'alert-success');
+                showAlert('Usuario eliminado', 'alert-success');
                 cargarUsuarios();
             } else {
                 showAlert(data.message || 'No se pudo eliminar el usuario', 'alert-error');
