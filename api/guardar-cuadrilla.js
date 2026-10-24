@@ -1,12 +1,12 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
-    // 1. Cabeceras CORS asignadas en la primera línea (evita bloqueos de preflight)
+    // Cabeceras CORS universales
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-    // 2. Responder 200 OK inmediatamente al preflight (OPTIONS)
+    // Manejo de Preflight CORS (OPTIONS)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -17,7 +17,6 @@ module.exports = async (req, res) => {
 
     let connection;
     try {
-        // Parsear body si viene como String o como Objeto
         const bodyData = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
         const { cuad_id, cuad_nombre, cuad_sector } = bodyData;
 
@@ -50,7 +49,7 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Error DB:', error);
-        return res.status(500).json({ status: 'error', message: error.message || 'Error interno en el servidor' });
+        return res.status(500).json({ status: 'error', message: error.message || 'Error en la base de datos' });
     } finally {
         if (connection) await connection.end();
     }
