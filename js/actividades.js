@@ -168,11 +168,11 @@ async function cargarActividades() {
 
     try {
         // 3. Incluir user_id y user_cargo en los parámetros de la URL
-        const queryParams = new URLSearchParams({ 
-            inicio, 
-            fin, 
-            tipo, 
-            cliente, 
+        const queryParams = new URLSearchParams({
+            inicio,
+            fin,
+            tipo,
+            cliente,
             cobradas,
             user_id: userId,
             user_cargo: userCargo
@@ -276,16 +276,16 @@ async function cargarActividades() {
         <td class="text-center">
             ${excMetros} m 
             ${excedenteMonto > 0
-                ? `<span class="badge-excedente">($${excedenteValorFormatted})</span>`
-                : `<span class="val-zero">($${excedenteValorFormatted})</span>`}
+                        ? `<span class="badge-excedente">($${excedenteValorFormatted})</span>`
+                        : `<span class="val-zero">($${excedenteValorFormatted})</span>`}
         </td>
         <td class="text-center">${numPtRed}</td>
         <td class="text-center">${numAc}</td>
         <td class="text-right"><b>$${totalMontoFormatted}</b></td>
         <td class="text-center">
             ${cobradoNum > 0
-                ? `<span class="badge-cobrado">$${valorCobradoFormatted}</span>`
-                : `<span class="val-zero">$${valorCobradoFormatted}</span>`}
+                        ? `<span class="badge-cobrado">$${valorCobradoFormatted}</span>`
+                        : `<span class="val-zero">$${valorCobradoFormatted}</span>`}
         </td>
         <td class="text-center">
             <div class="action-buttons">
@@ -665,10 +665,10 @@ document.addEventListener('keydown', (e) => {
 function abrirModalNuevo() {
     const form = document.getElementById('form_actividad');
     if (form) form.reset();
-    
+
     document.getElementById('form_act_id').value = '';
     document.getElementById('modal_titulo').textContent = 'Registrar Actividad';
-    
+
     // Fecha predeterminada de hoy
     const hoy = new Date().toISOString().split('T')[0];
     document.getElementById('act_fecha').value = hoy;
@@ -762,7 +762,7 @@ function generarReportePDF() {
     // 1. Obtener datos de la Sesión y Filtros
     const userSession = JSON.parse(localStorage.getItem('usuario_sesion')) || {};
     const usuarioNombre = userSession.nombre || userSession.usuario || 'Técnico';
-    
+
     const fechaDesdeInput = document.querySelector('input[type="date"]:first-of-type, #fecha_desde');
     const fechaHastaInput = document.querySelector('input[type="date"]:last-of-type, #fecha_hasta');
     const fechaDesde = fechaDesdeInput ? fechaDesdeInput.value : '---';
@@ -810,7 +810,7 @@ function generarReportePDF() {
         totalActidadesCount++;
         sumaPuntosRed += parseInt(ptRed, 10) || 0;
         sumaEquiposAC += parseInt(ac, 10) || 0;
-        
+
         // Convertir formato moneda a número ($20.00 -> 20.00)
         const parseMoneda = (txt) => parseFloat(String(txt).replace(/[^0-9.-]+/g, "")) || 0;
         sumaMontoTotal += parseMoneda(total);
@@ -978,7 +978,7 @@ async function generarReporteExcel() {
         if (row.style.display === 'none' || row.cells.length < 5) return;
 
         const cols = Array.from(row.cells).map(cell => cell.textContent.trim().replace(/\s+/g, ' '));
-        
+
         // Extraer valor cobrado
         const rawValor = row.getAttribute('data-cobrado') || row.dataset.cobrado || cols[9] || '0';
         const valorCobrado = parseFloat(String(rawValor).replace(/[^0-9.-]+/g, "")) || 0;
@@ -989,7 +989,7 @@ async function generarReporteExcel() {
         const fecha = cols[0] || '';
         const cliente = cols[1] || '';
         let tipo = (row.getAttribute('data-tipo') || cols[2] || '').toUpperCase();
-        
+
         let detalleTexto = row.getAttribute('data-detalle') || row.dataset.detalle || '---';
         if (!detalleTexto || detalleTexto === 'undefined' || detalleTexto === 'null') {
             detalleTexto = '---';

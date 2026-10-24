@@ -18,16 +18,41 @@ function getBadgeClass(tipo) {
     return 'badge-default';
 }
 
+// Obtener datos del usuario en sesión
+function getDatosSesion() {
+    let userId = localStorage.getItem('user_id') || '';
+    let userCargo = localStorage.getItem('user_cargo') || '';
+
+    try {
+        const sesion = JSON.parse(localStorage.getItem('usuario_sesion') || '{}');
+        if (!userId) userId = sesion.user_id || sesion.id || '';
+        if (!userCargo) userCargo = sesion.user_cargo || sesion.cargo || '';
+    } catch (e) {
+        console.warn('Error al leer usuario_sesion de localStorage', e);
+    }
+
+    return { userId, userCargo };
+}
+
 // ==========================================
 // 2. FUNCIONES DE CONSULTA Y RENDERIZADO
 // ==========================================
 
-// Cargar métricas principales (Tarjetas superiores)
+// Cargar métricas principales (Tarjetas superiores) filtradas por usuario
 async function cargarMetricas(fechaInicio, fechaFin) {
     if (!fechaInicio || !fechaFin || fechaInicio === 'undefined' || fechaFin === 'undefined' || fechaInicio === 'null' || fechaFin === 'null') return;
 
+    const { userId, userCargo } = getDatosSesion();
+
     try {
-        const res = await fetch(`${BASE_URL}/api/obtener-dashboard-metricas?inicio=${fechaInicio}&fin=${fechaFin}`);
+        const queryParams = new URLSearchParams({
+            inicio: fechaInicio,
+            fin: fechaFin,
+            user_id: userId,
+            user_cargo: userCargo
+        });
+
+        const res = await fetch(`${BASE_URL}/api/obtener-dashboard-metricas?${queryParams}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
         const data = await res.json();
@@ -35,7 +60,6 @@ async function cargarMetricas(fechaInicio, fechaFin) {
         if (data.status === 'success') {
             const m = data.metricas || {};
 
-            // Función auxiliar para asignar texto evitando errores de elemento nulo
             const setTexto = (id, texto) => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = texto;
@@ -48,7 +72,6 @@ async function cargarMetricas(fechaInicio, fechaFin) {
             setTexto('lbl_excedente_valor', `$${parseFloat(m.excedente_valor || 0).toFixed(2)}`);
             setTexto('lbl_puntos_red_ac', `${m.puntos_red || 0} / ${m.equipos_ac || 0}`);
 
-            // Actualización de la tarjeta Valores Cobrados
             const totalCobrado = m.valores_cobrados !== undefined ? m.valores_cobrados : (m.act_valores_cobrados || 0);
             setTexto('lbl_valores_cobrados', `$${parseFloat(totalCobrado || 0).toFixed(2)}`);
         }
@@ -57,16 +80,23 @@ async function cargarMetricas(fechaInicio, fechaFin) {
     }
 }
 
+// Cargar secciones secundarias filtradas por usuario
 async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
+    const { userId, userCargo } = getDatosSesion();
+
     try {
-        let url = `${BASE_URL}/api/obtener-ultimos-registros`;
+        const queryParams = new URLSearchParams({
+            user_id: userId,
+            user_cargo: userCargo
+        });
+
         if (fechaInicio && fechaFin) {
-            url += `?inicio=${fechaInicio}&fin=${fechaFin}`;
+            queryParams.append('inicio', fechaInicio);
+            queryParams.append('fin', fechaFin);
         }
 
-        const res = await fetch(url);
+        const res = await fetch(`${BASE_URL}/api/obtener-ultimos-registros?${queryParams}`);
 
-        // Si el servidor falla antes de responder en JSON
         if (!res.ok) {
             const errorHtml = await res.text();
             console.error('Respuesta no válida del servidor:', res.status, errorHtml);
@@ -76,7 +106,7 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
         const data = await res.json();
 
         if (data.status === 'success') {
-            // 1. Resumen Cuadrilla
+            // 1. Resumen Cuadrilla / Usuario
             const trabajos = data.cuadrilla?.total_trabajos || 0;
             const monto = parseFloat(data.cuadrilla?.total_monto || 0).toFixed(2);
 
@@ -86,12 +116,11 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
             if (elTrabajos) elTrabajos.textContent = `${trabajos} trabajos`;
             if (elMonto) elMonto.textContent = `$${monto}`;
 
-            // 2. Detalle de Actividades
+            // 2. Detalle de Actividades por tipo
             const cntActividades = document.getElementById('cnt_detalle_actividades');
             if (cntActividades) {
                 if (data.actividades && data.actividades.length > 0) {
                     cntActividades.innerHTML = data.actividades.map(act => {
-                        // Lee 'cantidad', si no existe busca 'registros', si no asigna 0
                         const totalCantidad = act.cantidad !== undefined ? act.cantidad : (act.registros !== undefined ? act.registros : 0);
 
                         return `
@@ -108,6 +137,7 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
                     cntActividades.innerHTML = '<p style="color:#94a3b8; font-size:13px; text-align:center; padding:12px;">Sin actividades en este período</p>';
                 }
             }
+
             // 3. Tabla Últimos 10 Registros
             const tblBody = document.getElementById('tbl_ultimos_registros');
             if (tblBody) {
@@ -117,15 +147,15 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
                         return `
                             <tr>
                                 <td>${fechaFormateada}</td>
-                                <td>${reg.cliente}</td>
+                                <td>${reg.cliente || 'N/A'}</td>
                                 <td><span class="badge-tipo ${getBadgeClass(reg.tipo)}">${reg.tipo}</span></td>
-                                <td>${reg.forma}</td>
+                                <td>${reg.forma || 'NORMAL'}</td>
                                 <td class="td-monto">$${parseFloat(reg.monto || 0).toFixed(2)}</td>
                             </tr>
                         `;
                     }).join('');
                 } else {
-                    tblBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:20px;">No se encontraron registros</td></tr>';
+                    tblBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:20px;">No se encontraron registros</td></tr>';
                 }
             }
         }
@@ -134,7 +164,7 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
     }
 }
 
-// Cargar opciones en el selector de Períodos y auto-seleccionar el período actual
+// Cargar opciones en el selector de Períodos
 async function cargarPeriodos(selectPeriodo) {
     try {
         const res = await fetch(`${BASE_URL}/api/obtener-periodos`);
@@ -145,7 +175,6 @@ async function cargarPeriodos(selectPeriodo) {
         if (data.status === 'success' && Array.isArray(data.periodos) && data.periodos.length > 0) {
             selectPeriodo.innerHTML = '<option value="">Seleccione un período...</option>';
 
-            // 1. Obtener la fecha de hoy en formato ISO local (YYYY-MM-DD)
             const ahora = new Date();
             const year = ahora.getFullYear();
             const month = String(ahora.getMonth() + 1).padStart(2, '0');
@@ -154,7 +183,6 @@ async function cargarPeriodos(selectPeriodo) {
 
             let periodoActualIndex = -1;
 
-            // Función interna para asegurar siempre el formato YYYY-MM-DD en comparaciones y dataset
             const obtenerFechaLimpia = (f) => {
                 if (!f) return '';
                 if (typeof formatFecha === 'function') {
@@ -164,7 +192,6 @@ async function cargarPeriodos(selectPeriodo) {
                 return String(f).split('T')[0];
             };
 
-            // 2. Poblar el select y buscar qué período incluye la fecha de hoy
             data.periodos.forEach((p, index) => {
                 const option = document.createElement('option');
                 const id = p.id;
@@ -177,13 +204,11 @@ async function cargarPeriodos(selectPeriodo) {
                 option.dataset.fin = fin;
                 selectPeriodo.appendChild(option);
 
-                // Comprobar si 'hoy' está dentro del rango (inicio <= hoy <= fin)
                 if (inicio && fin && hoy >= inicio && hoy <= fin) {
-                    periodoActualIndex = index + 1; // +1 por la opción inicial "Seleccione..."
+                    periodoActualIndex = index + 1;
                 }
             });
 
-            // 3. Seleccionar el período actual (o el primero de la lista si hoy no cae en ninguno)
             const indexASeleccionar = periodoActualIndex !== -1 ? periodoActualIndex : 1;
 
             if (selectPeriodo.options[indexASeleccionar]) {
@@ -193,7 +218,6 @@ async function cargarPeriodos(selectPeriodo) {
                 const inicioSel = optSeleccionada.dataset.inicio;
                 const finSel = optSeleccionada.dataset.fin;
 
-                // Cargar métricas y dashboard del período seleccionado
                 if (typeof cargarMetricas === 'function') {
                     cargarMetricas(inicioSel, finSel);
                 }
@@ -219,16 +243,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const usuario = JSON.parse(sessionData);
+    const nombreMostrar = usuario.user_nombre || usuario.nombre || 'Usuario';
+
     const userNameEl = document.getElementById('userName');
     const welcomeUserEl = document.getElementById('welcomeUser');
 
-    if (userNameEl) userNameEl.textContent = `${usuario.nombre}`;
-    if (welcomeUserEl) welcomeUserEl.textContent = usuario.nombre;
+    if (userNameEl) userNameEl.textContent = nombreMostrar;
+    if (welcomeUserEl) welcomeUserEl.textContent = nombreMostrar;
 
+    // Control de Cierre de Sesión
     const btnLogout = document.getElementById('btnLogout');
     if (btnLogout) {
         btnLogout.addEventListener('click', () => {
             localStorage.removeItem('usuario_sesion');
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('user_cargo');
             window.location.href = '../index.html';
         });
     }
@@ -246,7 +275,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Cargar los períodos al inicializar
         await cargarPeriodos(selectPeriodo);
     }
 });

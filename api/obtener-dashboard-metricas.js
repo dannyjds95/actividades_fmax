@@ -1,6 +1,7 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
+    // Cabeceras CORS y Content-Type
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,7 +10,8 @@ module.exports = async (req, res) => {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const { inicio, fin } = req.query;
+    // 1. Extraer rango de fechas y datos de sesión (user_id y user_cargo)
+    const { inicio, fin, user_id, user_cargo } = req.query;
 
     let connection;
     try {
@@ -22,14 +24,33 @@ module.exports = async (req, res) => {
             ssl: { rejectUnauthorized: false }
         });
 
-        let whereClause = '';
+        let conditions = [];
         let params = [];
 
-        if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
-            whereClause = ' WHERE act_fecha BETWEEN ? AND ?';
-            params = [inicio, fin];
+        // 2. Filtro de Seguridad por Usuario / Rol
+        if (user_cargo !== 'ADMINISTRADOR' && user_cargo !== 'SUPERVISOR') {
+            // Usuarios estándar: filtrar solo sus registros
+            if (user_id && user_id !== 'null' && user_id !== 'undefined') {
+                conditions.push('user_id = ?');
+                params.push(user_id);
+            }
+        } else {
+            // Administradores: ven todo, o pueden filtrar por un user_id específico opcional
+            if (user_id && user_id !== 'TODOS' && user_id !== 'null' && user_id !== 'undefined') {
+                conditions.push('user_id = ?');
+                params.push(user_id);
+            }
         }
 
+        // 3. Filtro por Rango de Fechas
+        if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
+            conditions.push('act_fecha BETWEEN ? AND ?');
+            params.push(inicio, fin);
+        }
+
+        const whereClause = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
+
+        // 4. Consulta SQL acumulativa para el tablero de métricas
         const query = `
             SELECT 
                 COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS monto_facturado,
