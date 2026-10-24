@@ -8,6 +8,21 @@
     <link rel="icon" type="image/png" href="../image/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/layout.css">
+
+    <!-- Enlace al Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- Registro del Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registrado con éxito', reg))
+                    .catch(err => console.error('Error al registrar Service Worker', err));
+            });
+        }
+    </script>
 </head>
 
 <body>
@@ -64,45 +79,67 @@
                     <!-- Mensaje de Alerta -->
                     <div id="alert" class="alert hidden"></div>
 
-                    <form id="credentialsForm" class="card" style="background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md);">
+                    <form id="credentialsForm" class="card"
+                        style="background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md);">
                         <div class="form-section">
-                            <div class="section-header" style="margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+                            <div class="section-header"
+                                style="margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
                                 <h3>🔐 Datos de Acceso</h3>
                             </div>
 
                             <div class="form-grid" style="display: flex; flex-direction: column; gap: 1.2rem;">
                                 <!-- Nombre de Usuario -->
                                 <div class="form-group">
-                                    <label for="user_usuario" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Nombre de Usuario</label>
-                                    <input type="text" id="user_usuario" class="custom-input" placeholder="Ej. admin" required style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
+                                    <label for="user_usuario"
+                                        style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Nombre de
+                                        Usuario</label>
+                                    <input type="text" id="user_usuario" class="custom-input" placeholder="Ej. admin"
+                                        required
+                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
                                 </div>
 
                                 <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
 
                                 <!-- Contraseña Actual (Obligatoria para confirmar) -->
                                 <div class="form-group">
-                                    <label for="current_password" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Contraseña Actual <span style="color: red;">*</span></label>
-                                    <input type="password" id="current_password" class="custom-input" placeholder="Ingresa tu contraseña actual" required style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
+                                    <label for="current_password"
+                                        style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Contraseña
+                                        Actual <span style="color: red;">*</span></label>
+                                    <input type="password" id="current_password" class="custom-input"
+                                        placeholder="Ingresa tu contraseña actual" required
+                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
                                 </div>
 
                                 <!-- Nueva Contraseña -->
                                 <div class="form-group">
-                                    <label for="new_password" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Nueva Contraseña (Opcional)</label>
-                                    <input type="password" id="new_password" class="custom-input" placeholder="Dejar en blanco si no deseas cambiarla" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
+                                    <label for="new_password"
+                                        style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Nueva
+                                        Contraseña (Opcional)</label>
+                                    <input type="password" id="new_password" class="custom-input"
+                                        placeholder="Dejar en blanco si no deseas cambiarla"
+                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
                                 </div>
 
                                 <!-- Confirmar Nueva Contraseña -->
                                 <div class="form-group">
-                                    <label for="confirm_password" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Confirmar Nueva Contraseña</label>
-                                    <input type="password" id="confirm_password" class="custom-input" placeholder="Repite la nueva contraseña" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
+                                    <label for="confirm_password"
+                                        style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Confirmar Nueva
+                                        Contraseña</label>
+                                    <input type="password" id="confirm_password" class="custom-input"
+                                        placeholder="Repite la nueva contraseña"
+                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
                                 </div>
                             </div>
                         </div>
 
                         <!-- Botones de Acción -->
-                        <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
-                            <a href="perfil.html" class="btn btn-secondary" style="padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; background: #e2e8f0; color: #334155; font-weight: 600;">Cancelar</a>
-                            <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.2rem; border-radius: 6px; background: #2563eb; color: #fff; border: none; font-weight: 600; cursor: pointer;">Guardar Cambios</button>
+                        <div class="form-actions"
+                            style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                            <a href="perfil.html" class="btn btn-secondary"
+                                style="padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; background: #e2e8f0; color: #334155; font-weight: 600;">Cancelar</a>
+                            <button type="submit" class="btn btn-primary"
+                                style="padding: 0.6rem 1.2rem; border-radius: 6px; background: #2563eb; color: #fff; border: none; font-weight: 600; cursor: pointer;">Guardar
+                                Cambios</button>
                         </div>
                     </form>
                 </div>

@@ -9,6 +9,21 @@
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/layout.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+
+    <!-- Enlace al Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- Registro del Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registrado con éxito', reg))
+                    .catch(err => console.error('Error al registrar Service Worker', err));
+            });
+        }
+    </script>
 </head>
 
 <body>
@@ -77,7 +92,7 @@
                     <button class="btn-primary" onclick="location.href='act_propia.html'">
                         📄 Registrar Actividad
                     </button>
-                    
+
                 </div>
 
                 <div class="metrics-grid">
@@ -180,19 +195,19 @@
 
 
             <!-- Se quita la cuadrilla y se centra la tarjeta de actividades -->
-<!-- Seccion Centrada: Detalle de Actividades -->
-<div class="section-centered-container">
-    <div class="card-dashboard">
-        <div class="card-header-bar">
-            <h3 class="card-title">Detalle de Actividades</h3>
-        </div>
-        
-        <!-- ID original conservado + clase de estilos -->
-        <div id="cnt_detalle_actividades" class="activity-list">
-            <!-- Se llena dinámicamente desde JavaScript -->
-        </div>
-    </div>
-</div>
+            <!-- Seccion Centrada: Detalle de Actividades -->
+            <div class="section-centered-container">
+                <div class="card-dashboard">
+                    <div class="card-header-bar">
+                        <h3 class="card-title">Detalle de Actividades</h3>
+                    </div>
+
+                    <!-- ID original conservado + clase de estilos -->
+                    <div id="cnt_detalle_actividades" class="activity-list">
+                        <!-- Se llena dinámicamente desde JavaScript -->
+                    </div>
+                </div>
+            </div>
 
             <!-- Card: Tabla Últimos Registros -->
             <div class="table-card">
