@@ -3,9 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const BASE_URL = isVercel ? '' : 'https://actividades-fmax-9ysb.vercel.app';
 
     // Endpoints de la API
-    const API_CUADRILLAS = `${BASE_URL}/api/obtener-cuadrillas`;
-    const API_GUARDAR_CUADRILLA = `${BASE_URL}/api/guardar-cuadrilla`;
-    const API_ELIMINAR_CUADRILLA = `${BASE_URL}/api/eliminar-cuadrilla`;
+    const API_CUADRILLAS = `${BASE_URL}/api/cuadrillas`;
     
     const API_USUARIOS = `${BASE_URL}/api/admin-usuarios`;
     const API_GUARDAR_USUARIO = `${BASE_URL}/api/admin-guardar-usuario`;
@@ -46,14 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 1. MÓDULO CUADRILLAS
+    // 1. MÓDULO CUADRILLAS (Endpoint unificado)
     // ==========================================
     async function cargarCuadrillas() {
         const tbody = document.getElementById('tbodyCuadrillas');
         const selectModalUser = document.getElementById('usr_cuad_id');
 
         try {
-            const res = await fetch(API_CUADRILLAS);
+            const res = await fetch(API_CUADRILLAS); // Petición GET
             if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
 
             const data = await res.json();
@@ -106,47 +104,54 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modalCuadrillaTitle').textContent = 'Editar Cuadrilla';
         document.getElementById('cuad_id_edit').value = item.cuad_id;
         document.getElementById('cuad_nombre_input').value = item.cuad_nombre;
-        document.getElementById('cuad_sector_input').value = item.cuad_sector || '';
+        document.getElementById('cuad_sector_input').value = item.cuad_sector === 'Sin Sector' ? '' : (item.cuad_sector || '');
         modalCuadrilla.classList.remove('hidden');
     };
 
-    document.getElementById('formCuadrilla').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('cuad_id_edit').value;
-        const body = {
-            cuad_id: id ? parseInt(id, 10) : null,
-            cuad_nombre: document.getElementById('cuad_nombre_input').value.trim(),
-            cuad_sector: document.getElementById('cuad_sector_input').value.trim()
-        };
+    // Guardar / Editar Cuadrilla
+    const formCuadrilla = document.getElementById('formCuadrilla');
+    if (formCuadrilla) {
+        formCuadrilla.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('cuad_id_edit').value;
+            const body = {
+                cuad_id: id ? parseInt(id, 10) : null,
+                cuad_nombre: document.getElementById('cuad_nombre_input').value.trim(),
+                cuad_sector: document.getElementById('cuad_sector_input').value.trim()
+            };
 
-        try {
-            const res = await fetch(API_GUARDAR_CUADRILLA, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
+            try {
+                // Se envía POST al endpoint único /api/cuadrillas
+                const res = await fetch(API_CUADRILLAS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
 
-            if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+                if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
 
-            const data = await res.json();
+                const data = await res.json();
 
-            if (data.status === 'success') {
-                modalCuadrilla.classList.add('hidden');
-                showAlert('Cuadrilla guardada con éxito', 'alert-success');
-                cargarCuadrillas();
-            } else {
-                showAlert(data.message || 'Error al guardar cuadrilla', 'alert-error');
+                if (data.status === 'success') {
+                    modalCuadrilla.classList.add('hidden');
+                    showAlert('Cuadrilla guardada con éxito', 'alert-success');
+                    cargarCuadrillas();
+                } else {
+                    showAlert(data.message || 'Error al guardar cuadrilla', 'alert-error');
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert('Error al conectar con el servidor', 'alert-error');
             }
-        } catch (err) {
-            console.error(err);
-            showAlert('Error al conectar con el servidor', 'alert-error');
-        }
-    });
+        });
+    }
 
+    // Eliminar Cuadrilla
     window.eliminarCuadrilla = async (id) => {
         if (!confirm('¿Deseas eliminar esta cuadrilla?')) return;
         try {
-            const res = await fetch(`${API_ELIMINAR_CUADRILLA}?id=${id}`, { method: 'DELETE' });
+            // Se envía DELETE al endpoint único /api/cuadrillas?id=X
+            const res = await fetch(`${API_CUADRILLAS}?id=${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Endpoint no encontrado');
             const data = await res.json();
             if (data.status === 'success') {
@@ -218,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('usr_nombre').value = item.user_nombre || '';
         document.getElementById('usr_ci').value = item.user_ci || '';
         document.getElementById('usr_usuario').value = item.user_usuario || '';
-        document.getElementById('usr_password').value = ''; // Contraseña vacía al editar
+        document.getElementById('usr_password').value = '';
         document.getElementById('usr_cargo').value = item.user_cargo || 'TECNICO';
         document.getElementById('usr_cuad_id').value = item.cuad_id || '';
         document.getElementById('usr_telefono').value = item.user_telefono || '';
@@ -230,6 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formUsuario.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('user_id_edit').value;
+            const empresaElem = document.getElementById('usr_empresa');
+
             const body = {
                 user_id: id ? parseInt(id, 10) : null,
                 user_nombre: document.getElementById('usr_nombre').value.trim(),
@@ -238,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 user_password: document.getElementById('usr_password').value.trim() || null,
                 user_cargo: document.getElementById('usr_cargo').value,
                 cuad_id: parseInt(document.getElementById('usr_cuad_id').value, 10) || null,
-                id_empresa: parseInt(document.getElementById('usr_empresa').value, 10) || 1,
+                id_empresa: empresaElem ? (parseInt(empresaElem.value, 10) || 1) : 1,
                 user_telefono: document.getElementById('usr_telefono').value.trim()
             };
 
