@@ -1,7 +1,7 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
-    // Configuración de cabeceras de respuesta (JSON y CORS)
+    // Cabeceras CORS y Content-Type
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -10,7 +10,8 @@ module.exports = async (req, res) => {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const { inicio, fin } = req.query;
+    // 1. Extraer fechas y datos de sesión desde los parámetros URL
+    const { inicio, fin, user_id, user_cargo } = req.query;
 
     let connection;
     try {
@@ -23,78 +24,80 @@ module.exports = async (req, res) => {
             ssl: { rejectUnauthorized: false }
         });
 
-        let whereClause = '';
+        let conditions = [];
         let params = [];
 
+        // 2. Filtro de Seguridad por Usuario / Cargo
+        if (user_cargo !== 'ADMINISTRADOR' && user_cargo !== 'SUPERVISOR') {
+            // Usuarios normales: filtrar solo sus propias actividades
+            if (user_id && user_id !== 'null' && user_id !== 'undefined') {
+                conditions.push('user_id = ?');
+                params.push(user_id);
+            }
+        } else {
+            // Administradores / Supervisores: filtrar por usuario solo si viene especificado en la consulta
+            if (user_id && user_id !== 'TODOS' && user_id !== 'null' && user_id !== 'undefined') {
+                conditions.push('user_id = ?');
+                params.push(user_id);
+            }
+        }
+
+        // 3. Filtro Opcional por Rango de Fechas
         if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
-            whereClause = ' WHERE act_fecha BETWEEN ? AND ?';
-            params = [inicio, fin];
+            conditions.push('act_fecha BETWEEN ? AND ?');
+            params.push(inicio, fin);
         }
 
-        let cuadrillaData = { total_trabajos: 0, total_monto: 0 };
-        let actividadesData = [];
-        let ultimosData = [];
+        const whereClause = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
 
-        // 1. Resumen por Cuadrilla (Suma de act_total)
-        try {
-            const [q1] = await connection.execute(
-                `SELECT 
-                    COUNT(*) AS total_trabajos, 
-                    COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS total_monto 
-                 FROM actividad_detalle ${whereClause}`,
-                params
-            );
-            if (q1.length > 0) cuadrillaData = q1[0];
-        } catch (e1) {
-            console.error('Error Q1:', e1.message);
-        }
+        // --- CONSULTA 1: Resumen de Trabajos y Monto ---
+        const queryCuadrilla = `
+            SELECT 
+                COUNT(*) AS total_trabajos, 
+                COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS total_monto 
+            FROM actividad_detalle
+            ${whereClause}
+        `;
+        const [cuadrillaRows] = await connection.execute(queryCuadrilla, params);
 
-        // 2. Detalle de Actividades por Tipo (Suma de act_cantidad y act_total)
-        try {
-            const [q2] = await connection.execute(
-                `SELECT 
-                    COALESCE(act_tipo, 'GENERAL') AS tipo, 
-                    COALESCE(SUM(act_cantidad), 0) AS cantidad,
-                    COUNT(*) AS registros,
-                    COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS monto 
-                 FROM actividad_detalle ${whereClause} 
-                 GROUP BY act_tipo 
-                 ORDER BY monto DESC`,
-                params
-            );
-            actividadesData = q2;
-        } catch (e2) {
-            console.error('Error Q2:', e2.message);
-        }
+        // --- CONSULTA 2: Detalle por Tipo de Actividad (Instalación, Traslado, Visita) ---
+        const queryActividades = `
+            SELECT 
+                act_tipo AS tipo, 
+                SUM(COALESCE(act_cantidad, 1)) AS cantidad, 
+                COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS monto 
+            FROM actividad_detalle
+            ${whereClause}
+            GROUP BY act_tipo
+            ORDER BY cantidad DESC
+        `;
+        const [actividadesRows] = await connection.execute(queryActividades, params);
 
-        // 3. Últimos 10 Registros (Lectura del valor act_total)
-        try {
-            const [q3] = await connection.execute(
-                `SELECT * FROM actividad_detalle ${whereClause} ORDER BY act_fecha DESC LIMIT 10`,
-                params
-            );
-
-            ultimosData = q3.map(row => ({
-                fecha: row.act_fecha || row.fecha || '',
-                cuadrilla: row.act_cuadrilla || row.cuadrilla || 'PROPIA',
-                cliente: row.act_cliente || row.cliente || row.nombre_cliente || row.nom_cliente || 'N/A',
-                tipo: row.act_tipo || row.tipo || 'GENERAL',
-                forma: row.act_forma || row.forma || row.forma_pago || 'NORMAL',
-                monto: parseFloat(row.act_total !== null && row.act_total !== undefined ? row.act_total : (row.act_valor || row.valor || 0))
-            }));
-        } catch (e3) {
-            console.error('Error Q3:', e3.message);
-        }
+        // --- CONSULTA 3: Últimos 10 Registros ---
+        const queryUltimos = `
+            SELECT 
+                act_id AS id, 
+                act_fecha AS fecha, 
+                act_cliente AS cliente, 
+                act_tipo AS tipo, 
+                act_forma AS forma, 
+                COALESCE(act_total, act_valor, 0) AS monto 
+            FROM actividad_detalle
+            ${whereClause}
+            ORDER BY act_fecha DESC, act_id DESC 
+            LIMIT 10
+        `;
+        const [ultimosRows] = await connection.execute(queryUltimos, params);
 
         return res.status(200).json({
             status: 'success',
-            cuadrilla: cuadrillaData,
-            actividades: actividadesData,
-            ultimos: ultimosData
+            cuadrilla: cuadrillaRows[0] || { total_trabajos: 0, total_monto: 0 },
+            actividades: actividadesRows,
+            ultimos: ultimosRows
         });
 
     } catch (err) {
-        console.error('Fallo general:', err.message);
+        console.error('Error en obtener-ultimos-registros:', err.message);
         return res.status(500).json({ status: 'error', message: err.message });
     } finally {
         if (connection) {
