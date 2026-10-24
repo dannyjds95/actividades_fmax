@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambiar Credenciales</title>
+    <link rel="icon" type="image/png" href="../image/logo.png">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/layout.css">
+</head>
+
+<body>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="app-layout">
+        <!-- MENÚ LATERAL (SIDEBAR) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;"
+                    onerror="this.style.display='none'">
+                <h2 id="userName">FMAX</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="actividades.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Actividades</span>
+                </a>
+                <a href="perfil.html" class="nav-item active">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Mi Perfil</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Configuración</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button type="button" id="btnLogout" class="nav-item btn-logout-sidebar">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-label">Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL -->
+        <main class="main-content">
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Toggle Sidebar">
+                        ☰
+                    </button>
+                    <h2 style="color: var(--primary-color); margin: 0;">Seguridad y Credenciales</h2>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div class="edit-profile-container" style="max-width: 600px; margin: 0 auto;">
+                    <div class="page-header" style="margin-bottom: 1.5rem;">
+                        <a href="perfil.html" class="back-link">&larr; Volver al Perfil</a>
+                        <p class="page-subtitle" style="color: var(--text-muted); margin-top: 5px;">
+                            Actualiza tu nombre de usuario o tu contraseña de acceso.
+                        </p>
+                    </div>
+
+                    <!-- Mensaje de Alerta -->
+                    <div id="alert" class="alert hidden"></div>
+
+                    <form id="credentialsForm" class="card" style="background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md);">
+                        <div class="form-section">
+                            <div class="section-header" style="margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+                                <h3>🔐 Datos de Acceso</h3>
+                            </div>
+
+                            <div class="form-grid" style="display: flex; flex-direction: column; gap: 1.2rem;">
+                                <!-- Nombre de Usuario -->
+                                <div class="form-group">
+                                    <label for="user_usuario" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Nombre de Usuario</label>
+                                    <input type="text" id="user_usuario" class="custom-input" placeholder="Ej. admin" required style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
+                                </div>
+
+                                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+                                <!-- Contraseña Actual (Obligatoria para confirmar) -->
+                                <div class="form-group">
+                                    <label for="current_password" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Contraseña Actual <span style="color: red;">*</span></label>
+                                    <input type="password" id="current_password" class="custom-input" placeholder="Ingresa tu contraseña actual" required style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
+                                </div>
+
+                                <!-- Nueva Contraseña -->
+                                <div class="form-group">
+                                    <label for="new_password" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Nueva Contraseña (Opcional)</label>
+                                    <input type="password" id="new_password" class="custom-input" placeholder="Dejar en blanco si no deseas cambiarla" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
+                                </div>
+
+                                <!-- Confirmar Nueva Contraseña -->
+                                <div class="form-group">
+                                    <label for="confirm_password" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Confirmar Nueva Contraseña</label>
+                                    <input type="password" id="confirm_password" class="custom-input" placeholder="Repite la nueva contraseña" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                            <a href="perfil.html" class="btn btn-secondary" style="padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; background: #e2e8f0; color: #334155; font-weight: 600;">Cancelar</a>
+                            <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.2rem; border-radius: 6px; background: #2563eb; color: #fff; border: none; font-weight: 600; cursor: pointer;">Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); margin-top: auto;">
+                <p>&copy; 2026 Daniel Cuñez - Todos los derechos reservados</p>
+            </footer>
+        </main>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/cambiar-credenciales.js"></script>
+    <script src="../js/layout.js"></script>
+</body>
+
+</html>
