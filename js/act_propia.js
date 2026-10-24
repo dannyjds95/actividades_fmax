@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
         calculateAll();
     }
 
-    // Cálculo general de tarifas y métricas
+// Cálculo general de tarifas y métricas
     function calculateAll() {
         const session = obtenerSesionUsuario();
         const tipo = actTipoSelect ? actTipoSelect.value : '';
@@ -91,10 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
         let tarifaBase = 0;
 
         if (tipo !== '' && forma !== '') {
-            actCantidad = (forma === 'DOBLE' || forma === 'RECABLEADO DOBLE') ? 2 : 1;
-            tarifaBase = (tipo === 'VISITA') 
-                ? (parseFloat(session.valor_visita) || 0) 
-                : (parseFloat(session.valor_act) || 0);
+            const esDoble = (forma === 'DOBLE' || forma === 'RECABLEADO DOBLE');
+            actCantidad = esDoble ? 2 : 1;
+
+            // Si es VISITA pero la forma es DOBLE o RECABLEADO DOBLE,
+            // se cobra como actividad/traslado/instalación normal (valor_act)
+            if (tipo === 'VISITA' && !esDoble) {
+                tarifaBase = parseFloat(session.valor_visita) || 0;
+            } else {
+                tarifaBase = parseFloat(session.valor_act) || 0;
+            }
         }
 
         if (lblCantidad) lblCantidad.textContent = actCantidad;
