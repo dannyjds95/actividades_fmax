@@ -2,9 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const isVercel = window.location.hostname.includes('vercel.app');
     const BASE_URL = isVercel ? '' : 'https://actividades-fmax-9ysb.vercel.app';
 
+    // Endpoints de la API
     const API_CUADRILLAS = `${BASE_URL}/api/obtener-cuadrillas`;
     const API_GUARDAR_CUADRILLA = `${BASE_URL}/api/guardar-cuadrilla`;
+    const API_ELIMINAR_CUADRILLA = `${BASE_URL}/api/eliminar-cuadrilla`;
+    
     const API_USUARIOS = `${BASE_URL}/api/admin-usuarios`;
+    const API_GUARDAR_USUARIO = `${BASE_URL}/api/admin-guardar-usuario`;
+    const API_ELIMINAR_USUARIO = `${BASE_URL}/api/admin-eliminar-usuario`;
 
     const tabCuadrillas = document.getElementById('tabCuadrillas');
     const tabUsuarios = document.getElementById('tabUsuarios');
@@ -16,10 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let listaUsuarios = [];
     let usuariosCargados = false;
 
-    // Cargar cuadrillas inmediatamente
+    // Cargar cuadrillas al iniciar
     cargarCuadrillas();
 
-    // Cambiar de pestaña (Carga usuarios solo cuando se presione la pestaña Usuarios)
+    // Navegación por pestañas
     if (tabCuadrillas && tabUsuarios) {
         tabCuadrillas.addEventListener('click', () => {
             tabCuadrillas.classList.add('active-tab');
@@ -41,45 +46,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // CUADRILLAS
+    // 1. MÓDULO CUADRILLAS
     // ==========================================
-async function cargarCuadrillas() {
-    const tbody = document.getElementById('tbodyCuadrillas');
-    const selectModalUser = document.getElementById('usr_cuad_id');
+    async function cargarCuadrillas() {
+        const tbody = document.getElementById('tbodyCuadrillas');
+        const selectModalUser = document.getElementById('usr_cuad_id');
 
-    try {
-        const res = await fetch(API_CUADRILLAS);
-        if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+        try {
+            const res = await fetch(API_CUADRILLAS);
+            if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
 
-        const data = await res.json();
+            const data = await res.json();
 
-        if (data.status === 'success' && Array.isArray(data.cuadrillas)) {
-            listaCuadrillas = data.cuadrillas;
+            if (data.status === 'success' && Array.isArray(data.cuadrillas)) {
+                listaCuadrillas = data.cuadrillas;
 
-            tbody.innerHTML = listaCuadrillas.map(c => `
-                <tr>
-                    <td><strong>#${c.cuad_id}</strong></td>
-                    <td>${c.cuad_nombre}</td>
-                    <td>${c.cuad_sector || 'Sin Sector'}</td>
-                    <td style="text-align: center;">
-                        <button class="btn-action edit" onclick="editarCuadrilla(${c.cuad_id})">✏️</button>
-                        <button class="btn-action delete" onclick="eliminarCuadrilla(${c.cuad_id})">🗑️</button>
-                    </td>
-                </tr>
-            `).join('');
+                tbody.innerHTML = listaCuadrillas.map(c => `
+                    <tr>
+                        <td><strong>#${c.cuad_id}</strong></td>
+                        <td>${c.cuad_nombre}</td>
+                        <td>${c.cuad_sector || 'Sin Sector'}</td>
+                        <td style="text-align: center;">
+                            <button class="btn-action edit" onclick="editarCuadrilla(${c.cuad_id})">✏️</button>
+                            <button class="btn-action delete" onclick="eliminarCuadrilla(${c.cuad_id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
 
-            if (selectModalUser) {
-                selectModalUser.innerHTML = '<option value="">Seleccione...</option>' +
-                    listaCuadrillas.map(c => `<option value="${c.cuad_id}">${c.cuad_nombre}</option>`).join('');
+                if (selectModalUser) {
+                    selectModalUser.innerHTML = '<option value="">Seleccione...</option>' +
+                        listaCuadrillas.map(c => `<option value="${c.cuad_id}">${c.cuad_nombre}</option>`).join('');
+                }
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay cuadrillas registradas.</td></tr>';
             }
-        } else {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay cuadrillas registradas.</td></tr>';
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Error al cargar cuadrillas.</td></tr>';
         }
-    } catch (err) {
-        console.error(err);
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Error al cargar cuadrillas.</td></tr>';
     }
-}
 
     // Modal Cuadrilla
     const modalCuadrilla = document.getElementById('modalCuadrilla');
@@ -141,7 +146,7 @@ async function cargarCuadrillas() {
     window.eliminarCuadrilla = async (id) => {
         if (!confirm('¿Deseas eliminar esta cuadrilla?')) return;
         try {
-            const res = await fetch(`${BASE_URL}/api/eliminar-cuadrilla?id=${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_ELIMINAR_CUADRILLA}?id=${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Endpoint no encontrado');
             const data = await res.json();
             if (data.status === 'success') {
@@ -156,7 +161,7 @@ async function cargarCuadrillas() {
     };
 
     // ==========================================
-    // USUARIOS
+    // 2. MÓDULO USUARIOS
     // ==========================================
     async function cargarUsuarios() {
         const tbody = document.getElementById('tbodyUsuarios');
@@ -187,15 +192,103 @@ async function cargarCuadrillas() {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay usuarios registrados.</td></tr>';
             }
         } catch (err) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">Endpoint de usuarios aún no desplegado en Vercel.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">Endpoint de usuarios pendiente de despliegue en Vercel.</td></tr>';
         }
     }
 
-    // Cerrar Modales
+    // Modal Usuario
+    const modalUsuario = document.getElementById('modalUsuario');
+    const btnNuevoUsuario = document.getElementById('btnNuevoUsuario');
+
+    if (btnNuevoUsuario) {
+        btnNuevoUsuario.addEventListener('click', () => {
+            document.getElementById('modalUsuarioTitle').textContent = 'Nuevo Usuario';
+            document.getElementById('user_id_edit').value = '';
+            document.getElementById('formUsuario').reset();
+            modalUsuario.classList.remove('hidden');
+        });
+    }
+
+    window.editarUsuario = (id) => {
+        const item = listaUsuarios.find(u => u.user_id === id);
+        if (!item) return;
+
+        document.getElementById('modalUsuarioTitle').textContent = 'Editar Usuario';
+        document.getElementById('user_id_edit').value = item.user_id;
+        document.getElementById('usr_nombre').value = item.user_nombre || '';
+        document.getElementById('usr_ci').value = item.user_ci || '';
+        document.getElementById('usr_usuario').value = item.user_usuario || '';
+        document.getElementById('usr_password').value = ''; // Contraseña vacía al editar
+        document.getElementById('usr_cargo').value = item.user_cargo || 'TECNICO';
+        document.getElementById('usr_cuad_id').value = item.cuad_id || '';
+        document.getElementById('usr_telefono').value = item.user_telefono || '';
+        modalUsuario.classList.remove('hidden');
+    };
+
+    const formUsuario = document.getElementById('formUsuario');
+    if (formUsuario) {
+        formUsuario.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('user_id_edit').value;
+            const body = {
+                user_id: id ? parseInt(id, 10) : null,
+                user_nombre: document.getElementById('usr_nombre').value.trim(),
+                user_ci: document.getElementById('usr_ci').value.trim(),
+                user_usuario: document.getElementById('usr_usuario').value.trim(),
+                user_password: document.getElementById('usr_password').value.trim() || null,
+                user_cargo: document.getElementById('usr_cargo').value,
+                cuad_id: parseInt(document.getElementById('usr_cuad_id').value, 10) || null,
+                id_empresa: parseInt(document.getElementById('usr_empresa').value, 10) || 1,
+                user_telefono: document.getElementById('usr_telefono').value.trim()
+            };
+
+            try {
+                const res = await fetch(API_GUARDAR_USUARIO, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    modalUsuario.classList.add('hidden');
+                    showAlert('Usuario guardado con éxito', 'alert-success');
+                    cargarUsuarios();
+                } else {
+                    showAlert(data.message || 'Error al guardar usuario', 'alert-error');
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert('Error al conectar con la API de usuarios', 'alert-error');
+            }
+        });
+    }
+
+    window.eliminarUsuario = async (id) => {
+        if (!confirm('¿Deseas desactivar o eliminar este usuario?')) return;
+        try {
+            const res = await fetch(`${API_ELIMINAR_USUARIO}?id=${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Endpoint no encontrado');
+            const data = await res.json();
+            if (data.status === 'success') {
+                showAlert('Usuario eliminado/desactivado', 'alert-success');
+                cargarUsuarios();
+            } else {
+                showAlert(data.message || 'No se pudo eliminar el usuario', 'alert-error');
+            }
+        } catch (err) {
+            showAlert('Error al conectar con la API de eliminación de usuarios', 'alert-error');
+        }
+    };
+
+    // ==========================================
+    // CERRAR MODALES Y ALERTAS
+    // ==========================================
     document.querySelectorAll('.btn-close-modal').forEach(btn => {
         btn.addEventListener('click', () => {
             if (modalCuadrilla) modalCuadrilla.classList.add('hidden');
-            const modalUsuario = document.getElementById('modalUsuario');
             if (modalUsuario) modalUsuario.classList.add('hidden');
         });
     });

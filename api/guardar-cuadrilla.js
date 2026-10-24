@@ -1,20 +1,30 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
+    // Cabeceras CORS explicitas
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    );
 
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ status: 'error', message: 'Método no permitido' });
+    // Responder 200 OK inmediatamente al preflight (OPTIONS)
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ status: 'error', message: 'Método no permitido' });
+    }
 
     let connection;
     try {
         const { cuad_id, cuad_nombre, cuad_sector } = req.body || {};
 
-        if (!cuad_nombre || cuad_nombre.trim() === '') {
-            return res.status(400).json({ status: 'error', message: 'El nombre de la cuadrilla es obligatorio' });
+        if (!cuad_nombre || !cuad_nombre.trim()) {
+            return res.status(400).json({ status: 'error', message: 'El nombre de la cuadrilla es requerido' });
         }
 
         connection = await mysql.createConnection({
@@ -27,11 +37,13 @@ module.exports = async (req, res) => {
         });
 
         if (cuad_id) {
+            // Actualización
             await connection.execute(
                 `UPDATE cuadrilla SET cuad_nombre = ?, cuad_sector = ? WHERE cuad_id = ?`,
                 [cuad_nombre.trim(), cuad_sector ? cuad_sector.trim() : null, cuad_id]
             );
         } else {
+            // Inserción
             await connection.execute(
                 `INSERT INTO cuadrilla (cuad_nombre, cuad_sector) VALUES (?, ?)`,
                 [cuad_nombre.trim(), cuad_sector ? cuad_sector.trim() : null]
