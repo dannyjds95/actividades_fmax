@@ -1,12 +1,12 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
-    // Cabeceras CORS indispensables
+    // 1. Cabeceras CORS asignadas en la primera línea (evita bloqueos de preflight)
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-    // Responder 200 OK inmediatamente al preflight (OPTIONS)
+    // 2. Responder 200 OK inmediatamente al preflight (OPTIONS)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -17,7 +17,9 @@ module.exports = async (req, res) => {
 
     let connection;
     try {
-        const { cuad_id, cuad_nombre, cuad_sector } = req.body || {};
+        // Parsear body si viene como String o como Objeto
+        const bodyData = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+        const { cuad_id, cuad_nombre, cuad_sector } = bodyData;
 
         if (!cuad_nombre || !cuad_nombre.trim()) {
             return res.status(400).json({ status: 'error', message: 'El nombre de la cuadrilla es requerido' });
@@ -48,7 +50,7 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Error DB:', error);
-        return res.status(500).json({ status: 'error', message: error.message || 'Error interno en la base de datos' });
+        return res.status(500).json({ status: 'error', message: error.message || 'Error interno en el servidor' });
     } finally {
         if (connection) await connection.end();
     }
