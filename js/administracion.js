@@ -96,34 +96,37 @@ document.addEventListener('DOMContentLoaded', () => {
         modalCuadrilla.classList.remove('hidden');
     };
 
-    document.getElementById('formCuadrilla').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('cuad_id_edit').value;
-        const body = {
-            cuad_id: id || null,
-            cuad_nombre: document.getElementById('cuad_nombre_input').value.trim(),
-            cuad_sector: document.getElementById('cuad_sector_input').value.trim()
-        };
+document.getElementById('formCuadrilla').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('cuad_id_edit').value;
+    const body = {
+        cuad_id: id ? parseInt(id, 10) : null,
+        cuad_nombre: document.getElementById('cuad_nombre_input').value.trim(),
+        cuad_sector: document.getElementById('cuad_sector_input').value.trim()
+    };
 
-        try {
-            const res = await fetch(`${BASE_URL}/api/guardar-cuadrilla`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            const data = await res.json();
+    try {
+        const res = await fetch(`${BASE_URL}/api/guardar-cuadrilla`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
 
-            if (data.status === 'success') {
-                modalCuadrilla.classList.add('hidden');
-                showAlert('Cuadrilla guardada con éxito', 'alert-success');
-                cargarCuadrillas();
-            } else {
-                showAlert(data.message || 'Error al guardar cuadrilla', 'alert-error');
-            }
-        } catch (err) {
-            showAlert('Error al conectar con el servidor', 'alert-error');
+        const data = await res.json();
+
+        if (res.ok && (data.status === 'success' || data.success)) {
+            document.getElementById('modalCuadrilla').classList.add('hidden');
+            showAlert('Cuadrilla guardada con éxito', 'alert-success');
+            cargarCuadrillas();
+        } else {
+            showAlert(data.message || data.error || 'Error al guardar cuadrilla', 'alert-error');
         }
-    });
+    } catch (err) {
+        console.error('Error al guardar cuadrilla:', err);
+        showAlert('Error de conexión o el endpoint no está publicado aún.', 'alert-error');
+    }
+});
 
     window.eliminarCuadrilla = async (id) => {
         if (!confirm('¿Deseas eliminar esta cuadrilla?')) return;
