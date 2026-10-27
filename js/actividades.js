@@ -49,12 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterCliente = document.getElementById('filter_cliente');
     const filterCobradas = document.getElementById('filter_cobradas');
 
-    // Cargar selector de períodos
+    // 1. Cargar selector de períodos
     if (typeof cargarPeriodos === 'function' && selectPeriodo) {
         cargarPeriodos(selectPeriodo);
     }
 
-    // Evento al cambiar de período
+    // 2. Evento al cambiar de período
     if (selectPeriodo) {
         selectPeriodo.addEventListener('change', (e) => {
             const opt = e.target.options[e.target.selectedIndex];
@@ -66,12 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Filtros dinámicos inmediatos
+    // 3. Filtros dinámicos inmediatos
     [fechaDesde, fechaHasta, filterTipo, filterCobradas].forEach(el => {
         if (el) el.addEventListener('change', cargarActividades);
     });
 
-    // Búsqueda por cliente en tiempo real con debounce (300ms)
+    // 4. Búsqueda por cliente en tiempo real con debounce (300ms)
     let timeoutCliente;
     if (filterCliente) {
         filterCliente.addEventListener('input', () => {
@@ -84,7 +84,102 @@ document.addEventListener('DOMContentLoaded', () => {
             formulario.addEventListener('submit', (e) => e.preventDefault());
         }
     }
+
+    // 🎯 5. VINCULAR BOTONES PRINCIPALES (Reportes, Vaciar Filtros, Registrar Actividad)
+    document.querySelectorAll('button, .btn').forEach(btn => {
+        const texto = btn.textContent.trim();
+
+        if (texto.includes('Registrar Actividad')) {
+            btn.onclick = () => window.location.href = 'act_propia.html';
+        }
+        if (texto.includes('Vaciar Filtros')) {
+            btn.onclick = () => vaciarFiltros();
+        }
+        if (texto.includes('Reporte PDF')) {
+            btn.onclick = () => exportarPDF();
+        }
+        if (texto.includes('Reporte Excel')) {
+            btn.onclick = () => exportarExcel();
+        }
+    });
+
+    // 🎯 6. VINCULAR CLIC EN LAS TARJETAS DE MÉTRICAS
+    vincularTarjetasMetricas();
 });
+
+// ===================================================
+// FUNCIONES AUXILIARES (Poner fuera del DOMContentLoaded)
+// ===================================================
+
+function vincularTarjetasMetricas() {
+    const cards = document.querySelectorAll('.metric-card, .card-metric, [class*="metric"], .card');
+
+    cards.forEach(card => {
+        const text = card.textContent.toUpperCase();
+        card.style.cursor = 'pointer';
+
+        if (text.includes('EXCEDENTE')) {
+            card.onclick = () => abrirModalDetalle('excedente');
+        } else if (text.includes('PUNTOS DE RED') || text.includes('PT. RED')) {
+            card.onclick = () => abrirModalDetalle('pt_red');
+        } else if (text.includes('AC INSTALADOS') || text.includes('AC')) {
+            card.onclick = () => abrirModalDetalle('ac');
+        } else if (text.includes('VALORES COBRADOS') || text.includes('V. COBR')) {
+            card.onclick = () => abrirModalDetalle('cobrados');
+        } else if (text.includes('MONTO TOTAL')) {
+            card.onclick = () => abrirModalDetalle('monto_total');
+        } else if (text.includes('TOTAL ACTIVIDADES')) {
+            card.onclick = () => abrirModalDetalle('totales');
+        }
+    });
+}
+
+// Generar archivo .csv compatible con Excel
+function exportarExcel() {
+    const lista = window.actividadesCargadas || [];
+    if (lista.length === 0) {
+        alert('No hay registros para exportar.');
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    csvContent += "Fecha,Cliente,Tipo,Forma,Sector,Fibra (m),Excedente (m),Puntos Red,AC,Total ($),Cobrado ($)\n";
+
+    lista.forEach(item => {
+        const row = [
+            `"${formatFecha(item.act_fecha)}"`,
+            `"${(item.act_cliente || 'N/A').replace(/"/g, '""')}"`,
+            `"${item.act_tipo || 'GENERAL'}"`,
+            `"${item.act_forma || 'NORMAL'}"`,
+            `"${item.act_sector || 'N/A'}"`,
+            item.act_fibra || 0,
+            item.act_excedente || 0,
+            item.act_pred || item.act_pt_red || 0,
+            item.act_ac || 0,
+            parseFloat(item.act_total || item.act_valor || 0).toFixed(2),
+            parseFloat(item.act_valores_cobrados || 0).toFixed(2)
+        ];
+        csvContent += row.join(",") + "\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Reporte_Actividades_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Vista previa de impresión para PDF
+function exportarPDF() {
+    const lista = window.actividadesCargadas || [];
+    if (lista.length === 0) {
+        alert('No hay registros para exportar.');
+        return;
+    }
+    window.print();
+}
 
 // ===================================================
 // 3. CARGA DE DATOS (API)
