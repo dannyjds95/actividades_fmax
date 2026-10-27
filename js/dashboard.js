@@ -33,9 +33,7 @@ function getDatosSesion() {
     return { userId, userCargo };
 }
 
-// ==========================================
 // 2. FUNCIONES DE CONSULTA Y RENDERIZADO
-// ==========================================
 
 // Cargar métricas principales (Tarjetas superiores) filtradas por usuario
 async function cargarMetricas(fechaInicio, fechaFin) {
@@ -51,7 +49,7 @@ async function cargarMetricas(fechaInicio, fechaFin) {
             user_cargo: userCargo
         });
 
-        const res = await fetch(`${BASE_URL}/api/obtener-dashboard-metricas?${queryParams}`);
+        const res = await fetch(`${BASE_URL}/api/dashboard-metricas?${queryParams}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
         const data = await res.json();
@@ -94,7 +92,7 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
             queryParams.append('fin', fechaFin);
         }
 
-        const res = await fetch(`${BASE_URL}/api/obtener-ultimos-registros?${queryParams}`);
+        const res = await fetch(`${BASE_URL}/api/dashboard-metricas?${queryParams}`);
 
         if (!res.ok) {
             const errorHtml = await res.text();
@@ -210,9 +208,9 @@ async function cargarPeriodos(selectPeriodo) {
     }
 }
 
-// ==========================================
+
 // 3. INICIALIZACIÓN ÚNICA DE LA PÁGINA
-// ==========================================
+
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Control de Sesión de Usuario
     const sessionData = localStorage.getItem('usuario_sesion');

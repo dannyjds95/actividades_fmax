@@ -10,8 +10,8 @@ module.exports = async (req, res) => {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // 1. Extraer rango de fechas y datos de sesión (user_id y user_cargo)
-    const { inicio, fin, user_id, user_cargo } = req.query;
+    // 1. Extraer filtros de fecha y datos de sesión (user_id, user_cargo, cuad_id)
+    const { inicio, fin, user_id, user_cargo, cuad_id } = req.query;
 
     let connection;
     try {
@@ -27,16 +27,20 @@ module.exports = async (req, res) => {
         let conditions = [];
         let params = [];
 
-        // 2. Filtro de Seguridad por Usuario / Rol
+        // 2. Filtro de Seguridad por Cuadrilla / Usuario / Cargo
         if (user_cargo !== 'ADMINISTRADOR' && user_cargo !== 'SUPERVISOR') {
-            // Usuarios estándar: filtrar solo sus registros
-            if (user_id && user_id !== 'null' && user_id !== 'undefined') {
+            if (cuad_id && cuad_id !== 'null' && cuad_id !== 'undefined' && cuad_id !== '0') {
+                conditions.push('cuad_id = ?');
+                params.push(cuad_id);
+            } else if (user_id && user_id !== 'null' && user_id !== 'undefined') {
                 conditions.push('user_id = ?');
                 params.push(user_id);
             }
         } else {
-            // Administradores: ven todo, o pueden filtrar por un user_id específico opcional
-            if (user_id && user_id !== 'TODOS' && user_id !== 'null' && user_id !== 'undefined') {
+            if (cuad_id && cuad_id !== 'TODOS' && cuad_id !== 'null' && cuad_id !== 'undefined') {
+                conditions.push('cuad_id = ?');
+                params.push(cuad_id);
+            } else if (user_id && user_id !== 'TODOS' && user_id !== 'null' && user_id !== 'undefined') {
                 conditions.push('user_id = ?');
                 params.push(user_id);
             }
@@ -50,8 +54,8 @@ module.exports = async (req, res) => {
 
         const whereClause = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
 
-        // 4. Consulta SQL acumulativa para el tablero de métricas
-        const query = `
+        // --- CONSULTA 1: Métricas Principales (Tarjetas Superiores) ---
+        const queryMetricas = `
             SELECT 
                 COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS monto_facturado,
                 COALESCE(SUM(act_cantidad), 0) AS total_actividades,
@@ -65,15 +69,58 @@ module.exports = async (req, res) => {
             FROM actividad_detalle
             ${whereClause}
         `;
+        const [metricasRows] = await connection.execute(queryMetricas, params);
 
-        const [rows] = await connection.execute(query, params);
+        // --- CONSULTA 2: Resumen Cuadrilla / Trabajos ---
+        const queryCuadrilla = `
+            SELECT 
+                COUNT(*) AS total_trabajos, 
+                COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS total_monto 
+            FROM actividad_detalle
+            ${whereClause}
+        `;
+        const [cuadrillaRows] = await connection.execute(queryCuadrilla, params);
 
+        // --- CONSULTA 3: Detalle por Tipo de Actividad ---
+        const queryActividades = `
+            SELECT 
+                act_tipo AS tipo, 
+                SUM(COALESCE(act_cantidad, 1)) AS cantidad, 
+                COALESCE(SUM(COALESCE(act_total, act_valor, 0)), 0) AS monto 
+            FROM actividad_detalle
+            ${whereClause}
+            GROUP BY act_tipo
+            ORDER BY cantidad DESC
+        `;
+        const [actividadesRows] = await connection.execute(queryActividades, params);
+
+        // --- CONSULTA 4: Últimos 10 Registros ---
+        const queryUltimos = `
+            SELECT 
+                act_id AS id, 
+                act_fecha AS fecha, 
+                act_cliente AS cliente, 
+                act_tipo AS tipo, 
+                act_forma AS forma, 
+                COALESCE(act_total, act_valor, 0) AS monto 
+            FROM actividad_detalle
+            ${whereClause}
+            ORDER BY act_fecha DESC, act_id DESC 
+            LIMIT 10
+        `;
+        const [ultimosRows] = await connection.execute(queryUltimos, params);
+
+        // Respuesta unificada
         return res.status(200).json({
             status: 'success',
-            metricas: rows[0] || {}
+            metricas: metricasRows[0] || {},
+            cuadrilla: cuadrillaRows[0] || { total_trabajos: 0, total_monto: 0 },
+            actividades: actividadesRows,
+            ultimos: ultimosRows
         });
+
     } catch (err) {
-        console.error('Error en obtener-dashboard-metricas:', err.message);
+        console.error('Error en API Dashboard Unificada:', err.message);
         return res.status(500).json({ status: 'error', message: err.message });
     } finally {
         if (connection) {
