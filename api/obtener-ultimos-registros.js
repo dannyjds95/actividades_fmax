@@ -74,20 +74,6 @@ module.exports = async (req, res) => {
         const [actividadesRows] = await connection.execute(queryActividades, params);
 
         // --- CONSULTA 3: Últimos 10 Registros ---
-        const queryUltimos = `
-            SELECT 
-                act_id AS id, 
-                act_fecha AS fecha, 
-                act_cliente AS cliente, 
-                act_tipo AS tipo, 
-                act_forma AS forma, 
-                COALESCE(act_total, act_valor, 0) AS monto 
-            FROM actividad_detalle
-            ${whereClause}
-            ORDER BY act_fecha DESC, act_id DESC 
-            LIMIT 10
-        `;
-        const [ultimosRows] = await connection.execute(queryUltimos, params);
 
         return res.status(200).json({
             status: 'success',
