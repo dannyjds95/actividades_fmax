@@ -41,72 +41,85 @@ module.exports = async (req, res) => {
             // 🟢 GET: OBTENER / LISTAR ACTIVIDADES
             // --------------------------------------
             case 'GET': {
-                const { inicio, fin, tipo, cliente, sector, cobradas, user_id, user_cargo, cuad_id } = req.query;
-                let conditions = [];
-                let params = [];
+    const { inicio, fin, tipo, cliente, sector, cobradas, user_id, user_cargo, cuad_id } = req.query;
+    let conditions = [];
+    let params = [];
 
-                // Filtro de Seguridad por Usuario / Cuadrilla / Role
-                if (user_cargo !== 'ADMINISTRADOR' && user_cargo !== 'SUPERVISOR') {
-                    if (cuad_id && cuad_id !== 'null' && cuad_id !== 'undefined' && cuad_id !== '0') {
-                        conditions.push('a.cuad_id = ?');
-                        params.push(cuad_id);
-                    } else if (user_id && user_id !== 'null' && user_id !== 'undefined') {
-                        conditions.push('a.user_id = ?');
-                        params.push(user_id);
-                    }
-                } else {
-                    if (cuad_id && cuad_id !== 'TODOS' && cuad_id !== 'null' && cuad_id !== 'undefined') {
-                        conditions.push('a.cuad_id = ?');
-                        params.push(cuad_id);
-                    } else if (user_id && user_id !== 'TODOS' && user_id !== 'null' && user_id !== 'undefined') {
-                        conditions.push('a.user_id = ?');
-                        params.push(user_id);
-                    }
-                }
+    // Helper para verificar si un parámetro es válido y no es una cadena nula
+    const esValido = (val) => val && val !== 'null' && val !== 'undefined' && val !== '0' && String(val).trim() !== '';
 
-                // Filtro por Fechas
-                if (inicio && fin && inicio !== 'undefined' && fin !== 'undefined' && inicio !== 'null') {
-                    conditions.push('a.act_fecha BETWEEN ? AND ?');
-                    params.push(inicio, fin);
-                }
+    // 1. Filtro de Seguridad por Rol / Cuadrilla / Usuario
+    const esAdminOSuper = user_cargo === 'ADMINISTRADOR' || user_cargo === 'SUPERVISOR';
 
-                // Filtro por Tipo
-                if (tipo && tipo !== 'TODOS' && tipo.trim() !== '') {
-                    conditions.push('a.act_tipo = ?');
-                    params.push(tipo);
-                }
+    if (!esAdminOSuper) {
+        // Usuarios estándar (Técnicos/Ayudantes): Filtrado estricto por su cuadrilla o usuario
+        if (esValido(cuad_id)) {
+            conditions.push('a.cuad_id = ?');
+            params.push(cuad_id);
+        } else if (esValido(user_id)) {
+            conditions.push('a.user_id = ?');
+            params.push(user_id);
+        }
+    } else {
+        // Administradores y Supervisores: Filtran solo si seleccionan un valor específico distinto de 'TODOS'
+        if (esValido(cuad_id) && cuad_id !== 'TODOS') {
+            conditions.push('a.cuad_id = ?');
+            params.push(cuad_id);
+        } else if (esValido(user_id) && user_id !== 'TODOS') {
+            conditions.push('a.user_id = ?');
+            params.push(user_id);
+        }
+    }
 
-                // Búsqueda por Cliente / Sector
-                const terminoCliente = (cliente || sector || '').trim();
-                if (terminoCliente !== '') {
-                    conditions.push('a.act_cliente LIKE ?');
-                    params.push(`%${terminoCliente}%`);
-                }
+    // 2. Filtro por Fechas
+    if (esValido(inicio) && esValido(fin)) {
+        conditions.push('a.act_fecha BETWEEN ? AND ?');
+        params.push(inicio, fin);
+    }
 
-                // Filtro por Valores Cobrados
-                if (cobradas === 'si') {
-                    conditions.push('CAST(COALESCE(a.act_valores_cobrados, 0) AS DECIMAL(10,2)) > 0');
-                } else if (cobradas === 'no') {
-                    conditions.push('CAST(COALESCE(a.act_valores_cobrados, 0) AS DECIMAL(10,2)) = 0');
-                }
+    // 3. Filtro por Tipo de Actividad
+    if (esValido(tipo) && tipo !== 'TODOS') {
+        conditions.push('a.act_tipo = ?');
+        params.push(tipo);
+    }
 
-                const whereClause = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
+    // 4. Búsqueda por Cliente / Sector
+    const terminoCliente = (cliente || sector || '').trim();
+    if (terminoCliente !== '' && terminoCliente !== 'null' && terminoCliente !== 'undefined') {
+        conditions.push('a.act_cliente LIKE ?');
+        params.push(`%${terminoCliente}%`);
+    }
 
-                const query = `
-                    SELECT a.*, c.cuad_nombre 
-                    FROM actividad_detalle a 
-                    LEFT JOIN cuadrilla c ON a.cuad_id = c.cuad_id 
-                    ${whereClause} 
-                    ORDER BY a.act_fecha DESC, a.act_id DESC
-                `;
+    // 5. Filtro por Valores Cobrados
+    if (cobradas === 'si') {
+        conditions.push('CAST(COALESCE(a.act_valores_cobrados, 0) AS DECIMAL(10,2)) > 0');
+    } else if (cobradas === 'no') {
+        conditions.push('CAST(COALESCE(a.act_valores_cobrados, 0) AS DECIMAL(10,2)) = 0');
+    }
 
-                const [rows] = await connection.execute(query, params);
+    const whereClause = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
 
-                return res.status(200).json({
-                    status: 'success',
-                    actividades: rows
-                });
-            }
+    // 🎯 6. Consulta SQL actualizando el SELECT y agregando LEFT JOIN a usuarios
+    const query = `
+        SELECT 
+            a.*, 
+            c.cuad_nombre, 
+            u.user_nombre, 
+            u.user_usuario 
+        FROM actividad_detalle a 
+        LEFT JOIN cuadrilla c ON a.cuad_id = c.cuad_id 
+        LEFT JOIN usuarios u ON a.user_id = u.user_id 
+        ${whereClause} 
+        ORDER BY a.act_fecha DESC, a.act_id DESC
+    `;
+
+    const [rows] = await connection.execute(query, params);
+
+    return res.status(200).json({
+        status: 'success',
+        actividades: rows
+    });
+}
 
             // --------------------------------------
             // 🟡 POST: CREAR NUEVA ACTIVIDAD

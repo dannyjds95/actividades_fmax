@@ -400,8 +400,9 @@ function verDetalleActividad(idActividad) {
     const container = document.getElementById('actividad_detalle_body');
     if (!modal || !container) return;
 
-    const fecha = formatFecha(item.act_fecha) || 'N/A';
-    const claseBadge = getBadgeClass(item.act_tipo);
+    // Formateo seguro de fecha y badges
+    const fecha = typeof formatFecha === 'function' ? formatFecha(item.act_fecha) : (item.act_fecha ? String(item.act_fecha).split('T')[0] : 'N/A');
+    const claseBadge = typeof getBadgeClass === 'function' ? getBadgeClass(item.act_tipo) : 'badge-default';
 
     const excMetros = parseFloat(item.act_excedente || 0);
     const excMonto = parseFloat(item.act_excedente_valor || 0);
@@ -411,6 +412,9 @@ function verDetalleActividad(idActividad) {
     const totalMonto = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0));
 
     const cuadrillaNombre = item.cuad_nombre || (item.cuad_id ? `Cuadrilla #${item.cuad_id}` : 'No asignada');
+    
+    // 🎯 Capturar usuario que registró la actividad
+    const registradoPor = item.user_nombre || item.user_usuario || (item.user_id ? `Usuario #${item.user_id}` : 'No especificado');
 
     let camposOpcionalesHTML = '';
 
@@ -456,6 +460,13 @@ function verDetalleActividad(idActividad) {
                 <span class="detail-label">Cuadrilla</span>
                 <span class="detail-value"><b>${cuadrillaNombre}</b></span>
             </div>
+
+            <!-- 🎯 Bloque: Registrado por -->
+            <div class="detail-item col-span-2">
+                <span class="detail-label">Registrado por</span>
+                <span class="detail-value strong" style="color: var(--primary-color, #1e3a8a);">${registradoPor}</span>
+            </div>
+
             <div class="detail-item col-span-2">
                 <span class="detail-label">Cliente</span>
                 <span class="detail-value strong">${item.act_cliente || 'N/A'}</span>
