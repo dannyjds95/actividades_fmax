@@ -1,3 +1,4 @@
+// ==========================================
 // 1. CONFIGURACIÓN GLOBAL Y AUXILIARES
 // ==========================================
 const BASE_URL = window.location.hostname.includes('vercel.app')
@@ -17,36 +18,41 @@ function getBadgeClass(tipo) {
     return 'badge-default';
 }
 
-// Obtener datos del usuario en sesión
+// Obtener datos del usuario y cuadrilla en sesión
 function getDatosSesion() {
     let userId = localStorage.getItem('user_id') || '';
     let userCargo = localStorage.getItem('user_cargo') || '';
+    let cuadId = localStorage.getItem('cuad_id') || '';
 
     try {
         const sesion = JSON.parse(localStorage.getItem('usuario_sesion') || '{}');
         if (!userId) userId = sesion.user_id || sesion.id || '';
         if (!userCargo) userCargo = sesion.user_cargo || sesion.cargo || '';
+        if (!cuadId) cuadId = sesion.cuad_id || '';
     } catch (e) {
         console.warn('Error al leer usuario_sesion de localStorage', e);
     }
 
-    return { userId, userCargo };
+    return { userId, userCargo, cuadId };
 }
 
+// ==========================================
 // 2. FUNCIONES DE CONSULTA Y RENDERIZADO
+// ==========================================
 
-// Cargar métricas principales (Tarjetas superiores) filtradas por usuario
+// Cargar métricas principales (Tarjetas superiores)
 async function cargarMetricas(fechaInicio, fechaFin) {
     if (!fechaInicio || !fechaFin || fechaInicio === 'undefined' || fechaFin === 'undefined' || fechaInicio === 'null' || fechaFin === 'null') return;
 
-    const { userId, userCargo } = getDatosSesion();
+    const { userId, userCargo, cuadId } = getDatosSesion();
 
     try {
         const queryParams = new URLSearchParams({
             inicio: fechaInicio,
             fin: fechaFin,
             user_id: userId,
-            user_cargo: userCargo
+            user_cargo: userCargo,
+            cuad_id: cuadId // 👈 Filtro por Cuadrilla agregado
         });
 
         const res = await fetch(`${BASE_URL}/api/dashboard-metricas?${queryParams}`);
@@ -77,14 +83,15 @@ async function cargarMetricas(fechaInicio, fechaFin) {
     }
 }
 
-// Cargar secciones secundarias filtradas por usuario
+// Cargar secciones secundarias (Resumen cuadrilla y desglose de actividades)
 async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
-    const { userId, userCargo } = getDatosSesion();
+    const { userId, userCargo, cuadId } = getDatosSesion();
 
     try {
         const queryParams = new URLSearchParams({
             user_id: userId,
-            user_cargo: userCargo
+            user_cargo: userCargo,
+            cuad_id: cuadId // 👈 Filtro por Cuadrilla agregado
         });
 
         if (fechaInicio && fechaFin) {
@@ -121,14 +128,14 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
                         const totalCantidad = act.cantidad !== undefined ? act.cantidad : (act.registros !== undefined ? act.registros : 0);
 
                         return `
-                <div class="activity-item">
-                    <div>
-                        <span class="badge-tipo ${getBadgeClass(act.tipo)}">${act.tipo}</span>
-                        <div class="item-subtitle" style="margin-top:4px;">${totalCantidad} cantidad</div>
-                    </div>
-                    <span class="activity-amount-blue">$${parseFloat(act.monto || 0).toFixed(2)}</span>
-                </div>
-            `;
+                        <div class="activity-item">
+                            <div>
+                                <span class="badge-tipo ${getBadgeClass(act.tipo)}">${act.tipo}</span>
+                                <div class="item-subtitle" style="margin-top:4px;">${totalCantidad} cantidad</div>
+                            </div>
+                            <span class="activity-amount-blue">$${parseFloat(act.monto || 0).toFixed(2)}</span>
+                        </div>
+                    `;
                     }).join('');
                 } else {
                     cntActividades.innerHTML = '<p style="color:#94a3b8; font-size:13px; text-align:center; padding:12px;">Sin actividades en este período</p>';
@@ -195,12 +202,8 @@ async function cargarPeriodos(selectPeriodo) {
                 const inicioSel = optSeleccionada.dataset.inicio;
                 const finSel = optSeleccionada.dataset.fin;
 
-                if (typeof cargarMetricas === 'function') {
-                    cargarMetricas(inicioSel, finSel);
-                }
-                if (typeof cargarSeccionesSecundarias === 'function') {
-                    cargarSeccionesSecundarias(inicioSel, finSel);
-                }
+                cargarMetricas(inicioSel, finSel);
+                cargarSeccionesSecundarias(inicioSel, finSel);
             }
         }
     } catch (err) {
@@ -208,8 +211,9 @@ async function cargarPeriodos(selectPeriodo) {
     }
 }
 
-
+// ==========================================
 // 3. INICIALIZACIÓN ÚNICA DE LA PÁGINA
+// ==========================================
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Control de Sesión de Usuario
@@ -219,7 +223,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    const usuario = JSON.parse(sessionData);
+    let usuario = {};
+    try {
+        usuario = JSON.parse(sessionData);
+    } catch (e) {
+        console.error('Error al leer datos de sesión:', e);
+        localStorage.clear();
+        window.location.href = '../index.html';
+        return;
+    }
+
     const nombreMostrar = usuario.user_nombre || usuario.nombre || 'Usuario';
 
     const userNameEl = document.getElementById('userName');
@@ -228,13 +241,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (userNameEl) userNameEl.textContent = nombreMostrar;
     if (welcomeUserEl) welcomeUserEl.textContent = nombreMostrar;
 
-    // Control de Cierre de Sesión
+    // Control de Cierre de Sesión Completo
     const btnLogout = document.getElementById('btnLogout');
     if (btnLogout) {
         btnLogout.addEventListener('click', () => {
             localStorage.removeItem('usuario_sesion');
             localStorage.removeItem('user_id');
             localStorage.removeItem('user_cargo');
+            localStorage.removeItem('cuad_id'); // 👈 Se limpia la cuadrilla guardada
             window.location.href = '../index.html';
         });
     }

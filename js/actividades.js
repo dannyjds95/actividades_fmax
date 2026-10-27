@@ -20,6 +20,24 @@ function getBadgeClass(tipo) {
     return 'badge-default';
 }
 
+// Helper centralizado para obtener datos de sesión
+function getDatosSesion() {
+    let userId = localStorage.getItem('user_id') || '';
+    let userCargo = localStorage.getItem('user_cargo') || '';
+    let cuadId = localStorage.getItem('cuad_id') || '';
+
+    try {
+        const sesion = JSON.parse(localStorage.getItem('usuario_sesion') || '{}');
+        if (!userId) userId = sesion.user_id || sesion.id || '';
+        if (!userCargo) userCargo = sesion.user_cargo || sesion.cargo || '';
+        if (!cuadId) cuadId = sesion.cuad_id || '';
+    } catch (e) {
+        console.warn('Error al leer datos de sesión:', e);
+    }
+
+    return { userId, userCargo, cuadId };
+}
+
 // ===================================================
 // 2. INICIALIZACIÓN Y EVENTOS
 // ===================================================
@@ -28,15 +46,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const fechaDesde = document.getElementById('fecha_desde');
     const fechaHasta = document.getElementById('fecha_hasta');
     const filterTipo = document.getElementById('filter_tipo');
-    const filterCliente = document.getElementById('filter_cliente'); // Actualizado: ID correcto
+    const filterCliente = document.getElementById('filter_cliente');
     const filterCobradas = document.getElementById('filter_cobradas');
 
-    // Cargar selector de períodos y auto-seleccionar el período actual
+    // Cargar selector de períodos
     if (typeof cargarPeriodos === 'function' && selectPeriodo) {
         cargarPeriodos(selectPeriodo);
     }
 
-    // Evento al cambiar de período en el select
+    // Evento al cambiar de período
     if (selectPeriodo) {
         selectPeriodo.addEventListener('change', (e) => {
             const opt = e.target.options[e.target.selectedIndex];
@@ -48,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Filtros dinámicos inmediatos para selectores y fechas
+    // Filtros dinámicos inmediatos
     [fechaDesde, fechaHasta, filterTipo, filterCobradas].forEach(el => {
         if (el) el.addEventListener('change', cargarActividades);
     });
@@ -61,13 +79,13 @@ document.addEventListener('DOMContentLoaded', () => {
             timeoutCliente = setTimeout(cargarActividades, 300);
         });
 
-        // Prevenir recarga de página al presionar Enter en la casilla de cliente
         const formulario = filterCliente.closest('form');
         if (formulario) {
             formulario.addEventListener('submit', (e) => e.preventDefault());
         }
     }
 });
+
 // ===================================================
 // 3. CARGA DE DATOS (API)
 // ===================================================
@@ -96,19 +114,21 @@ async function cargarPeriodos(selectPeriodo) {
                 selectPeriodo.appendChild(opt);
 
                 if (hoy >= inicio && hoy <= fin) {
-                    actualIdx = index + 1; // +1 por la opción inicial
+                    actualIdx = index + 1;
                 }
             });
 
-            // Seleccionar período actual (o el primero disponible)
             const selIndex = actualIdx !== -1 ? actualIdx : (data.periodos.length > 0 ? 1 : 0);
 
             if (selectPeriodo.options[selIndex]) {
                 selectPeriodo.selectedIndex = selIndex;
                 const optSel = selectPeriodo.options[selIndex];
 
-                document.getElementById('fecha_desde').value = optSel.dataset.inicio || '';
-                document.getElementById('fecha_hasta').value = optSel.dataset.fin || '';
+                const fechaDesde = document.getElementById('fecha_desde');
+                const fechaHasta = document.getElementById('fecha_hasta');
+
+                if (fechaDesde) fechaDesde.value = optSel.dataset.inicio || '';
+                if (fechaHasta) fechaHasta.value = optSel.dataset.fin || '';
 
                 cargarActividades();
             }
@@ -119,7 +139,6 @@ async function cargarPeriodos(selectPeriodo) {
     }
 }
 
-// Función auxiliar para actualizar los valores en los elementos del DOM del Resumen
 function actualizarResumenTotales(totalAct, excM, excV, ptRed, cantAc, totalM, cobradosM) {
     const elTotalAct = document.getElementById('sum_total_actividades');
     const elExc = document.getElementById('sum_total_excedente');
@@ -142,20 +161,8 @@ async function cargarActividades() {
 
     if (!tbody) return;
 
-    // 1. Obtener datos de sesión guardados en localStorage
-    let userId = localStorage.getItem('user_id') || '';
-    let userCargo = localStorage.getItem('user_cargo') || '';
-
-    // Respaldo: intentar leer desde el objeto 'usuario_sesion'
-    if (!userId || !userCargo) {
-        try {
-            const sesion = JSON.parse(localStorage.getItem('usuario_sesion') || '{}');
-            userId = userId || sesion.user_id || sesion.id || '';
-            userCargo = userCargo || sesion.user_cargo || sesion.cargo || '';
-        } catch (e) {
-            console.warn('No se pudo parsear usuario_sesion', e);
-        }
-    }
+    // 🎯 1. Obtener datos de sesión incluyendo cuadrilla
+    const { userId, userCargo, cuadId } = getDatosSesion();
 
     // 2. Obtener valores de los filtros de la interfaz
     const inicio = document.getElementById('fecha_desde')?.value || '';
@@ -167,7 +174,7 @@ async function cargarActividades() {
     tbody.innerHTML = '<tr><td colspan="11" class="text-center">Buscando registros...</td></tr>';
 
     try {
-        // 3. Incluir user_id y user_cargo en los parámetros de la URL
+        // 🎯 3. Incluir cuad_id en los parámetros de la URL
         const queryParams = new URLSearchParams({
             inicio,
             fin,
@@ -175,11 +182,11 @@ async function cargarActividades() {
             cliente,
             cobradas,
             user_id: userId,
-            user_cargo: userCargo
+            user_cargo: userCargo,
+            cuad_id: cuadId
         });
 
         const res = await fetch(`${BASE_URL}/api/actividades?${queryParams}`);
-
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
         const data = await res.json();
@@ -187,7 +194,7 @@ async function cargarActividades() {
         if (data.status === 'success' && Array.isArray(data.actividades)) {
             let lista = data.actividades;
 
-            // 🔍 Respaldo Frontend: Filtrado de cliente si la API no lo realiza directamente
+            // Filtrado secundario en frontend si es necesario
             if (cliente !== '') {
                 const queryCliente = cliente.toLowerCase();
                 lista = lista.filter(item =>
@@ -207,7 +214,6 @@ async function cargarActividades() {
                 lista = lista.filter(item => parseFloat(item.act_valores_cobrados || 0) === 0);
             }
 
-            // 📌 Almacenar la lista activa para las tarjetas de métricas o exportación
             window.actividadesCargadas = lista;
 
             if (txtTotal) txtTotal.textContent = `${lista.length} registros`;
@@ -218,7 +224,6 @@ async function cargarActividades() {
                 return;
             }
 
-            // Variables acumuladoras para los totales filtrados
             let sumActividades = 0;
             let sumExcedenteMetros = 0;
             let sumExcedenteValor = 0;
@@ -227,10 +232,8 @@ async function cargarActividades() {
             let sumTotalMonto = 0;
             let sumValoresCobrados = 0;
 
-            // 4. Renderizar filas y realizar sumatorias
             tbody.innerHTML = lista.map(item => {
                 const idReg = item.id || item.act_id || 0;
-
                 const cantAct = parseFloat(item.act_cantidad || 1);
                 const excMetros = parseFloat(item.act_excedente || 0);
                 const excedenteMonto = parseFloat(item.act_excedente_valor || 0);
@@ -245,11 +248,9 @@ async function cargarActividades() {
                 const cobradoNum = parseFloat(item.act_valores_cobrados || 0);
                 const valorCobradoFormatted = cobradoNum.toFixed(2);
 
-                // Sanitización de atributos HTML
                 const detalleLimpio = String(item.act_detalle || item.detalle || '').replace(/"/g, '&quot;');
                 const tipoLimpio = String(item.act_tipo || 'INSTALACION').replace(/"/g, '&quot;');
 
-                // Sumatorias acumuladas
                 sumActividades += cantAct;
                 sumExcedenteMetros += excMetros;
                 sumExcedenteValor += excedenteMonto;
@@ -258,48 +259,40 @@ async function cargarActividades() {
                 sumTotalMonto += totalMontoNum;
                 sumValoresCobrados += cobradoNum;
 
-                const fechaFormateada = typeof formatFecha === 'function'
-                    ? formatFecha(item.act_fecha)
-                    : (item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
-
-                const claseBadge = typeof getBadgeClass === 'function'
-                    ? getBadgeClass(item.act_tipo)
-                    : 'badge-default';
+                const fechaFormateada = formatFecha(item.act_fecha);
+                const claseBadge = getBadgeClass(item.act_tipo);
 
                 return `
-    <tr data-detalle="${detalleLimpio}" data-cobrado="${valorCobradoFormatted}" data-tipo="${tipoLimpio}">
-        <td class="col-fecha text-center">${fechaFormateada}</td>
-        <td class="col-cliente">${item.act_cliente || 'N/A'}</td>
-        <td class="text-center"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
-        <td class="text-center">${item.act_forma || 'NORMAL'}</td>
-        <td class="text-center">${item.act_fibra || 0} m</td>
-        <td class="text-center">
-            ${excMetros} m 
-            ${excedenteMonto > 0
-                        ? `<span class="badge-excedente">($${excedenteValorFormatted})</span>`
-                        : `<span class="val-zero">($${excedenteValorFormatted})</span>`}
-        </td>
-        <td class="text-center">${numPtRed}</td>
-        <td class="text-center">${numAc}</td>
-        <td class="text-right"><b>$${totalMontoFormatted}</b></td>
-        <td class="text-center">
-            ${cobradoNum > 0
-                        ? `<span class="badge-cobrado">$${valorCobradoFormatted}</span>`
-                        : `<span class="val-zero">$${valorCobradoFormatted}</span>`}
-        </td>
-        <td class="text-center">
-            <div class="action-buttons">
-                <!-- Botón Ver Detalle (Lupa) -->
-                <button class="btn-action btn-view" onclick="verDetalleActividad(${idReg})" title="Ver Detalle">🔍</button>
-                <button class="btn-action btn-edit" onclick="editarActividad(${idReg})">Editar</button>
-                <button class="btn-action btn-delete" onclick="eliminarActividad(${idReg})">Eliminar</button>
-            </div>
-        </td>
-    </tr>
-`;
+                <tr data-detalle="${detalleLimpio}" data-cobrado="${valorCobradoFormatted}" data-tipo="${tipoLimpio}">
+                    <td class="col-fecha text-center">${fechaFormateada}</td>
+                    <td class="col-cliente">${item.act_cliente || 'N/A'}</td>
+                    <td class="text-center"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
+                    <td class="text-center">${item.act_forma || 'NORMAL'}</td>
+                    <td class="text-center">${item.act_fibra || 0} m</td>
+                    <td class="text-center">
+                        ${excMetros} m 
+                        ${excedenteMonto > 0
+                            ? `<span class="badge-excedente">($${excedenteValorFormatted})</span>`
+                            : `<span class="val-zero">($${excedenteValorFormatted})</span>`}
+                    </td>
+                    <td class="text-center">${numPtRed}</td>
+                    <td class="text-center">${numAc}</td>
+                    <td class="text-right"><b>$${totalMontoFormatted}</b></td>
+                    <td class="text-center">
+                        ${cobradoNum > 0
+                            ? `<span class="badge-cobrado">$${valorCobradoFormatted}</span>`
+                            : `<span class="val-zero">$${valorCobradoFormatted}</span>`}
+                    </td>
+                    <td class="text-center">
+                        <div class="action-buttons">
+                            <button class="btn-action btn-view" onclick="verDetalleActividad(${idReg})" title="Ver Detalle">🔍</button>
+                            <button class="btn-action btn-edit" onclick="editarActividad(${idReg})">Editar</button>
+                            <button class="btn-action btn-delete" onclick="eliminarActividad(${idReg})">Eliminar</button>
+                        </div>
+                    </td>
+                </tr>`;
             }).join('');
 
-            // 5. Actualizar la tarjeta de resumen en el DOM
             actualizarResumenTotales(
                 sumActividades,
                 sumExcedenteMetros,
@@ -322,28 +315,24 @@ async function cargarActividades() {
         actualizarResumenTotales(0, 0, 0, 0, 0, 0, 0);
     }
 }
+
 // ===================================================
 // 4. ACCIONES DE REGISTRO
 // ===================================================
 
-// Función para eliminar un registro con confirmación
 async function eliminarActividad(idActividad) {
     if (!idActividad) {
         alert('ID de registro no válido.');
         return;
     }
 
-    // Confirmación previa antes de eliminar
     const confirmacion = confirm(`¿Estás seguro de que deseas eliminar la actividad #${idActividad}? Esta acción no se puede deshacer.`);
     if (!confirmacion) return;
 
     try {
-        // 🎯 Se envía el ID como query param ?id=... para coincidir con api/actividades.js
         const res = await fetch(`${BASE_URL}/api/actividades?id=${idActividad}`, {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' }
         });
 
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -352,7 +341,6 @@ async function eliminarActividad(idActividad) {
 
         if (data.status === 'success') {
             alert('✅ Registro eliminado con éxito.');
-            // Recargar la tabla y los totales inmediatamente
             cargarActividades();
         } else {
             alert(`⚠️ Error: ${data.message || 'No se pudo eliminar el registro.'}`);
@@ -365,7 +353,6 @@ async function eliminarActividad(idActividad) {
 }
 
 function vaciarFiltros() {
-    // 1. Limpiar campos de texto y selects (Actualizado: filter_cliente)
     const filterTipo = document.getElementById('filter_tipo');
     const filterCliente = document.getElementById('filter_cliente');
     const filterCobradas = document.getElementById('filter_cobradas');
@@ -374,7 +361,6 @@ function vaciarFiltros() {
     if (filterCliente) filterCliente.value = '';
     if (filterCobradas) filterCobradas.value = '';
 
-    // 2. Restablecer el selector al Período Actual basado en la fecha de hoy
     const selectPeriodo = document.getElementById('select_periodo');
     const fechaDesde = document.getElementById('fecha_desde');
     const fechaHasta = document.getElementById('fecha_hasta');
@@ -383,7 +369,6 @@ function vaciarFiltros() {
         const hoy = new Date().toISOString().split('T')[0];
         let actualIdx = -1;
 
-        // Buscar qué opción abarca la fecha actual
         for (let i = 0; i < selectPeriodo.options.length; i++) {
             const opt = selectPeriodo.options[i];
             if (opt.dataset.inicio && opt.dataset.fin) {
@@ -394,11 +379,9 @@ function vaciarFiltros() {
             }
         }
 
-        // Si se encuentra el período actual se selecciona, sino se usa el primero disponible
         const selIndex = actualIdx !== -1 ? actualIdx : (selectPeriodo.options.length > 1 ? 1 : 0);
         selectPeriodo.selectedIndex = selIndex;
 
-        // Asignar las fechas desde/hasta del período seleccionado
         const optSel = selectPeriodo.options[selIndex];
         if (optSel && optSel.dataset.inicio && optSel.dataset.fin) {
             if (fechaDesde) fechaDesde.value = optSel.dataset.inicio;
@@ -406,141 +389,9 @@ function vaciarFiltros() {
         }
     }
 
-    // 3. Consultar las actividades con los filtros limpios
     cargarActividades();
 }
 
-function abrirModalDetalle(tipoMetrica) {
-    const modal = document.getElementById('modal_detalle_metrica');
-    const titulo = document.getElementById('modal_detalle_titulo');
-    const thead = document.getElementById('tbl_detalle_metrica_head');
-    const tbody = document.getElementById('tbl_detalle_metrica_body');
-
-    if (!modal || !tbody || !thead) return;
-
-    let registrosFiltrados = [];
-    let tituloTexto = '';
-    let nombreColumnaMétrica = '';
-    let obtenerValorMétrica = (item) => '';
-
-    // Filtrado y configuración dinámica según la tarjeta seleccionada
-    switch (tipoMetrica) {
-        case 'excedente':
-            tituloTexto = 'Actividades con Excedente';
-            nombreColumnaMétrica = 'Excedente';
-            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
-                parseFloat(item.act_excedente || 0) > 0 || parseFloat(item.act_excedente_valor || 0) > 0
-            );
-            obtenerValorMétrica = (item) => {
-                const m = item.act_excedente || 0;
-                const val = parseFloat(item.act_excedente_valor || 0).toFixed(2);
-                return `<span class="badge-excedente">${m} m ($${val})</span>`;
-            };
-            break;
-
-        case 'pt_red':
-            tituloTexto = 'Actividades con Puntos de Red';
-            nombreColumnaMétrica = 'Puntos de Red';
-            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
-                parseFloat(item.act_pred || item.act_pt_red || 0) > 0
-            );
-            obtenerValorMétrica = (item) => `<b>${item.act_pred || item.act_pt_red || 0}</b>`;
-            break;
-
-        case 'ac':
-            tituloTexto = 'Actividades con AC Instalados';
-            nombreColumnaMétrica = 'AC Instalados';
-            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
-                parseFloat(item.act_ac || 0) > 0
-            );
-            obtenerValorMétrica = (item) => `<b>${item.act_ac || 0}</b>`;
-            break;
-
-        case 'cobrados':
-            tituloTexto = 'Actividades con Valores Cobrados';
-            nombreColumnaMétrica = 'Valores Cobrados';
-            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
-                parseFloat(item.act_valores_cobrados || 0) > 0
-            );
-            obtenerValorMétrica = (item) => {
-                const val = parseFloat(item.act_valores_cobrados || 0).toFixed(2);
-                return `<span class="badge-cobrado">$${val}</span>`;
-            };
-            break;
-
-        case 'monto_total':
-            tituloTexto = 'Actividades con Monto Total';
-            nombreColumnaMétrica = 'Monto Total';
-            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
-                parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)) > 0
-            );
-            obtenerValorMétrica = (item) => {
-                const total = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)).toFixed(2);
-                return `<b>$${total}</b>`;
-            };
-            break;
-
-        case 'totales':
-        default:
-            tituloTexto = 'Todas las Actividades del Período';
-            nombreColumnaMétrica = 'Cantidad / Fibra';
-            registrosFiltrados = [...(window.actividadesCargadas || [])];
-            obtenerValorMétrica = (item) => `${item.act_cantidad || 1} act (${item.act_fibra || 0} m)`;
-            break;
-    }
-
-    if (titulo) titulo.textContent = `${tituloTexto} (${registrosFiltrados.length})`;
-
-    // 1. Construir únicamente las cabeceras necesarias
-    thead.innerHTML = `
-        <tr>
-            <th class="text-center">Fecha</th>
-            <th>Cliente</th>
-            <th class="text-center">Tipo</th>
-            <th class="text-center">${nombreColumnaMétrica}</th>
-        </tr>
-    `;
-
-    // 2. Renderizar los datos limpios
-    if (registrosFiltrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No hay registros que coincidan con esta métrica.</td></tr>';
-    } else {
-        tbody.innerHTML = registrosFiltrados.map(item => {
-            const fechaFormateada = typeof formatFecha === 'function'
-                ? formatFecha(item.act_fecha)
-                : (item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
-
-            const claseBadge = typeof getBadgeClass === 'function'
-                ? getBadgeClass(item.act_tipo)
-                : 'badge-default';
-
-            return `
-                <tr>
-                    <td class="text-center">${fechaFormateada}</td>
-                    <td><b>${item.act_cliente || 'N/A'}</b></td>
-                    <td class="text-center"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
-                    <td class="text-center">${obtenerValorMétrica(item)}</td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    // Mostrar el modal centrado
-    modal.classList.add('active');
-}
-
-function cerrarModalDetalle() {
-    const modal = document.getElementById('modal_detalle_metrica');
-    if (modal) modal.classList.remove('active');
-}
-
-// Permitir cerrar modal con la tecla ESC
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') cerrarModalDetalle();
-});
-
-
-// Función para abrir y armar el modal de detalle completo
 function verDetalleActividad(idActividad) {
     const item = (window.actividadesCargadas || []).find(act => (act.id || act.act_id) == idActividad);
     if (!item) return;
@@ -549,9 +400,8 @@ function verDetalleActividad(idActividad) {
     const container = document.getElementById('actividad_detalle_body');
     if (!modal || !container) return;
 
-    // Formateo de valores
-    const fecha = typeof formatFecha === 'function' ? formatFecha(item.act_fecha) : (item.act_fecha ? String(item.act_fecha).split('T')[0] : 'N/A');
-    const claseBadge = typeof getBadgeClass === 'function' ? getBadgeClass(item.act_tipo) : 'badge-default';
+    const fecha = formatFecha(item.act_fecha) || 'N/A';
+    const claseBadge = getBadgeClass(item.act_tipo);
 
     const excMetros = parseFloat(item.act_excedente || 0);
     const excMonto = parseFloat(item.act_excedente_valor || 0);
@@ -560,10 +410,8 @@ function verDetalleActividad(idActividad) {
     const cobrados = parseFloat(item.act_valores_cobrados || 0);
     const totalMonto = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0));
 
-    // Nombre de cuadrilla (muestra nombre si existe en el objeto o el ID)
     const cuadrillaNombre = item.cuad_nombre || (item.cuad_id ? `Cuadrilla #${item.cuad_id}` : 'No asignada');
 
-    // Construcción dinámica de campos condicionales
     let camposOpcionalesHTML = '';
 
     if (excMetros > 0 || excMonto > 0) {
@@ -612,19 +460,15 @@ function verDetalleActividad(idActividad) {
                 <span class="detail-label">Cliente</span>
                 <span class="detail-value strong">${item.act_cliente || 'N/A'}</span>
             </div>
-
-                        <div class="detail-item">
+            <div class="detail-item">
                 <span class="detail-label">Tipo</span>
                 <span class="detail-value"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></span>
             </div>
-
             <div class="detail-item">
                 <span class="detail-label">Forma</span>
                 <span class="detail-value">${item.act_forma || 'NORMAL'}</span>
             </div>
-
-
-                        <div class="detail-item">
+            <div class="detail-item">
                 <span class="detail-label">Sector</span>
                 <span class="detail-value">${item.act_sector || 'N/A'}</span>
             </div>
@@ -656,48 +500,26 @@ function cerrarModalVerActividad() {
     if (modal) modal.classList.remove('active');
 }
 
-// Cerrar con Escape o clic en fondo
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') cerrarModalVerActividad();
-});
-
-
-// Abrir modal en modo "Nueva Actividad"
-function abrirModalNuevo() {
-    const form = document.getElementById('form_actividad');
-    if (form) form.reset();
-
-    document.getElementById('form_act_id').value = '';
-    document.getElementById('modal_titulo').textContent = 'Registrar Actividad';
-
-    // Fecha predeterminada de hoy
-    const hoy = new Date().toISOString().split('T')[0];
-    document.getElementById('act_fecha').value = hoy;
-
-    abrirModal();
-}
-
-// Se dispara al hacer clic en el botón Editar de la tabla
-// Redirige a la página del formulario pasando el ID en la URL
 function editarActividad(idActividad) {
     if (!idActividad) {
         alert('ID de registro no válido.');
         return;
     }
-    // Redirección directa al formulario con el parámetro de edición
     window.location.href = `act_propia.html?editId=${idActividad}`;
 }
 
-// 2. Enviar actualización o creación según exista el ID
+// 🎯 Guardar o actualizar actividad (Corregido para la API unificada)
 async function guardarActividad(e) {
     if (e) e.preventDefault();
 
     const act_id = document.getElementById('form_act_id').value;
+    const { userId, cuadId } = getDatosSesion();
 
     const payload = {
+        user_id: userId ? Number(userId) : null,
         act_id: act_id ? Number(act_id) : null,
         act_fecha: document.getElementById('act_fecha').value,
-        cuad_id: Number(document.getElementById('cuad_id').value || 1),
+        cuad_id: Number(document.getElementById('cuad_id')?.value || cuadId || 1),
         act_cliente: document.getElementById('act_cliente').value.trim(),
         act_sector: document.getElementById('act_sector').value.trim(),
         act_tipo: document.getElementById('act_tipo').value,
@@ -711,7 +533,8 @@ async function guardarActividad(e) {
     };
 
     const isEdit = Boolean(act_id);
-    const url = isEdit ? `${BASE_URL}/api/actividades/${act_id}` : `${BASE_URL}/api/actividades`;
+    // 🎯 Siempre llamamos a /api/actividades independientemente de si es PUT o POST
+    const url = `${BASE_URL}/api/actividades`;
     const method = isEdit ? 'PUT' : 'POST';
 
     try {
@@ -728,7 +551,7 @@ async function guardarActividad(e) {
         if (data.status === 'success') {
             alert(isEdit ? '✅ Actividad actualizada correctamente.' : '✅ Actividad registrada con éxito.');
             cerrarModal();
-            cargarActividades(); // Recargar tabla y métricas superiores
+            cargarActividades();
         } else {
             alert(`⚠️ Error: ${data.message || 'No se pudo guardar la actividad.'}`);
         }
@@ -747,6 +570,14 @@ function cerrarModal() {
     const modal = document.getElementById('modal_actividad');
     if (modal) modal.classList.remove('active');
 }
+
+// Cierre de modales con Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        cerrarModalVerActividad();
+        cerrarModal();
+    }
+});
 
 // Función para Generar un Reporte PDF Elegante con los Filtros Visibles
 // Función para Generar el Reporte PDF capturando dinámicamente la tabla visible

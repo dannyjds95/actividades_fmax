@@ -9,18 +9,21 @@
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/Formularios.css">
     <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/administracion.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Enlace al Manifest -->
-<link rel="icon" type="image/png" href="/actividades_fmax/image/logo.png">
-<link rel="apple-touch-icon" href="/actividades_fmax/image/logo.png">
-<link rel="manifest" href="/actividades_fmax/manifest.json">
+<link rel="icon" type="image/png" href="../image/logo.png">
+<link rel="apple-touch-icon" href="../image/logo.png">
+<link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#2563eb">
 
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/actividades_fmax/sw.js', { scope: '/actividades_fmax/' });
+      navigator.serviceWorker.register('../sw.js', { scope: '../' })
+        .then(reg => console.log('Service Worker registrado correctamente:', reg))
+        .catch(err => console.error('Error al registrar Service Worker:', err));
     });
   }
 </script>
@@ -133,38 +136,41 @@
                 </section>
 
                 <!-- ==================== SECCIÓN 2: CRUD USUARIOS ==================== -->
-                <section id="secUsuarios" class="admin-section hidden" style="max-width: 1000px; margin: 0 auto;">
-                    <div class="card"
-                        style="background: var(--card-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md);">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3 style="margin: 0; color: var(--primary-color);">Gestión de Usuarios</h3>
-                            <button type="button" id="btnNuevoUsuario" class="btn btn-primary">+ Nuevo Usuario</button>
-                        </div>
+<section id="secUsuarios" class="admin-section hidden" style="width: 100%; max-width: 1000px; margin: 0 auto; padding: 0 0.5rem; box-sizing: border-box;">
+    <div class="card" style="background: var(--card-bg); padding: 1rem; border-radius: var(--border-radius); box-shadow: var(--shadow-md); width: 100%; box-sizing: border-box;">
+        
+        <!-- Cabecera flexible: se acomoda verticalmente en móviles si no hay espacio -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
+            <h3 style="margin: 0; color: var(--primary-color); font-size: 1.25rem;">Gestión de Usuarios</h3>
+            <button type="button" id="btnNuevoUsuario" class="btn btn-primary" style="white-space: nowrap;">+ Nuevo Usuario</button>
+        </div>
 
-                        <div class="table-responsive">
-                            <table class="custom-table" style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Nombre</th>
-                                        <th>Usuario</th>
-                                        <th>Cargo</th>
-                                        <th>Cuadrilla</th>
-                                        <th>Estado</th>
-                                        <th style="text-align: center;">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbodyUsuarios">
-                                    <tr>
-                                        <td colspan="7" style="text-align: center; padding: 1rem;">Cargando usuarios...
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
+        <!-- Contenedor con desplazamiento horizontal suave para la tabla -->
+        <div class="table-responsive" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="custom-table" style="width: 100%; min-width: 600px; border-collapse: collapse; white-space: nowrap;">
+                <thead>
+                    <tr>
+                        <th style="padding: 0.75rem 0.5rem; text-align: left;">ID</th>
+                        <th style="padding: 0.75rem 0.5rem; text-align: left;">Nombre</th>
+                        <th style="padding: 0.75rem 0.5rem; text-align: left;">Usuario</th>
+                        <th style="padding: 0.75rem 0.5rem; text-align: left;">Cargo</th>
+                        <th style="padding: 0.75rem 0.5rem; text-align: left;">Cuadrilla</th>
+                        <th style="padding: 0.75rem 0.5rem; text-align: left;">Estado</th>
+                        <th style="padding: 0.75rem 0.5rem; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyUsuarios">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 1.5rem; color: #64748b;">
+                            Cargando usuarios...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</section>
             </div>
 
             <footer style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); margin-top: auto;">

@@ -1,10 +1,11 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
+    // Cabeceras CORS
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Content-Type');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -16,18 +17,20 @@ module.exports = async (req, res) => {
 
     let connection;
     try {
-        const { user_usuario, user_password } = req.body || {};
+        // Parsear body si viene serializado como string
+        const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+        const { user_usuario, user_password } = body;
 
         if (!user_usuario || !user_password) {
             return res.status(400).json({ status: 'error', message: 'Usuario y contraseña requeridos' });
         }
 
         connection = await mysql.createConnection({
-            host: 'gateway01.us-east-1.prod.aws.tidbcloud.com',
-            port: 4000,
-            user: '2ji5HdpY4sfmZMo.root',
-            password: 'tQPdtsQdqHSASOp6',
-            database: 'actividades2',
+            host: process.env.DB_HOST || 'gateway01.us-east-1.prod.aws.tidbcloud.com',
+            port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 4000,
+            user: process.env.DB_USER || '2ji5HdpY4sfmZMo.root',
+            password: process.env.DB_PASSWORD || 'tQPdtsQdqHSASOp6',
+            database: process.env.DB_NAME || 'actividades2',
             ssl: { rejectUnauthorized: false }
         });
 
@@ -47,14 +50,18 @@ module.exports = async (req, res) => {
 
         const rawUser = rows[0];
 
+        // 🎯 Objeto de usuario completo con campos estandarizados para localStorage
         const user = {
             id: rawUser.user_id,
+            user_id: rawUser.user_id,                         // 👈 Para compatibilidad directa
             nombre: rawUser.user_nombre,
             user_usuario: rawUser.user_usuario,
             cargo: rawUser.user_cargo,
+            user_cargo: rawUser.user_cargo,                   // 👈 Para compatibilidad directa
+            cuad_id: rawUser.cuad_id || null,                 // 👈 VITAL para el filtro por cuadrilla
             empresa: rawUser.emp_razon || 'No especificada',
-            cuadrilla: rawUser.cuad_nombre || 'No especificada',      // 👈 Nombre asignado
-            cuad_nombre: rawUser.cuad_nombre || 'No especificada',    // 👈 Nombre por redundancia
+            cuadrilla: rawUser.cuad_nombre || 'No especificada',
+            cuad_nombre: rawUser.cuad_nombre || 'No especificada',
             cedula: rawUser.user_ci || 'Sin registro',
             telefono: rawUser.user_telefono || 'Sin registro',
             direccion: rawUser.user_direccion || 'Sin registro',
@@ -67,7 +74,11 @@ module.exports = async (req, res) => {
             excedente: rawUser.excedente || 'No especificado'
         };
 
-        return res.status(200).json({ status: 'success', message: 'Inicio de sesión exitoso', user });
+        return res.status(200).json({ 
+            status: 'success', 
+            message: 'Inicio de sesión exitoso', 
+            user 
+        });
 
     } catch (error) {
         console.error('Error DB:', error);
