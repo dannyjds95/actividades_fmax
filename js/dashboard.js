@@ -1,4 +1,3 @@
-// ==========================================
 // 1. CONFIGURACIÓN GLOBAL Y AUXILIARES
 // ==========================================
 const BASE_URL = window.location.hostname.includes('vercel.app')
@@ -138,26 +137,6 @@ async function cargarSeccionesSecundarias(fechaInicio, fechaFin) {
                 }
             }
 
-            // 3. Tabla Últimos 10 Registros
-            const tblBody = document.getElementById('tbl_ultimos_registros');
-            if (tblBody) {
-                if (data.ultimos && data.ultimos.length > 0) {
-                    tblBody.innerHTML = data.ultimos.map(reg => {
-                        const fechaFormateada = reg.fecha ? String(reg.fecha).split('T')[0] : '-';
-                        return `
-                            <tr>
-                                <td>${fechaFormateada}</td>
-                                <td>${reg.cliente || 'N/A'}</td>
-                                <td><span class="badge-tipo ${getBadgeClass(reg.tipo)}">${reg.tipo}</span></td>
-                                <td>${reg.forma || 'NORMAL'}</td>
-                                <td class="td-monto">$${parseFloat(reg.monto || 0).toFixed(2)}</td>
-                            </tr>
-                        `;
-                    }).join('');
-                } else {
-                    tblBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:20px;">No se encontraron registros</td></tr>';
-                }
-            }
         }
     } catch (err) {
         console.error('Error al procesar datos secundarios:', err);
