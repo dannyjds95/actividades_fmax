@@ -1,4 +1,4 @@
-const CACHE_NAME = 'actividades-v3.1';
+const CACHE_NAME = 'actividades-v3.2.0';
 const urlsToCache = [
   '/actividades_fmax/',
   '/actividades_fmax/index.html',
