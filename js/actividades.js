@@ -338,7 +338,8 @@ async function eliminarActividad(idActividad) {
     if (!confirmacion) return;
 
     try {
-        const res = await fetch(`${BASE_URL}/api/actividades/${idActividad}`, {
+        // 🎯 Se envía el ID como query param ?id=... para coincidir con api/actividades.js
+        const res = await fetch(`${BASE_URL}/api/actividades?id=${idActividad}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
