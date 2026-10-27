@@ -1,3 +1,7 @@
+// ===================================================
+// SISTEMA DE AUTENTICACIÓN Y GESTIÓN DE SESIÓN (login.js)
+// ===================================================
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Configuración de URLs y Rutas Adaptativas
     const isVercel = window.location.hostname.includes('vercel.app');
@@ -15,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // SECCIÓN A: PÁGINA DE LOGIN (index.html)
     // ===================================================
     if (loginForm) {
-        // Redirección automática si el usuario YA tiene sesión activa
+        // Redirección automática si el usuario YA tiene sesión válida
         const sessionData = localStorage.getItem('usuario_sesion');
         const userId = localStorage.getItem('user_id');
 
@@ -29,8 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const user_usuario = document.getElementById('user_usuario').value.trim();
-            const user_password = document.getElementById('user_password').value.trim();
+            const user_usuario = document.getElementById('user_usuario')?.value.trim();
+            const user_password = document.getElementById('user_password')?.value.trim();
 
             if (!user_usuario || !user_password) {
                 showAlert('Por favor complete todos los campos.', 'alert-error');
@@ -62,16 +66,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const usuario = data.user || data.usuario || {};
 
-                    // Guardar objeto completo y llaves individuales (incluyendo cuad_id)
+                    // Guardar objeto completo de sesión
                     localStorage.setItem('usuario_sesion', JSON.stringify(usuario));
 
+                    // Sincronizar llaves individuales para consultas a las APIs
                     const uId = usuario.user_id || usuario.id;
                     const uCargo = usuario.user_cargo || usuario.cargo;
                     const uCuad = usuario.cuad_id;
 
-                    if (uId) localStorage.setItem('user_id', uId);
-                    if (uCargo) localStorage.setItem('user_cargo', uCargo);
-                    if (uCuad !== undefined && uCuad !== null) localStorage.setItem('cuad_id', uCuad);
+                    if (uId) localStorage.setItem('user_id', String(uId));
+                    if (uCargo) localStorage.setItem('user_cargo', String(uCargo));
+                    if (uCuad !== undefined && uCuad !== null) localStorage.setItem('cuad_id', String(uCuad));
 
                     setTimeout(() => {
                         window.location.href = dashboardPagePath;
@@ -91,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Funciones auxiliares de alerta en Login
         function showAlert(message, typeClass) {
             if (alertDiv) {
                 alertDiv.textContent = message;
@@ -106,15 +110,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        return; // Finaliza la ejecución en la página de Login
+        return; // Detiene la ejecución en el Login
     }
 
     // ===================================================
-    // SECCIÓN B: PÁGINAS PROTEGDAS (Dashboard, Admin, etc.)
+    // SECCIÓN B: PÁGINAS PROTEGIDAS (Dashboard, Actividades, etc.)
     // ===================================================
     const sessionData = localStorage.getItem('usuario_sesion');
-    if (!sessionData) {
-        window.location.href = loginPagePath;
+    const userId = localStorage.getItem('user_id');
+
+    if (!sessionData || !userId || userId === 'null' || userId === 'undefined') {
+        cerrarSesionCompleta(loginPagePath);
         return;
     }
 
@@ -127,22 +133,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Sincronizar llaves individuales necesarias para las peticiones API
+    // Re-sincronizar llaves por seguridad
     const uId = usuario.user_id || usuario.id;
     const uCargo = usuario.user_cargo || usuario.cargo;
     const uCuad = usuario.cuad_id;
 
-    if (uId) localStorage.setItem('user_id', uId);
-    if (uCargo) localStorage.setItem('user_cargo', uCargo);
-    if (uCuad !== undefined && uCuad !== null) localStorage.setItem('cuad_id', uCuad);
+    if (uId) localStorage.setItem('user_id', String(uId));
+    if (uCargo) localStorage.setItem('user_cargo', String(uCargo));
+    if (uCuad !== undefined && uCuad !== null) localStorage.setItem('cuad_id', String(uCuad));
 
-    // Mostrar nombre de usuario en el botón de perfil
+    // Mostrar nombre de usuario en la barra de navegación / perfil
     const userNameEl = document.getElementById('userName');
     if (userNameEl) {
-        userNameEl.textContent = usuario.nombre || usuario.user_nombre || 'Perfil';
+        userNameEl.textContent = usuario.nombre || usuario.user_nombre || usuario.usuario || 'Perfil';
     }
 
-    // Control del menú desplegable del perfil
+    // Control Menú Desplegable de Perfil
     const userMenuBtn = document.getElementById('userMenuBtn');
     const userDropdown = document.getElementById('userDropdown');
 
@@ -157,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Control del botón Cerrar Sesión
+    // Control Botón Cerrar Sesión
     const btnLogout = document.getElementById('btnLogout');
     if (btnLogout) {
         btnLogout.addEventListener('click', (e) => {
@@ -167,7 +173,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Función global auxiliar para limpiar almacenamiento y redirigir
+// ===================================================
+// FUNCIONES GLOBALES Y REGISTRO DE SERVICE WORKER (PWA)
+// ===================================================
+
 function cerrarSesionCompleta(redirectPath) {
     localStorage.removeItem('usuario_sesion');
     localStorage.removeItem('user_id');
@@ -177,4 +186,29 @@ function cerrarSesionCompleta(redirectPath) {
     const inSubfolder = window.location.pathname.includes('/html/');
     const target = redirectPath || (inSubfolder ? '../index.html' : './index.html');
     window.location.href = target;
+}
+
+// Registro y auto-actualización automática de PWA (Service Worker)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        const swPath = window.location.pathname.includes('/actividades_fmax/')
+            ? '/actividades_fmax/sw.js'
+            : '/sw.js';
+
+        navigator.serviceWorker.register(swPath).then((reg) => {
+            // Verificar si hay una nueva versión del SW en Vercel/GitHub
+            reg.update();
+        }).catch((err) => {
+            console.warn('Service Worker no registrado:', err);
+        });
+
+        // Recargar automáticamente cuando se active la nueva versión de caché
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+                refreshing = true;
+                window.location.reload();
+            }
+        });
+    });
 }
