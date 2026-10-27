@@ -85,7 +85,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 🎯 5. VINCULAR BOTONES PRINCIPALES (Reportes, Vaciar Filtros, Registrar Actividad)
+    // 5. Vincular clics en botones superiores por ID y por texto
+    const btnExportPDF = document.getElementById('btnExportPDF');
+    if (btnExportPDF) btnExportPDF.addEventListener('click', generarReportePDF);
+
+    const btnExportExcel = document.getElementById('btnExportExcel');
+    if (btnExportExcel) btnExportExcel.addEventListener('click', generarReporteExcel);
+
     document.querySelectorAll('button, .btn').forEach(btn => {
         const texto = btn.textContent.trim();
 
@@ -96,93 +102,465 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.onclick = () => vaciarFiltros();
         }
         if (texto.includes('Reporte PDF')) {
-            btn.onclick = () => exportarPDF();
+            btn.onclick = () => generarReportePDF();
         }
         if (texto.includes('Reporte Excel')) {
-            btn.onclick = () => exportarExcel();
+            btn.onclick = () => generarReporteExcel();
         }
     });
-
-    // 🎯 6. VINCULAR CLIC EN LAS TARJETAS DE MÉTRICAS
-    vincularTarjetasMetricas();
 });
 
 // ===================================================
-// FUNCIONES AUXILIARES (Poner fuera del DOMContentLoaded)
+// 3. POP-UP DE MÉTRICAS (TARJETAS SUPERIORES)
 // ===================================================
 
-function vincularTarjetasMetricas() {
-    const cards = document.querySelectorAll('.metric-card, .card-metric, [class*="metric"], .card');
+window.abrirModalDetalle = function(tipoMetrica) {
+    const modal = document.getElementById('modal_detalle_metrica');
+    const titulo = document.getElementById('modal_detalle_titulo');
+    const thead = document.getElementById('tbl_detalle_metrica_head');
+    const tbody = document.getElementById('tbl_detalle_metrica_body');
 
-    cards.forEach(card => {
-        const text = card.textContent.toUpperCase();
-        card.style.cursor = 'pointer';
+    if (!modal || !tbody || !thead) return;
 
-        if (text.includes('EXCEDENTE')) {
-            card.onclick = () => abrirModalDetalle('excedente');
-        } else if (text.includes('PUNTOS DE RED') || text.includes('PT. RED')) {
-            card.onclick = () => abrirModalDetalle('pt_red');
-        } else if (text.includes('AC INSTALADOS') || text.includes('AC')) {
-            card.onclick = () => abrirModalDetalle('ac');
-        } else if (text.includes('VALORES COBRADOS') || text.includes('V. COBR')) {
-            card.onclick = () => abrirModalDetalle('cobrados');
-        } else if (text.includes('MONTO TOTAL')) {
-            card.onclick = () => abrirModalDetalle('monto_total');
-        } else if (text.includes('TOTAL ACTIVIDADES')) {
-            card.onclick = () => abrirModalDetalle('totales');
+    let registrosFiltrados = [];
+    let tituloTexto = '';
+    let nombreColumnaMetrica = '';
+    let obtenerValorMetrica = (item) => '';
+
+    switch (tipoMetrica) {
+        case 'excedente':
+            tituloTexto = 'Actividades con Excedente';
+            nombreColumnaMetrica = 'Excedente';
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
+                parseFloat(item.act_excedente || 0) > 0 || parseFloat(item.act_excedente_valor || 0) > 0
+            );
+            obtenerValorMetrica = (item) => `${item.act_excedente || 0} m ($${parseFloat(item.act_excedente_valor || 0).toFixed(2)})`;
+            break;
+
+        case 'pt_red':
+            tituloTexto = 'Actividades con Puntos de Red';
+            nombreColumnaMetrica = 'Puntos de Red';
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
+                parseFloat(item.act_pred || item.act_pt_red || 0) > 0
+            );
+            obtenerValorMetrica = (item) => item.act_pred || item.act_pt_red || 0;
+            break;
+
+        case 'ac':
+            tituloTexto = 'Actividades con AC Instalados';
+            nombreColumnaMetrica = 'AC Instalados';
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
+                parseFloat(item.act_ac || 0) > 0
+            );
+            obtenerValorMetrica = (item) => item.act_ac || 0;
+            break;
+
+        case 'cobrados':
+            tituloTexto = 'Actividades con Valores Cobrados';
+            nombreColumnaMetrica = 'Valores Cobrados';
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
+                parseFloat(item.act_valores_cobrados || 0) > 0
+            );
+            obtenerValorMetrica = (item) => `$${parseFloat(item.act_valores_cobrados || 0).toFixed(2)}`;
+            break;
+
+        case 'monto_total':
+            tituloTexto = 'Actividades con Monto Total';
+            nombreColumnaMetrica = 'Monto Total';
+            registrosFiltrados = (window.actividadesCargadas || []).filter(item =>
+                parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)) > 0
+            );
+            obtenerValorMetrica = (item) => `$${parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0)).toFixed(2)}`;
+            break;
+
+        case 'totales':
+        default:
+            tituloTexto = 'Todas las Actividades del Período';
+            nombreColumnaMetrica = 'Cantidad / Fibra';
+            registrosFiltrados = [...(window.actividadesCargadas || [])];
+            obtenerValorMetrica = (item) => `${item.act_cantidad || 1} act (${item.act_fibra || 0} m)`;
+            break;
+    }
+
+    if (titulo) titulo.textContent = `${tituloTexto} (${registrosFiltrados.length})`;
+
+    thead.innerHTML = `
+        <tr>
+            <th class="text-center">Fecha</th>
+            <th>Cliente</th>
+            <th class="text-center">Tipo</th>
+            <th class="text-center">${nombreColumnaMetrica}</th>
+        </tr>
+    `;
+
+    if (registrosFiltrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding:1rem;">No hay registros para este filtro.</td></tr>';
+    } else {
+        tbody.innerHTML = registrosFiltrados.map(item => {
+            const fechaFormateada = typeof formatFecha === 'function' ? formatFecha(item.act_fecha) : (item.act_fecha ? String(item.act_fecha).split('T')[0] : '');
+            const claseBadge = typeof getBadgeClass === 'function' ? getBadgeClass(item.act_tipo) : 'badge-default';
+
+            return `
+                <tr>
+                    <td class="text-center">${fechaFormateada}</td>
+                    <td><b>${item.act_cliente || 'N/A'}</b></td>
+                    <td class="text-center"><span class="badge-tipo ${claseBadge}">${item.act_tipo || 'GENERAL'}</span></td>
+                    <td class="text-center">${obtenerValorMetrica(item)}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    modal.classList.add('active');
+};
+
+window.cerrarModalDetalle = function() {
+    const modal = document.getElementById('modal_detalle_metrica');
+    if (modal) modal.classList.remove('active');
+};
+
+// ===================================================
+// 4. GENERACIÓN DE REPORTES (PDF Y EXCEL)
+// ===================================================
+
+// Generar Reporte PDF con jsPDF y AutoTable
+window.generarReportePDF = function() {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert("⚠️ La librería jsPDF aún se está cargando. Por favor, reintenta en un momento.");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    const userSession = JSON.parse(localStorage.getItem('usuario_sesion')) || {};
+    const usuarioNombre = userSession.nombre || userSession.user_nombre || userSession.usuario || 'Técnico';
+
+    const fechaDesdeInput = document.querySelector('input[type="date"]:first-of-type, #fecha_desde');
+    const fechaHastaInput = document.querySelector('input[type="date"]:last-of-type, #fecha_hasta');
+    const fechaDesde = fechaDesdeInput ? fechaDesdeInput.value : '---';
+    const fechaHasta = fechaHastaInput ? fechaHastaInput.value : '---';
+
+    const tableBody = [];
+    const filasTabla = document.querySelectorAll('tbody#tbl_actividades_body tr');
+
+    let totalActidadesCount = 0;
+    let sumaMontoTotal = 0;
+    let sumaPuntosRed = 0;
+    let sumaEquiposAC = 0;
+    let sumaValoresCobrados = 0;
+
+    filasTabla.forEach(row => {
+        if (row.style.display === 'none' || row.cells.length < 5) return;
+
+        const cols = Array.from(row.cells).map(cell => {
+            const clone = cell.cloneNode(true);
+            const buttons = clone.querySelectorAll('button, a, .btn');
+            buttons.forEach(b => b.remove());
+            return clone.textContent.trim().replace(/\s+/g, ' ');
+        });
+
+        const fecha = cols[0] || '';
+        const cliente = cols[1] || '';
+        const tipo = cols[2] || '';
+        const forma = cols[3] || '';
+        const fibra = cols[4] || '0 m';
+        const excedente = cols[5] || '0 m ($0.00)';
+        const ptRed = cols[6] || '0';
+        const ac = cols[7] || '0';
+        const total = cols[8] || '$0.00';
+        const cobrados = cols[9] || '$0.00';
+
+        tableBody.push([fecha, cliente, tipo, forma, fibra, excedente, ptRed, ac, total, cobrados]);
+
+        totalActidadesCount++;
+        sumaPuntosRed += parseInt(ptRed, 10) || 0;
+        sumaEquiposAC += parseInt(ac, 10) || 0;
+
+        const parseMoneda = (txt) => parseFloat(String(txt).replace(/[^0-9.-]+/g, "")) || 0;
+        sumaMontoTotal += parseMoneda(total);
+        sumaValoresCobrados += parseMoneda(cobrados);
+    });
+
+    // Header Corporativo
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, 297, 24, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('REPORTE DE ACTIVIDADES', 14, 13);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('SISTEMA DE GESTIÓN TÉCNICA - FMAX', 283, 13, { align: 'right' });
+
+    doc.setTextColor(51, 65, 85);
+    doc.setFontSize(9);
+    const fechaImpresion = new Date().toLocaleString('es-EC');
+    doc.text(`Generado por: ${usuarioNombre}`, 14, 30);
+    doc.text(`Fecha de Emisión: ${fechaImpresion}`, 283, 30, { align: 'right' });
+    doc.text(`Período: ${fechaDesde} al ${fechaHasta}`, 14, 35);
+
+    // Tarjetas Resumen
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(14, 39, 269, 16, 2, 2, 'FD');
+
+    const kpis = [
+        { label: 'TOTAL ACTIVIDADES', val: String(totalActidadesCount) },
+        { label: 'MONTO TOTAL', val: `$${sumaMontoTotal.toFixed(2)}` },
+        { label: 'EXCEDENTE FIBRA', val: '0 m ($0.00)' },
+        { label: 'PUNTOS DE RED', val: String(sumaPuntosRed) },
+        { label: 'EQUIPOS AC', val: String(sumaEquiposAC) },
+        { label: 'VALORES COBRADOS', val: `$${sumaValoresCobrados.toFixed(2)}` }
+    ];
+
+    const startX = 20;
+    const stepX = 43;
+
+    kpis.forEach((kpi, idx) => {
+        const posX = startX + (idx * stepX);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.text(kpi.label, posX, 44);
+
+        doc.setFontSize(10);
+        doc.setTextColor(15, 23, 42);
+        doc.text(kpi.val, posX, 50);
+    });
+
+    // Tabla con AutoTable
+    doc.autoTable({
+        startY: 59,
+        head: [['FECHA', 'CLIENTE', 'TIPO', 'FORMA', 'FIBRA', 'EXCEDENTE', 'PT. RED', 'AC', 'TOTAL', 'V. COBRADOS']],
+        body: tableBody,
+        theme: 'grid',
+        styles: {
+            font: 'helvetica',
+            fontSize: 8,
+            cellPadding: 2.5,
+            textColor: [30, 41, 59],
+            valign: 'middle'
+        },
+        headStyles: {
+            fillColor: [15, 23, 42],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 8,
+            halign: 'left'
+        },
+        columnStyles: {
+            0: { cellWidth: 22, halign: 'center' },
+            1: { cellWidth: 70 },
+            2: { cellWidth: 26, halign: 'center' },
+            3: { cellWidth: 32, halign: 'left' },
+            4: { cellWidth: 18, halign: 'center' },
+            5: { cellWidth: 28, halign: 'center' },
+            6: { cellWidth: 16, halign: 'center' },
+            7: { cellWidth: 14, halign: 'center' },
+            8: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
+            9: { cellWidth: 22, halign: 'right' }
+        },
+        alternateRowStyles: {
+            fillColor: [248, 250, 252]
+        },
+        margin: { left: 14, right: 14, bottom: 18 },
+        didDrawPage: function () {
+            const strPage = `Página ${doc.internal.getNumberOfPages()}`;
+            doc.setFontSize(8);
+            doc.setTextColor(148, 163, 184);
+            doc.text(strPage, 283, 202, { align: 'right' });
+            doc.text('Documento generado automáticamente - Confidencial', 14, 202);
         }
     });
-}
 
-// Generar archivo .csv compatible con Excel
-function exportarExcel() {
-    const lista = window.actividadesCargadas || [];
-    if (lista.length === 0) {
-        alert('No hay registros para exportar.');
+    doc.save(`Reporte_Actividades_${fechaDesde}_al_${fechaHasta}.pdf`);
+};
+
+window.exportarPDF = window.generarReportePDF;
+
+// Generar Reporte Excel estructurado por Secciones con ExcelJS
+window.generarReporteExcel = async function() {
+    if (!window.ExcelJS) {
+        alert("⚠️ La librería ExcelJS aún se está cargando. Por favor, reintenta en un momento.");
         return;
     }
 
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-    csvContent += "Fecha,Cliente,Tipo,Forma,Sector,Fibra (m),Excedente (m),Puntos Red,AC,Total ($),Cobrado ($)\n";
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('REPORTES');
 
-    lista.forEach(item => {
-        const row = [
-            `"${formatFecha(item.act_fecha)}"`,
-            `"${(item.act_cliente || 'N/A').replace(/"/g, '""')}"`,
-            `"${item.act_tipo || 'GENERAL'}"`,
-            `"${item.act_forma || 'NORMAL'}"`,
-            `"${item.act_sector || 'N/A'}"`,
-            item.act_fibra || 0,
-            item.act_excedente || 0,
-            item.act_pred || item.act_pt_red || 0,
-            item.act_ac || 0,
-            parseFloat(item.act_total || item.act_valor || 0).toFixed(2),
-            parseFloat(item.act_valores_cobrados || 0).toFixed(2)
-        ];
-        csvContent += row.join(",") + "\n";
+    worksheet.columns = [
+        { key: 'index', width: 8 },
+        { key: 'fecha', width: 22 },
+        { key: 'cliente', width: 45 },
+        { key: 'detalle', width: 35 },
+        { key: 'valor', width: 18 }
+    ];
+
+    const borderStyle = {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
+    };
+
+    const fillAzul = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCE6F1' } };
+    const fillVerde = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
+
+    const instalaciones = [];
+    const traslados = [];
+    const otrasActividades = [];
+
+    const filasTabla = document.querySelectorAll('tbody#tbl_actividades_body tr');
+
+    filasTabla.forEach(row => {
+        if (row.style.display === 'none' || row.cells.length < 5) return;
+
+        const cols = Array.from(row.cells).map(cell => cell.textContent.trim().replace(/\s+/g, ' '));
+        const rawValor = row.getAttribute('data-cobrado') || row.dataset.cobrado || cols[9] || '0';
+        const valorCobrado = parseFloat(String(rawValor).replace(/[^0-9.-]+/g, "")) || 0;
+
+        if (valorCobrado <= 0) return;
+
+        const fecha = cols[0] || '';
+        const cliente = cols[1] || '';
+        let tipo = (row.getAttribute('data-tipo') || cols[2] || '').toUpperCase();
+
+        let detalleTexto = row.getAttribute('data-detalle') || row.dataset.detalle || '---';
+        if (!detalleTexto || detalleTexto === 'undefined' || detalleTexto === 'null') {
+            detalleTexto = '---';
+        }
+
+        const itemData = { fecha, cliente, detalle: detalleTexto, valor: valorCobrado };
+
+        if (tipo.includes('INSTALAC')) {
+            instalaciones.push(itemData);
+        } else if (tipo.includes('TRASLAD')) {
+            traslados.push(itemData);
+        } else {
+            otrasActividades.push(itemData);
+        }
     });
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Reporte_Actividades_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// Vista previa de impresión para PDF
-function exportarPDF() {
-    const lista = window.actividadesCargadas || [];
-    if (lista.length === 0) {
-        alert('No hay registros para exportar.');
+    if (instalaciones.length === 0 && traslados.length === 0 && otrasActividades.length === 0) {
+        alert("⚠️ No hay registros con valores cobrados (> $0.00) para exportar.");
         return;
     }
-    window.print();
-}
+
+    function construirSeccion(titulo, headerFechaLabel, totalLabel, listaDatos, fillEstilo) {
+        if (worksheet.lastRow && worksheet.lastRow.number > 0) {
+            worksheet.addRow([]);
+            worksheet.addRow([]);
+        }
+
+        const startRowIndex = worksheet.lastRow ? worksheet.lastRow.number + 1 : 1;
+
+        worksheet.mergeCells(`A${startRowIndex}:E${startRowIndex}`);
+        const titleCell = worksheet.getCell(`A${startRowIndex}`);
+        titleCell.value = titulo;
+        titleCell.font = { name: 'Calibri', size: 11, bold: true };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        titleCell.fill = fillEstilo;
+
+        ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+            worksheet.getCell(`${col}${startRowIndex}`).border = borderStyle;
+        });
+
+        const headers = ['#', headerFechaLabel, 'CLIENTE', 'DETALLE DE LO COBRADO', 'VALOR\nCOBRADO'];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.height = 28;
+
+        headerRow.eachCell((cell) => {
+            cell.font = { name: 'Calibri', size: 10, bold: true };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = borderStyle;
+        });
+
+        let sumaSeccion = 0;
+
+        listaDatos.forEach((item, idx) => {
+            sumaSeccion += item.valor;
+
+            const dataRow = worksheet.addRow([
+                idx + 1,
+                item.fecha,
+                item.cliente,
+                item.detalle,
+                item.valor
+            ]);
+
+            dataRow.height = 22;
+
+            dataRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            const cellValor = dataRow.getCell(5);
+            cellValor.alignment = { horizontal: 'right', vertical: 'middle' };
+            cellValor.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
+
+            dataRow.eachCell({ includeEmpty: true }, (cell) => {
+                cell.font = { name: 'Calibri', size: 10 };
+                cell.border = borderStyle;
+            });
+        });
+
+        const totalRowIndex = worksheet.lastRow.number + 1;
+
+        worksheet.mergeCells(`A${totalRowIndex}:D${totalRowIndex}`);
+        const labelTotalCell = worksheet.getCell(`A${totalRowIndex}`);
+        labelTotalCell.value = totalLabel;
+        labelTotalCell.font = { name: 'Calibri', size: 10, bold: true };
+        labelTotalCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        labelTotalCell.fill = fillEstilo;
+
+        ['A', 'B', 'C', 'D'].forEach(col => {
+            worksheet.getCell(`${col}${totalRowIndex}`).border = borderStyle;
+            worksheet.getCell(`${col}${totalRowIndex}`).fill = fillEstilo;
+        });
+
+        const valueTotalCell = worksheet.getCell(`E${totalRowIndex}`);
+        valueTotalCell.value = sumaSeccion;
+        valueTotalCell.font = { name: 'Calibri', size: 10, bold: true };
+        valueTotalCell.alignment = { horizontal: 'right', vertical: 'middle' };
+        valueTotalCell.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
+        valueTotalCell.fill = fillEstilo;
+        valueTotalCell.border = borderStyle;
+
+        worksheet.getRow(totalRowIndex).height = 24;
+    }
+
+    if (instalaciones.length > 0) {
+        construirSeccion('INSTALACIONES', 'FECHA DE\nINSTALACIÓN', 'TOTAL DE INSTALACIÓN', instalaciones, fillAzul);
+    }
+
+    if (traslados.length > 0) {
+        construirSeccion('TRASLADOS', 'FECHA DE\nTRASLADOS', 'TOTAL DE TRASLADOS', traslados, fillVerde);
+    }
+
+    if (otrasActividades.length > 0) {
+        construirSeccion('OTRAS ACTIVIDADES', 'FECHA DE\nACTIVIDAD', 'TOTAL DE OTRAS ACTIVIDADES', otrasActividades, fillAzul);
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    if (window.saveAs) {
+        saveAs(blob, `Reporte_Valores_Cobrados_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } else {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `Reporte_Valores_Cobrados_${new Date().toISOString().split('T')[0]}.xlsx`;
+        link.click();
+    }
+};
+
+window.exportarExcel = window.generarReporteExcel;
 
 // ===================================================
-// 3. CARGA DE DATOS (API)
+// 5. CARGA DE DATOS (API)
 // ===================================================
 async function cargarPeriodos(selectPeriodo) {
     try {
@@ -256,10 +634,8 @@ async function cargarActividades() {
 
     if (!tbody) return;
 
-    // 🎯 1. Obtener datos de sesión incluyendo cuadrilla
     const { userId, userCargo, cuadId } = getDatosSesion();
 
-    // 2. Obtener valores de los filtros de la interfaz
     const inicio = document.getElementById('fecha_desde')?.value || '';
     const fin = document.getElementById('fecha_hasta')?.value || '';
     const tipo = document.getElementById('filter_tipo')?.value || '';
@@ -269,7 +645,6 @@ async function cargarActividades() {
     tbody.innerHTML = '<tr><td colspan="11" class="text-center">Buscando registros...</td></tr>';
 
     try {
-        // 🎯 3. Incluir cuad_id en los parámetros de la URL
         const queryParams = new URLSearchParams({
             inicio,
             fin,
@@ -289,7 +664,6 @@ async function cargarActividades() {
         if (data.status === 'success' && Array.isArray(data.actividades)) {
             let lista = data.actividades;
 
-            // Filtrado secundario en frontend si es necesario
             if (cliente !== '') {
                 const queryCliente = cliente.toLowerCase();
                 lista = lista.filter(item =>
@@ -412,7 +786,7 @@ async function cargarActividades() {
 }
 
 // ===================================================
-// 4. ACCIONES DE REGISTRO
+// 6. ACCIONES CRUD Y MODAL INDIVIDUAL (LUPA)
 // ===================================================
 
 async function eliminarActividad(idActividad) {
@@ -495,7 +869,6 @@ function verDetalleActividad(idActividad) {
     const container = document.getElementById('actividad_detalle_body');
     if (!modal || !container) return;
 
-    // Formateo seguro de fecha y badges
     const fecha = typeof formatFecha === 'function' ? formatFecha(item.act_fecha) : (item.act_fecha ? String(item.act_fecha).split('T')[0] : 'N/A');
     const claseBadge = typeof getBadgeClass === 'function' ? getBadgeClass(item.act_tipo) : 'badge-default';
 
@@ -507,8 +880,6 @@ function verDetalleActividad(idActividad) {
     const totalMonto = parseFloat(item.act_total !== null && item.act_total !== undefined ? item.act_total : (item.act_valor || 0));
 
     const cuadrillaNombre = item.cuad_nombre || (item.cuad_id ? `Cuadrilla #${item.cuad_id}` : 'No asignada');
-    
-    // 🎯 Capturar usuario que registró la actividad
     const registradoPor = item.user_nombre || item.user_usuario || (item.user_id ? `Usuario #${item.user_id}` : 'No especificado');
 
     let camposOpcionalesHTML = '';
@@ -556,7 +927,6 @@ function verDetalleActividad(idActividad) {
                 <span class="detail-value"><b>${cuadrillaNombre}</b></span>
             </div>
 
-            <!-- 🎯 Bloque: Registrado por -->
             <div class="detail-item col-span-2">
                 <span class="detail-label">Registrado por</span>
                 <span class="detail-value strong" style="color: var(--primary-color, #1e3a8a);">${registradoPor}</span>
@@ -614,7 +984,6 @@ function editarActividad(idActividad) {
     window.location.href = `act_propia.html?editId=${idActividad}`;
 }
 
-// 🎯 Guardar o actualizar actividad (Corregido para la API unificada)
 async function guardarActividad(e) {
     if (e) e.preventDefault();
 
@@ -639,7 +1008,6 @@ async function guardarActividad(e) {
     };
 
     const isEdit = Boolean(act_id);
-    // 🎯 Siempre llamamos a /api/actividades independientemente de si es PUT o POST
     const url = `${BASE_URL}/api/actividades`;
     const method = isEdit ? 'PUT' : 'POST';
 
@@ -677,410 +1045,11 @@ function cerrarModal() {
     if (modal) modal.classList.remove('active');
 }
 
-// Cierre de modales con Escape
+// Cierre universal de modales al presionar la tecla Escape
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         cerrarModalVerActividad();
+        window.cerrarModalDetalle();
         cerrarModal();
-    }
-});
-
-// Función para Generar un Reporte PDF Elegante con los Filtros Visibles
-// Función para Generar el Reporte PDF capturando dinámicamente la tabla visible
-function generarReportePDF() {
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-        alert("⚠️ La librería jsPDF aún se está cargando. Por favor, reintenta en un momento.");
-        return;
-    }
-
-    const { jsPDF } = window.jspdf;
-    // Formato horizontal (landscape) para mayor espacio de columnas
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-    // 1. Obtener datos de la Sesión y Filtros
-    const userSession = JSON.parse(localStorage.getItem('usuario_sesion')) || {};
-    const usuarioNombre = userSession.nombre || userSession.usuario || 'Técnico';
-
-    const fechaDesdeInput = document.querySelector('input[type="date"]:first-of-type, #fecha_desde');
-    const fechaHastaInput = document.querySelector('input[type="date"]:last-of-type, #fecha_hasta');
-    const fechaDesde = fechaDesdeInput ? fechaDesdeInput.value : '---';
-    const fechaHasta = fechaHastaInput ? fechaHastaInput.value : '---';
-
-    // 2. EXTRAER CELDAS DE LA TABLA VISIBLE EN PANTALLA
-    const tableBody = [];
-    // Busca cualquier fila dentro del tbody existente en la página
-    const filasTabla = document.querySelectorAll('tbody tr');
-
-    let totalActidadesCount = 0;
-    let sumaMontoTotal = 0;
-    let sumaPuntosRed = 0;
-    let sumaEquiposAC = 0;
-    let sumaValoresCobrados = 0;
-
-    filasTabla.forEach(row => {
-        // Ignorar filas ocultas por filtros o mensajes de "sin datos"
-        if (row.style.display === 'none' || row.cells.length < 5) return;
-
-        // Limpiar el texto de cada celda quitando saltos de línea y espacios extra
-        const cols = Array.from(row.cells).map(cell => {
-            // Clonar celda para quitar botones o elementos no deseados si existieran
-            const clone = cell.cloneNode(true);
-            const buttons = clone.querySelectorAll('button, a, .btn');
-            buttons.forEach(b => b.remove());
-            return clone.textContent.trim().replace(/\s+/g, ' ');
-        });
-
-        // Mapear celdas correspondientes a la tabla
-        const fecha = cols[0] || '';
-        const cliente = cols[1] || '';
-        const tipo = cols[2] || '';
-        const forma = cols[3] || '';
-        const fibra = cols[4] || '0 m';
-        const excedente = cols[5] || '0 m ($0.00)';
-        const ptRed = cols[6] || '0';
-        const ac = cols[7] || '0';
-        const total = cols[8] || '$0.00';
-        const cobrados = cols[9] || '$0.00';
-
-        tableBody.push([fecha, cliente, tipo, forma, fibra, excedente, ptRed, ac, total, cobrados]);
-
-        // Acumular totales para el resumen
-        totalActidadesCount++;
-        sumaPuntosRed += parseInt(ptRed, 10) || 0;
-        sumaEquiposAC += parseInt(ac, 10) || 0;
-
-        // Convertir formato moneda a número ($20.00 -> 20.00)
-        const parseMoneda = (txt) => parseFloat(String(txt).replace(/[^0-9.-]+/g, "")) || 0;
-        sumaMontoTotal += parseMoneda(total);
-        sumaValoresCobrados += parseMoneda(cobrados);
-    });
-
-    // 3. ENCABEZADO CORPORATIVO
-    doc.setFillColor(15, 23, 42); // #27292e (Azul Oscuro)
-    doc.rect(0, 0, 297, 24, 'F');
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('REPORTE DE ACTIVIDADES', 14, 13);
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('SISTEMA DE GESTIÓN TÉCNICA - FMAX', 283, 13, { align: 'right' });
-
-    // Metadatos
-    doc.setTextColor(51, 65, 85);
-    doc.setFontSize(9);
-    const fechaImpresion = new Date().toLocaleString('es-EC');
-    doc.text(`Generado por: ${usuarioNombre}`, 14, 30);
-    doc.text(`Fecha de Emisión: ${fechaImpresion}`, 283, 30, { align: 'right' });
-    doc.text(`Período: ${fechaDesde} al ${fechaHasta}`, 14, 35);
-
-    // 4. DIBUJAR TARJETAS DE RESUMEN CON VALORES CALCULADOS
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(14, 39, 269, 16, 2, 2, 'FD');
-
-    const kpis = [
-        { label: 'TOTAL ACTIVIDADES', val: String(totalActidadesCount) },
-        { label: 'MONTO TOTAL', val: `$${sumaMontoTotal.toFixed(2)}` },
-        { label: 'EXCEDENTE FIBRA', val: '0 m ($0.00)' },
-        { label: 'PUNTOS DE RED', val: String(sumaPuntosRed) },
-        { label: 'EQUIPOS AC', val: String(sumaEquiposAC) },
-        { label: 'VALORES COBRADOS', val: `$${sumaValoresCobrados.toFixed(2)}` }
-    ];
-
-    const startX = 20;
-    const stepX = 43;
-
-    kpis.forEach((kpi, idx) => {
-        const posX = startX + (idx * stepX);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7);
-        doc.setTextColor(100, 116, 139);
-        doc.text(kpi.label, posX, 44);
-
-        doc.setFontSize(10);
-        doc.setTextColor(15, 23, 42);
-        doc.text(kpi.val, posX, 50);
-    });
-
-    // 5. RENDERIZAR TABLA CON JSPDF-AUTOTABLE
-    doc.autoTable({
-        startY: 59,
-        head: [['FECHA', 'CLIENTE', 'TIPO', 'FORMA', 'FIBRA', 'EXCEDENTE', 'PT. RED', 'AC', 'TOTAL', 'V. COBRADOS']],
-        body: tableBody,
-        theme: 'grid',
-        styles: {
-            font: 'helvetica',
-            fontSize: 8,
-            cellPadding: 2.5,
-            textColor: [30, 41, 59],
-            valign: 'middle'
-        },
-        headStyles: {
-            fillColor: [15, 23, 42],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold',
-            fontSize: 8,
-            halign: 'left'
-        },
-        columnStyles: {
-            0: { cellWidth: 22, halign: 'center' },
-            1: { cellWidth: 70 },
-            2: { cellWidth: 26, halign: 'center' },
-            3: { cellWidth: 32, halign: 'left' },
-            4: { cellWidth: 18, halign: 'center' },
-            5: { cellWidth: 28, halign: 'center' },
-            6: { cellWidth: 16, halign: 'center' },
-            7: { cellWidth: 14, halign: 'center' },
-            8: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
-            9: { cellWidth: 22, halign: 'right' }
-        },
-        alternateRowStyles: {
-            fillColor: [248, 250, 252]
-        },
-        margin: { left: 14, right: 14, bottom: 18 },
-        didDrawPage: function () {
-            const strPage = `Página ${doc.internal.getNumberOfPages()}`;
-            doc.setFontSize(8);
-            doc.setTextColor(148, 163, 184);
-            doc.text(strPage, 283, 202, { align: 'right' });
-            doc.text('Documento generado automáticamente - Confidencial', 14, 202);
-        }
-    });
-
-    // 6. DESCARGAR ARCHIVO
-    doc.save(`Reporte_Actividades_${fechaDesde}_al_${fechaHasta}.pdf`);
-}
-
-// Vincular al botón de Reporte PDF
-document.addEventListener('DOMContentLoaded', () => {
-    const btnExportPDF = document.getElementById('btnExportPDF');
-    if (btnExportPDF) {
-        btnExportPDF.addEventListener('click', generarReportePDF);
-    }
-});
-
-
-// Función para Generar el Reporte Excel Dividido en Secciones (Instalaciones y Traslados)
-// Función para Generar el Reporte Excel solo con Valores Cobrados (> 0)
-async function generarReporteExcel() {
-    if (!window.ExcelJS) {
-        alert("⚠️ La librería ExcelJS aún se está cargando. Por favor, reintenta en un momento.");
-        return;
-    }
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('REPORTES');
-
-    // 1. Configuración de ancho de columnas
-    worksheet.columns = [
-        { key: 'index', width: 8 },      // Columna A (#)
-        { key: 'fecha', width: 22 },     // Columna B (FECHA)
-        { key: 'cliente', width: 45 },   // Columna C (CLIENTE)
-        { key: 'detalle', width: 35 },   // Columna D (DETALLE DE LO COBRADO)
-        { key: 'valor', width: 18 }      // Columna E (VALOR COBRADO)
-    ];
-
-    // Estilos de bordes y paletas de colores
-    const borderStyle = {
-        top: { style: 'thin', color: { argb: 'FF000000' } },
-        left: { style: 'thin', color: { argb: 'FF000000' } },
-        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-        right: { style: 'thin', color: { argb: 'FF000000' } }
-    };
-
-    // Azul pastel para Instalaciones (#DCE6F1)
-    const fillAzul = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFDCE6F1' }
-    };
-
-    // Verde pastel para Traslados (#E2EFDA)
-    const fillVerde = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFE2EFDA' }
-    };
-
-    // 2. CLASIFICAR LAS FILAS VISIBLES DE LA TABLA
-    const instalaciones = [];
-    const traslados = [];
-    const otrasActividades = [];
-
-    const filasTabla = document.querySelectorAll('tbody tr');
-
-    filasTabla.forEach(row => {
-        if (row.style.display === 'none' || row.cells.length < 5) return;
-
-        const cols = Array.from(row.cells).map(cell => cell.textContent.trim().replace(/\s+/g, ' '));
-
-        // Extraer valor cobrado
-        const rawValor = row.getAttribute('data-cobrado') || row.dataset.cobrado || cols[9] || '0';
-        const valorCobrado = parseFloat(String(rawValor).replace(/[^0-9.-]+/g, "")) || 0;
-
-        // 🎯 FILTRO CLAVE: Omitir registros si no tienen valor cobrado (> 0)
-        if (valorCobrado <= 0) return;
-
-        const fecha = cols[0] || '';
-        const cliente = cols[1] || '';
-        let tipo = (row.getAttribute('data-tipo') || cols[2] || '').toUpperCase();
-
-        let detalleTexto = row.getAttribute('data-detalle') || row.dataset.detalle || '---';
-        if (!detalleTexto || detalleTexto === 'undefined' || detalleTexto === 'null') {
-            detalleTexto = '---';
-        }
-
-        const itemData = { fecha, cliente, detalle: detalleTexto, valor: valorCobrado };
-
-        if (tipo.includes('INSTALAC')) {
-            instalaciones.push(itemData);
-        } else if (tipo.includes('TRASLAD')) {
-            traslados.push(itemData);
-        } else {
-            otrasActividades.push(itemData);
-        }
-    });
-
-    // Validar si hay al menos un registro con cobro para exportar
-    if (instalaciones.length === 0 && traslados.length === 0 && otrasActividades.length === 0) {
-        alert("⚠️ No hay registros con valores cobrados (> $0.00) para exportar.");
-        return;
-    }
-
-    // 3. FUNCIÓN AUXILIAR PARA DIBUJAR CADA SECCIÓN
-    function construirSeccion(titulo, headerFechaLabel, totalLabel, listaDatos, fillEstilo) {
-        // Añadir espacio si ya existe una tabla previa
-        if (worksheet.lastRow && worksheet.lastRow.number > 0) {
-            worksheet.addRow([]);
-            worksheet.addRow([]);
-        }
-
-        const startRowIndex = worksheet.lastRow ? worksheet.lastRow.number + 1 : 1;
-
-        // Banner Superior
-        worksheet.mergeCells(`A${startRowIndex}:E${startRowIndex}`);
-        const titleCell = worksheet.getCell(`A${startRowIndex}`);
-        titleCell.value = titulo;
-        titleCell.font = { name: 'Calibri', size: 11, bold: true };
-        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-        titleCell.fill = fillEstilo;
-
-        ['A', 'B', 'C', 'D', 'E'].forEach(col => {
-            worksheet.getCell(`${col}${startRowIndex}`).border = borderStyle;
-        });
-
-        // Encabezados
-        const headers = ['#', headerFechaLabel, 'CLIENTE', 'DETALLE DE LO COBRADO', 'VALOR\nCOBRADO'];
-        const headerRow = worksheet.addRow(headers);
-        headerRow.height = 28;
-
-        headerRow.eachCell((cell) => {
-            cell.font = { name: 'Calibri', size: 10, bold: true };
-            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            cell.border = borderStyle;
-        });
-
-        // Filas de Datos con Cobro
-        let sumaSeccion = 0;
-
-        listaDatos.forEach((item, idx) => {
-            sumaSeccion += item.valor;
-
-            const dataRow = worksheet.addRow([
-                idx + 1,
-                item.fecha,
-                item.cliente,
-                item.detalle,
-                item.valor
-            ]);
-
-            dataRow.height = 22;
-
-            dataRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }; // #
-            dataRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' }; // Fecha
-            dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' }; // Cliente
-            dataRow.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }; // Detalle
-
-            const cellValor = dataRow.getCell(5);
-            cellValor.alignment = { horizontal: 'right', vertical: 'middle' };
-            cellValor.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
-
-            dataRow.eachCell({ includeEmpty: true }, (cell) => {
-                cell.font = { name: 'Calibri', size: 10 };
-                cell.border = borderStyle;
-            });
-        });
-
-        // Fila Final de Suma Total
-        const totalRowIndex = worksheet.lastRow.number + 1;
-
-        worksheet.mergeCells(`A${totalRowIndex}:D${totalRowIndex}`);
-        const labelTotalCell = worksheet.getCell(`A${totalRowIndex}`);
-        labelTotalCell.value = totalLabel;
-        labelTotalCell.font = { name: 'Calibri', size: 10, bold: true };
-        labelTotalCell.alignment = { horizontal: 'center', vertical: 'middle' };
-        labelTotalCell.fill = fillEstilo;
-
-        ['A', 'B', 'C', 'D'].forEach(col => {
-            worksheet.getCell(`${col}${totalRowIndex}`).border = borderStyle;
-            worksheet.getCell(`${col}${totalRowIndex}`).fill = fillEstilo;
-        });
-
-        const valueTotalCell = worksheet.getCell(`E${totalRowIndex}`);
-        valueTotalCell.value = sumaSeccion;
-        valueTotalCell.font = { name: 'Calibri', size: 10, bold: true };
-        valueTotalCell.alignment = { horizontal: 'right', vertical: 'middle' };
-        valueTotalCell.numFmt = '"$"#,##0.00;("$"#,##0.00);"-"';
-        valueTotalCell.fill = fillEstilo;
-        valueTotalCell.border = borderStyle;
-
-        worksheet.getRow(totalRowIndex).height = 24;
-    }
-
-    // 4. GENERAR SOLO LAS SECCIONES QUE TENGAN REGISTROS COBRADOS
-    if (instalaciones.length > 0) {
-        construirSeccion(
-            'INSTALACIONES',
-            'FECHA DE\nINSTALACIÓN',
-            'TOTAL DE INSTALACIÓN',
-            instalaciones,
-            fillAzul
-        );
-    }
-
-    if (traslados.length > 0) {
-        construirSeccion(
-            'TRASLADOS',
-            'FECHA DE\nTRASLADOS',
-            'TOTAL DE TRASLADOS',
-            traslados,
-            fillVerde
-        );
-    }
-
-    if (otrasActividades.length > 0) {
-        construirSeccion(
-            'OTRAS ACTIVIDADES',
-            'FECHA DE\nACTIVIDAD',
-            'TOTAL DE OTRAS ACTIVIDADES',
-            otrasActividades,
-            fillAzul
-        );
-    }
-
-    // 5. DESCARGAR EL ARCHIVO EXCEL
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `Reporte_Valores_Cobrados_${new Date().toISOString().split('T')[0]}.xlsx`);
-}
-
-// Vincular al botón de Reporte Excel
-document.addEventListener('DOMContentLoaded', () => {
-    const btnExportExcel = document.getElementById('btnExportExcel');
-    if (btnExportExcel) {
-        btnExportExcel.addEventListener('click', generarReporteExcel);
     }
 });
