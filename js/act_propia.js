@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tituloHeader = document.querySelector('h1, h2, h3, .title');
             if (tituloHeader) tituloHeader.textContent = `Editar Actividad #${id}`;
 
-            const response = await fetch(`${BASE_URL}/api/obtener-actividades`);
+            const response = await fetch(`${BASE_URL}/api/actividades`);
             if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
 
             const data = await response.json();
@@ -367,8 +367,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const targetApiUrl = esEdicion 
-            ? `${BASE_URL}/api/editar-actividad` 
-            : `${BASE_URL}/api/guardar-actividad`;
+            ? `${BASE_URL}/api/actividades` 
+            : `${BASE_URL}/api/actividades`;
             
         const method = esEdicion ? 'PUT' : 'POST';
         const btn = document.getElementById('btnSubmit') || document.querySelector('button[type="submit"]');

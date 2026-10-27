@@ -178,7 +178,7 @@ async function cargarActividades() {
             user_cargo: userCargo
         });
 
-        const res = await fetch(`${BASE_URL}/api/obtener-actividades?${queryParams}`);
+        const res = await fetch(`${BASE_URL}/api/actividades?${queryParams}`);
 
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
@@ -338,7 +338,7 @@ async function eliminarActividad(idActividad) {
     if (!confirmacion) return;
 
     try {
-        const res = await fetch(`${BASE_URL}/api/eliminar-actividad?id=${idActividad}`, {
+        const res = await fetch(`${BASE_URL}/api/actividades/${idActividad}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -710,7 +710,7 @@ async function guardarActividad(e) {
     };
 
     const isEdit = Boolean(act_id);
-    const url = isEdit ? `${BASE_URL}/api/editar-actividad` : `${BASE_URL}/api/guardar-actividad`;
+    const url = isEdit ? `${BASE_URL}/api/actividades/${act_id}` : `${BASE_URL}/api/actividades`;
     const method = isEdit ? 'PUT' : 'POST';
 
     try {
