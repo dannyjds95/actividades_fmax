@@ -32,18 +32,29 @@ module.exports = async (req, res) => {
         if (req.method === 'GET') {
             const { id } = req.query;
 
-            // 🎯 Caso A: Obtener un solo usuario por ID (para perfil.js)
+            // Consulta ajustada a la estructura real de la tabla 'empresa'
+            const sqlBase = `
+                SELECT 
+                    u.user_id, 
+                    u.user_nombre, 
+                    u.user_usuario, 
+                    u.user_ci, 
+                    u.user_cargo, 
+                    u.user_telefono, 
+                    u.user_direccion, 
+                    u.user_estado, 
+                    u.cuad_id, 
+                    u.id_empresa, 
+                    c.cuad_nombre, 
+                    e.emp_razon AS empresa 
+                FROM usuarios u 
+                LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id
+                LEFT JOIN empresa e ON u.id_empresa = e.emp_id
+            `;
+
+            // Caso A: Obtener un solo usuario por ID (para perfil.js)
             if (id) {
-                const [rows] = await connection.execute(
-                    `SELECT u.user_id, u.user_nombre, u.user_usuario, u.user_ci, u.user_cargo, 
-                            u.user_telefono, u.user_direccion, u.user_estado, u.cuad_id, u.id_empresa, 
-                            c.cuad_nombre, e.nombre_empresa AS empresa 
-                     FROM usuarios u 
-                     LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id 
-                     LEFT JOIN empresas e ON u.id_empresa = e.id_empresa 
-                     WHERE u.user_id = ?`,
-                    [id]
-                );
+                const [rows] = await connection.execute(`${sqlBase} WHERE u.user_id = ?`, [id]);
 
                 if (rows.length === 0) {
                     return res.status(404).json({ status: 'error', message: 'Usuario no encontrado' });
@@ -52,16 +63,8 @@ module.exports = async (req, res) => {
                 return res.status(200).json({ status: 'success', usuario: rows[0] });
             }
 
-            // 🎯 Caso B: Obtener todos los usuarios (para la tabla de administración)
-            const [usuarios] = await connection.execute(
-                `SELECT u.user_id, u.user_nombre, u.user_usuario, u.user_ci, u.user_cargo, 
-                        u.user_telefono, u.user_direccion, u.user_estado, u.cuad_id, u.id_empresa, 
-                        c.cuad_nombre, e.nombre_empresa AS empresa 
-                 FROM usuarios u 
-                 LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id 
-                 LEFT JOIN empresas e ON u.id_empresa = e.id_empresa 
-                 ORDER BY u.user_id ASC`
-            );
+            // Caso B: Obtener todos los usuarios (para la tabla de administración)
+            const [usuarios] = await connection.execute(`${sqlBase} ORDER BY u.user_id ASC`);
             return res.status(200).json({ status: 'success', usuarios });
         }
 
