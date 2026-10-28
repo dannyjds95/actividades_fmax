@@ -10,7 +10,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (sessionData && (!userId || userId === 'null' || userId === 'undefined')) {
         try {
             const parsed = JSON.parse(sessionData);
-            userId = parsed.user_id || parsed.id;
+            const uData = parsed.usuario || parsed.user || parsed;
+            userId = uData.user_id || uData.id;
+            
+            // Asegurar la clave user_id en localStorage
+            if (userId) {
+                localStorage.setItem('user_id', String(userId));
+            }
         } catch (e) {
             console.error('Error al leer sesión:', e);
         }
@@ -35,9 +41,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Función encargada de renderizar los datos en pantalla con fallbacks completos
-    const renderPerfil = (usuario) => {
-        if (!usuario) return;
+    // Función encargada de renderizar los datos en pantalla
+    const renderPerfil = (dataPerfil) => {
+        if (!dataPerfil) return;
+
+        // Desempaquetado seguro en caso de venir anidado
+        const usuario = dataPerfil.usuario || dataPerfil.user || dataPerfil;
 
         // 1. Datos Personales
         setFieldText('profileNombre', usuario.user_nombre || usuario.nombre);
@@ -49,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setFieldText('profileDireccion', usuario.user_direccion || usuario.direccion);
         setFieldText('profileSector', usuario.user_sector || usuario.sector);
 
-        // 2. Valores y Tarifas de Actividades (Soporta nombres de la BD y la API)
+        // 2. Valores y Tarifas de Actividades
         setFieldCurrency('profileValorAct', usuario.valor_act ?? usuario.cuad_valor_act);
         setFieldCurrency('profileValorVisita', usuario.valor_visita ?? usuario.cuad_valor_visita);
         setFieldCurrency('profileValorPred', usuario.valor_pred ?? usuario.cuad_valor_pred);
@@ -80,6 +89,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Actualizar localStorage con la información en tiempo real
                     localStorage.setItem('usuario_sesion', JSON.stringify(usuarioFresh));
                     
+                    const actualId = usuarioFresh.user_id || usuarioFresh.id || userId;
+                    localStorage.setItem('user_id', String(actualId));
+
                     const nuevoCargo = usuarioFresh.user_cargo || usuarioFresh.cargo;
                     if (nuevoCargo) {
                         localStorage.setItem('user_cargo', String(nuevoCargo));

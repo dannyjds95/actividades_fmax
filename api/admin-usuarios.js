@@ -27,25 +27,16 @@ module.exports = async (req, res) => {
         });
 
         // -------------------------------------------------------------
-        // 1. OBTENER USUARIOS (GET)
+        // 1. OBTENER USUARIOS CON TODOS SUS CAMPOS Y TARIFAS (GET)
         // -------------------------------------------------------------
         if (req.method === 'GET') {
             const { id } = req.query;
 
-            // 🎯 Consulta limpia sobre tablas verificadas (evita errores 500 por columnas inexistentes)
+            // 🎯 SELECT u.*, c.* extrae la totalidad de campos de usuarios y tarifas de cuadrilla
             const sqlBase = `
                 SELECT 
-                    u.user_id, 
-                    u.user_nombre, 
-                    u.user_usuario, 
-                    u.user_ci, 
-                    u.user_cargo, 
-                    u.user_telefono, 
-                    u.user_direccion, 
-                    u.user_estado, 
-                    u.cuad_id, 
-                    u.id_empresa, 
-                    c.cuad_nombre, 
+                    u.*, 
+                    c.*, 
                     e.emp_razon AS empresa 
                 FROM usuarios u 
                 LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id 
@@ -60,21 +51,25 @@ module.exports = async (req, res) => {
                     return res.status(404).json({ status: 'error', message: 'Usuario no encontrado' });
                 }
 
-                const row = rows[0];
+                const raw = rows[0];
 
-                // Mapear el usuario con sus campos y fallbacks de tarifas para la vista de perfil
+                // Mapeo seguro con fallbacks para garantizar compatibilidad con perfil.js
                 const usuario = {
-                    ...row,
-                    nombre: row.user_nombre,
-                    cargo: row.user_cargo,
-                    cuadrilla: row.cuad_nombre,
-                    empresa: row.empresa || 'Soluciones Tecnológicas S.A.',
-                    valor_act: row.valor_act || row.cuad_valor_act || 0,
-                    valor_visita: row.valor_visita || row.cuad_valor_visita || 0,
-                    valor_pred: row.valor_pred || row.cuad_valor_pred || 0,
-                    valor_ac: row.valor_ac || row.cuad_valor_ac || 0,
-                    valor_exc: row.valor_exc || row.cuad_valor_exc || 0,
-                    excedente: row.excedente || row.cuad_excedente || 0
+                    ...raw,
+                    nombre: raw.user_nombre,
+                    cargo: raw.user_cargo,
+                    cuadrilla: raw.cuad_nombre,
+                    empresa: raw.empresa || raw.emp_razon || 'Soluciones Tecnológicas S.A.',
+                    cedula: raw.user_ci,
+                    telefono: raw.user_telefono,
+                    direccion: raw.user_direccion,
+                    sector: raw.user_sector,
+                    valor_act: raw.valor_act ?? raw.cuad_valor_act ?? 0,
+                    valor_visita: raw.valor_visita ?? raw.cuad_valor_visita ?? 0,
+                    valor_pred: raw.valor_pred ?? raw.cuad_valor_pred ?? 0,
+                    valor_ac: raw.valor_ac ?? raw.cuad_valor_ac ?? 0,
+                    valor_exc: raw.valor_exc ?? raw.cuad_valor_exc ?? 0,
+                    excedente: raw.excedente ?? raw.cuad_excedente ?? 0
                 };
 
                 return res.status(200).json({ status: 'success', usuario });
