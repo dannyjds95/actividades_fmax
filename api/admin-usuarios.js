@@ -1,7 +1,7 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
-    // 🎯 1. Cabeceras CORS Universales (Añadido PUT y Access-Control-Allow-Credentials)
+    // 🎯 1. Cabeceras CORS Universales
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS, POST, PUT, DELETE');
@@ -30,11 +30,36 @@ module.exports = async (req, res) => {
         // 1. OBTENER USUARIOS (GET)
         // -------------------------------------------------------------
         if (req.method === 'GET') {
+            const { id } = req.query;
+
+            // 🎯 Caso A: Obtener un solo usuario por ID (para perfil.js)
+            if (id) {
+                const [rows] = await connection.execute(
+                    `SELECT u.user_id, u.user_nombre, u.user_usuario, u.user_ci, u.user_cargo, 
+                            u.user_telefono, u.user_direccion, u.user_estado, u.cuad_id, u.id_empresa, 
+                            c.cuad_nombre, e.nombre_empresa AS empresa 
+                     FROM usuarios u 
+                     LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id 
+                     LEFT JOIN empresas e ON u.id_empresa = e.id_empresa 
+                     WHERE u.user_id = ?`,
+                    [id]
+                );
+
+                if (rows.length === 0) {
+                    return res.status(404).json({ status: 'error', message: 'Usuario no encontrado' });
+                }
+
+                return res.status(200).json({ status: 'success', usuario: rows[0] });
+            }
+
+            // 🎯 Caso B: Obtener todos los usuarios (para la tabla de administración)
             const [usuarios] = await connection.execute(
                 `SELECT u.user_id, u.user_nombre, u.user_usuario, u.user_ci, u.user_cargo, 
-                        u.user_telefono, u.user_estado, u.cuad_id, u.id_empresa, c.cuad_nombre 
+                        u.user_telefono, u.user_direccion, u.user_estado, u.cuad_id, u.id_empresa, 
+                        c.cuad_nombre, e.nombre_empresa AS empresa 
                  FROM usuarios u 
                  LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id 
+                 LEFT JOIN empresas e ON u.id_empresa = e.id_empresa 
                  ORDER BY u.user_id ASC`
             );
             return res.status(200).json({ status: 'success', usuarios });
@@ -54,7 +79,8 @@ module.exports = async (req, res) => {
                 user_cargo,
                 cuad_id,
                 id_empresa,
-                user_telefono
+                user_telefono,
+                user_direccion
             } = bodyData;
 
             if (!user_nombre || !user_usuario) {
@@ -67,7 +93,7 @@ module.exports = async (req, res) => {
                     await connection.execute(
                         `UPDATE usuarios 
                          SET user_nombre = ?, user_ci = ?, user_usuario = ?, user_password = ?, 
-                             user_cargo = ?, cuad_id = ?, id_empresa = ?, user_telefono = ? 
+                             user_cargo = ?, cuad_id = ?, id_empresa = ?, user_telefono = ?, user_direccion = ? 
                          WHERE user_id = ?`,
                         [
                             user_nombre.trim(),
@@ -78,6 +104,7 @@ module.exports = async (req, res) => {
                             cuad_id || null,
                             id_empresa || 1,
                             user_telefono || null,
+                            user_direccion || null,
                             user_id
                         ]
                     );
@@ -85,7 +112,7 @@ module.exports = async (req, res) => {
                     await connection.execute(
                         `UPDATE usuarios 
                          SET user_nombre = ?, user_ci = ?, user_usuario = ?, 
-                             user_cargo = ?, cuad_id = ?, id_empresa = ?, user_telefono = ? 
+                             user_cargo = ?, cuad_id = ?, id_empresa = ?, user_telefono = ?, user_direccion = ? 
                          WHERE user_id = ?`,
                         [
                             user_nombre.trim(),
@@ -95,6 +122,7 @@ module.exports = async (req, res) => {
                             cuad_id || null,
                             id_empresa || 1,
                             user_telefono || null,
+                            user_direccion || null,
                             user_id
                         ]
                     );
@@ -103,8 +131,8 @@ module.exports = async (req, res) => {
             } else {
                 // Insertar nuevo usuario
                 await connection.execute(
-                    `INSERT INTO usuarios (user_nombre, user_ci, user_usuario, user_password, user_cargo, cuad_id, id_empresa, user_telefono, user_estado) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+                    `INSERT INTO usuarios (user_nombre, user_ci, user_usuario, user_password, user_cargo, cuad_id, id_empresa, user_telefono, user_direccion, user_estado) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
                     [
                         user_nombre.trim(),
                         user_ci || null,
@@ -113,7 +141,8 @@ module.exports = async (req, res) => {
                         user_cargo || 'TECNICO',
                         cuad_id || null,
                         id_empresa || 1,
-                        user_telefono || null
+                        user_telefono || null,
+                        user_direccion || null
                     ]
                 );
                 return res.status(200).json({ status: 'success', message: 'Usuario guardado correctamente' });

@@ -4,37 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Perfil</title>
+    <title>Mi Perfil - FMAX</title>
+    
+    <!-- Recursos e Íconos PWA -->
     <link rel="icon" type="image/png" href="../image/logo.png">
+    <link rel="apple-touch-icon" href="../image/logo.png">
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- Hojas de Estilos -->
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/layout.css">
-
-    <!-- Enlace al Manifest -->
-<link rel="icon" type="image/png" href="../image/logo.png">
-<link rel="apple-touch-icon" href="../image/logo.png">
-<link rel="manifest" href="../manifest.json">
-<meta name="theme-color" content="#2563eb">
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('../sw.js', { scope: '../' })
-        .then(reg => console.log('Service Worker registrado correctamente:', reg))
-        .catch(err => console.error('Error al registrar Service Worker:', err));
-    });
-  }
-</script>
 </head>
 
 <body>
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <div class="app-layout">
+        
         <!-- MENÚ LATERAL (SIDEBAR) -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <img src="../image/logo.png" alt="Logo" style="height: 28px; width: auto;"
                     onerror="this.style.display='none'">
-                <h2 id="userName">FMAX</h2>
+                <h2>FMAX</h2>
             </div>
 
             <nav class="sidebar-nav">
@@ -52,11 +44,12 @@
                 </a>
                 <a href="administracion.html" class="nav-item">
                     <span class="nav-icon">⚙️</span>
-                    <span class="nav-label">Administracion</span>
+                    <span class="nav-label">Administración</span>
                 </a>
             </nav>
+            
             <div class="sidebar-footer">
-                <button type="button" id="btnLogout" class="nav-item btn-logout-sidebar">
+                <button type="button" class="nav-item btn-logout btn-logout-sidebar">
                     <span class="nav-icon">🚪</span>
                     <span class="nav-label">Cerrar Sesión</span>
                 </button>
@@ -65,7 +58,8 @@
 
         <!-- ÁREA PRINCIPAL -->
         <main class="main-content">
-            <!-- ENCABEZADO SUPERIOR -->
+            
+            <!-- ENCABEZADO SUPERIOR (TOPBAR) -->
             <header class="topbar">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button type="button" id="toggleSidebar" class="toggle-sidebar-btn" aria-label="Toggle Sidebar">
@@ -108,7 +102,6 @@
                                 -</p>
                         </div>
 
-                        <!-- 🎯 CAMBIO REALIZADO: Reemplazo de Usuario por Cuadrilla -->
                         <div class="form-group">
                             <label>Cuadrilla</label>
                             <p id="profileCuadrilla"
@@ -122,30 +115,35 @@
                                 style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">
                                 -</p>
                         </div>
+                        
                         <div class="form-group">
                             <label>Empresa</label>
                             <p id="profileEmpresa"
                                 style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">
                                 -</p>
                         </div>
+                        
                         <div class="form-group">
                             <label>Cédula</label>
                             <p id="profileCedula"
                                 style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">
                                 -</p>
                         </div>
+                        
                         <div class="form-group">
                             <label>Teléfono</label>
                             <p id="profileTelefono"
                                 style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">
                                 -</p>
                         </div>
+                        
                         <div class="form-group">
                             <label>Dirección</label>
                             <p id="profileDireccion"
                                 style="padding: 0.5rem 0; font-weight: 600; border-bottom: 1px solid var(--border-color);">
                                 -</p>
                         </div>
+                        
                         <div class="form-group">
                             <label>Sector</label>
                             <p id="profileSector"
@@ -208,6 +206,7 @@
         </main>
     </div>
 
+    <!-- Carga de Scripts -->
     <script src="../js/login.js"></script>
     <script src="../js/perfil.js"></script>
     <script src="../js/layout.js"></script>
