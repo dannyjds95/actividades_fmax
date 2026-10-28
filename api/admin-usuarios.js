@@ -27,12 +27,12 @@ module.exports = async (req, res) => {
         });
 
         // -------------------------------------------------------------
-        // 1. OBTENER USUARIOS CON TARIFAS Y EMPRESA (GET)
+        // 1. OBTENER USUARIOS (GET)
         // -------------------------------------------------------------
         if (req.method === 'GET') {
             const { id } = req.query;
 
-            // 🎯 Incluye los valores numéricos y tarifas de la cuadrilla
+            // 🎯 Consulta limpia sobre tablas verificadas (evita errores 500 por columnas inexistentes)
             const sqlBase = `
                 SELECT 
                     u.user_id, 
@@ -45,20 +45,14 @@ module.exports = async (req, res) => {
                     u.user_estado, 
                     u.cuad_id, 
                     u.id_empresa, 
-                    e.emp_razon AS empresa,
-                    c.cuad_nombre,
-                    c.cuad_valor_act AS valor_act,
-                    c.cuad_valor_visita AS valor_visita,
-                    c.cuad_valor_pred AS valor_pred,
-                    c.cuad_valor_ac AS valor_ac,
-                    c.cuad_valor_exc AS valor_exc,
-                    c.cuad_excedente AS excedente
+                    c.cuad_nombre, 
+                    e.emp_razon AS empresa 
                 FROM usuarios u 
-                LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id
+                LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id 
                 LEFT JOIN empresa e ON u.id_empresa = e.emp_id
             `;
 
-            // Caso A: Un solo usuario por ID (para perfil.js)
+            // Caso A: Obtener un solo usuario por ID (para perfil.js / editar-perfil.js)
             if (id) {
                 const [rows] = await connection.execute(`${sqlBase} WHERE u.user_id = ?`, [id]);
 
@@ -66,10 +60,27 @@ module.exports = async (req, res) => {
                     return res.status(404).json({ status: 'error', message: 'Usuario no encontrado' });
                 }
 
-                return res.status(200).json({ status: 'success', usuario: rows[0] });
+                const row = rows[0];
+
+                // Mapear el usuario con sus campos y fallbacks de tarifas para la vista de perfil
+                const usuario = {
+                    ...row,
+                    nombre: row.user_nombre,
+                    cargo: row.user_cargo,
+                    cuadrilla: row.cuad_nombre,
+                    empresa: row.empresa || 'Soluciones Tecnológicas S.A.',
+                    valor_act: row.valor_act || row.cuad_valor_act || 0,
+                    valor_visita: row.valor_visita || row.cuad_valor_visita || 0,
+                    valor_pred: row.valor_pred || row.cuad_valor_pred || 0,
+                    valor_ac: row.valor_ac || row.cuad_valor_ac || 0,
+                    valor_exc: row.valor_exc || row.cuad_valor_exc || 0,
+                    excedente: row.excedente || row.cuad_excedente || 0
+                };
+
+                return res.status(200).json({ status: 'success', usuario });
             }
 
-            // Caso B: Todos los usuarios (para la tabla de administración)
+            // Caso B: Obtener todos los usuarios (para la tabla de administración)
             const [usuarios] = await connection.execute(`${sqlBase} ORDER BY u.user_id ASC`);
             return res.status(200).json({ status: 'success', usuarios });
         }
@@ -97,6 +108,7 @@ module.exports = async (req, res) => {
             }
 
             if (user_id) {
+                // Actualizar usuario existente
                 if (user_password && user_password.trim() !== '') {
                     await connection.execute(
                         `UPDATE usuarios 
@@ -137,6 +149,7 @@ module.exports = async (req, res) => {
                 }
                 return res.status(200).json({ status: 'success', message: 'Usuario actualizado correctamente' });
             } else {
+                // Insertar nuevo usuario
                 await connection.execute(
                     `INSERT INTO usuarios (user_nombre, user_ci, user_usuario, user_password, user_cargo, cuad_id, id_empresa, user_telefono, user_direccion, user_estado) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
