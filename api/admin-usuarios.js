@@ -27,12 +27,12 @@ module.exports = async (req, res) => {
         });
 
         // -------------------------------------------------------------
-        // 1. OBTENER USUARIOS (GET)
+        // 1. OBTENER USUARIOS CON TARIFAS Y EMPRESA (GET)
         // -------------------------------------------------------------
         if (req.method === 'GET') {
             const { id } = req.query;
 
-            // Consulta ajustada a la estructura real de la tabla 'empresa'
+            // 🎯 Incluye los valores numéricos y tarifas de la cuadrilla
             const sqlBase = `
                 SELECT 
                     u.user_id, 
@@ -45,14 +45,20 @@ module.exports = async (req, res) => {
                     u.user_estado, 
                     u.cuad_id, 
                     u.id_empresa, 
-                    c.cuad_nombre, 
-                    e.emp_razon AS empresa 
+                    e.emp_razon AS empresa,
+                    c.cuad_nombre,
+                    c.cuad_valor_act AS valor_act,
+                    c.cuad_valor_visita AS valor_visita,
+                    c.cuad_valor_pred AS valor_pred,
+                    c.cuad_valor_ac AS valor_ac,
+                    c.cuad_valor_exc AS valor_exc,
+                    c.cuad_excedente AS excedente
                 FROM usuarios u 
                 LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id
                 LEFT JOIN empresa e ON u.id_empresa = e.emp_id
             `;
 
-            // Caso A: Obtener un solo usuario por ID (para perfil.js)
+            // Caso A: Un solo usuario por ID (para perfil.js)
             if (id) {
                 const [rows] = await connection.execute(`${sqlBase} WHERE u.user_id = ?`, [id]);
 
@@ -63,7 +69,7 @@ module.exports = async (req, res) => {
                 return res.status(200).json({ status: 'success', usuario: rows[0] });
             }
 
-            // Caso B: Obtener todos los usuarios (para la tabla de administración)
+            // Caso B: Todos los usuarios (para la tabla de administración)
             const [usuarios] = await connection.execute(`${sqlBase} ORDER BY u.user_id ASC`);
             return res.status(200).json({ status: 'success', usuarios });
         }
@@ -91,7 +97,6 @@ module.exports = async (req, res) => {
             }
 
             if (user_id) {
-                // Actualizar usuario existente
                 if (user_password && user_password.trim() !== '') {
                     await connection.execute(
                         `UPDATE usuarios 
@@ -132,7 +137,6 @@ module.exports = async (req, res) => {
                 }
                 return res.status(200).json({ status: 'success', message: 'Usuario actualizado correctamente' });
             } else {
-                // Insertar nuevo usuario
                 await connection.execute(
                     `INSERT INTO usuarios (user_nombre, user_ci, user_usuario, user_password, user_cargo, cuad_id, id_empresa, user_telefono, user_direccion, user_estado) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
