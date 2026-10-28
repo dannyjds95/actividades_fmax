@@ -10,7 +10,6 @@ module.exports = async (req, res) => {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
     );
 
-    // Responder 200 OK de inmediato al Preflight (OPTIONS)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -27,23 +26,22 @@ module.exports = async (req, res) => {
         });
 
         // -------------------------------------------------------------
-        // 1. OBTENER USUARIOS CON TODOS SUS CAMPOS Y TARIFAS (GET)
+        // 1. OBTENER USUARIOS (GET)
         // -------------------------------------------------------------
         if (req.method === 'GET') {
             const { id } = req.query;
 
-            // 🎯 SELECT u.*, c.* extrae la totalidad de campos de usuarios y tarifas de cuadrilla
+            // 🎯 u.* obtiene directamente todas las tarifas y datos de usuarios
             const sqlBase = `
                 SELECT 
                     u.*, 
-                    c.*, 
+                    c.cuad_nombre, 
                     e.emp_razon AS empresa 
                 FROM usuarios u 
                 LEFT JOIN cuadrilla c ON u.cuad_id = c.cuad_id 
                 LEFT JOIN empresa e ON u.id_empresa = e.emp_id
             `;
 
-            // Caso A: Obtener un solo usuario por ID (para perfil.js / editar-perfil.js)
             if (id) {
                 const [rows] = await connection.execute(`${sqlBase} WHERE u.user_id = ?`, [id]);
 
@@ -53,29 +51,28 @@ module.exports = async (req, res) => {
 
                 const raw = rows[0];
 
-                // Mapeo seguro con fallbacks para garantizar compatibilidad con perfil.js
+                // Normalización de llaves para el renderizado del perfil
                 const usuario = {
                     ...raw,
                     nombre: raw.user_nombre,
                     cargo: raw.user_cargo,
                     cuadrilla: raw.cuad_nombre,
-                    empresa: raw.empresa || raw.emp_razon || 'Soluciones Tecnológicas S.A.',
+                    empresa: raw.empresa || 'Soluciones Tecnológicas S.A.',
                     cedula: raw.user_ci,
                     telefono: raw.user_telefono,
                     direccion: raw.user_direccion,
                     sector: raw.user_sector,
-                    valor_act: raw.valor_act ?? raw.cuad_valor_act ?? 0,
-                    valor_visita: raw.valor_visita ?? raw.cuad_valor_visita ?? 0,
-                    valor_pred: raw.valor_pred ?? raw.cuad_valor_pred ?? 0,
-                    valor_ac: raw.valor_ac ?? raw.cuad_valor_ac ?? 0,
-                    valor_exc: raw.valor_exc ?? raw.cuad_valor_exc ?? 0,
-                    excedente: raw.excedente ?? raw.cuad_excedente ?? 0
+                    valor_act: raw.valor_act ?? 0,
+                    valor_visita: raw.valor_visita ?? 0,
+                    valor_pred: raw.valor_pred ?? 0,
+                    valor_ac: raw.valor_ac ?? 0,
+                    valor_exc: raw.valor_exc ?? 0,
+                    excedente: raw.excedente ?? 0
                 };
 
                 return res.status(200).json({ status: 'success', usuario });
             }
 
-            // Caso B: Obtener todos los usuarios (para la tabla de administración)
             const [usuarios] = await connection.execute(`${sqlBase} ORDER BY u.user_id ASC`);
             return res.status(200).json({ status: 'success', usuarios });
         }
@@ -95,7 +92,13 @@ module.exports = async (req, res) => {
                 cuad_id,
                 id_empresa,
                 user_telefono,
-                user_direccion
+                user_direccion,
+                user_sector,
+                valor_act,
+                valor_visita,
+                valor_pred,
+                valor_ac,
+                valor_exc
             } = bodyData;
 
             if (!user_nombre || !user_usuario) {
@@ -103,12 +106,12 @@ module.exports = async (req, res) => {
             }
 
             if (user_id) {
-                // Actualizar usuario existente
                 if (user_password && user_password.trim() !== '') {
                     await connection.execute(
                         `UPDATE usuarios 
                          SET user_nombre = ?, user_ci = ?, user_usuario = ?, user_password = ?, 
-                             user_cargo = ?, cuad_id = ?, id_empresa = ?, user_telefono = ?, user_direccion = ? 
+                             user_cargo = ?, cuad_id = ?, id_empresa = ?, user_telefono = ?, user_direccion = ?,
+                             user_sector = ?, valor_act = ?, valor_visita = ?, valor_pred = ?, valor_ac = ?, valor_exc = ?
                          WHERE user_id = ?`,
                         [
                             user_nombre.trim(),
@@ -120,6 +123,12 @@ module.exports = async (req, res) => {
                             id_empresa || 1,
                             user_telefono || null,
                             user_direccion || null,
+                            user_sector || null,
+                            valor_act ?? 0,
+                            valor_visita ?? 0,
+                            valor_pred ?? 0,
+                            valor_ac ?? 0,
+                            valor_exc ?? 0,
                             user_id
                         ]
                     );
@@ -127,7 +136,8 @@ module.exports = async (req, res) => {
                     await connection.execute(
                         `UPDATE usuarios 
                          SET user_nombre = ?, user_ci = ?, user_usuario = ?, 
-                             user_cargo = ?, cuad_id = ?, id_empresa = ?, user_telefono = ?, user_direccion = ? 
+                             user_cargo = ?, cuad_id = ?, id_empresa = ?, user_telefono = ?, user_direccion = ?,
+                             user_sector = ?, valor_act = ?, valor_visita = ?, valor_pred = ?, valor_ac = ?, valor_exc = ?
                          WHERE user_id = ?`,
                         [
                             user_nombre.trim(),
@@ -138,16 +148,21 @@ module.exports = async (req, res) => {
                             id_empresa || 1,
                             user_telefono || null,
                             user_direccion || null,
+                            user_sector || null,
+                            valor_act ?? 0,
+                            valor_visita ?? 0,
+                            valor_pred ?? 0,
+                            valor_ac ?? 0,
+                            valor_exc ?? 0,
                             user_id
                         ]
                     );
                 }
                 return res.status(200).json({ status: 'success', message: 'Usuario actualizado correctamente' });
             } else {
-                // Insertar nuevo usuario
                 await connection.execute(
-                    `INSERT INTO usuarios (user_nombre, user_ci, user_usuario, user_password, user_cargo, cuad_id, id_empresa, user_telefono, user_direccion, user_estado) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+                    `INSERT INTO usuarios (user_nombre, user_ci, user_usuario, user_password, user_cargo, cuad_id, id_empresa, user_telefono, user_direccion, user_sector, valor_act, valor_visita, valor_pred, valor_ac, valor_exc, user_estado) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
                     [
                         user_nombre.trim(),
                         user_ci || null,
@@ -157,7 +172,13 @@ module.exports = async (req, res) => {
                         cuad_id || null,
                         id_empresa || 1,
                         user_telefono || null,
-                        user_direccion || null
+                        user_direccion || null,
+                        user_sector || null,
+                        valor_act ?? 0,
+                        valor_visita ?? 0,
+                        valor_pred ?? 0,
+                        valor_ac ?? 0,
+                        valor_exc ?? 0
                     ]
                 );
                 return res.status(200).json({ status: 'success', message: 'Usuario guardado correctamente' });

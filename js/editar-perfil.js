@@ -1,46 +1,82 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const editForm = document.getElementById('editForm');
-    const alertDiv = document.getElementById('alert');
+    const editForm = document.getElementById('editForm') || document.getElementById('formEditarPerfil');
+    const alertDiv = document.getElementById('alert') || document.querySelector('.alert');
     const btnSubmit = editForm ? editForm.querySelector('button[type="submit"]') : null;
 
-    // URLs para Vercel y entorno local
-    const BASE_VERCEL_URL = 'https://actividades-fmax-9ysb.vercel.app';
+    // 1. Configuración adaptativa de URLs base
     const isVercel = window.location.hostname.includes('vercel.app');
+    const BASE_URL = isVercel ? '' : 'https://actividades-fmax-9ysb.vercel.app';
     
-    const API_UPDATE_URL = isVercel ? '/api/actualizar-perfil' : `${BASE_VERCEL_URL}/api/actualizar-perfil`;
-    const API_CUADRILLAS_URL = isVercel ? '/api/cuadrillas' : `${BASE_VERCEL_URL}/api/cuadrillas`;
+    const API_UPDATE_URL = `${BASE_URL}/api/admin-usuarios`;
+    const API_CUADRILLAS_URL = `${BASE_URL}/api/cuadrillas`;
 
-    // Obtener la sesión actual guardada
-    const userSession = JSON.parse(localStorage.getItem('usuario_sesion'));
+    // 2. Obtener y desempaquetar la sesión de forma segura
+    const rawSession = localStorage.getItem('usuario_sesion');
+    let userSession = null;
+
+    if (rawSession) {
+        try {
+            userSession = JSON.parse(rawSession);
+        } catch (e) {
+            console.error('Error al leer sesión:', e);
+        }
+    }
 
     if (!userSession) {
         window.location.href = '../index.html';
         return;
     }
 
-    // 1. PRECARGA INMEDIATA DE TODOS LOS CAMPOS (Sin bloquear la pantalla)
-    if (document.getElementById('nombre')) document.getElementById('nombre').value = userSession.nombre || userSession.user_nombre || '';
-    if (document.getElementById('cedula')) document.getElementById('cedula').value = userSession.cedula || userSession.user_ci || '';
-    if (document.getElementById('telefono')) document.getElementById('telefono').value = userSession.telefono || userSession.user_telefono || '';
-    if (document.getElementById('direccion')) document.getElementById('direccion').value = userSession.direccion || userSession.user_direccion || '';
+    // Extraer sub-objeto si la sesión está anidada ({ usuario: { ... } })
+    const uData = userSession.usuario || userSession.user || userSession;
+    
+    // Obtener ID del usuario priorizando localStorage o las llaves conocidas
+    let userId = localStorage.getItem('user_id') || uData.user_id || uData.id;
+
+    if (!userId || userId === 'null' || userId === 'undefined') {
+        showAlert('ID de usuario no proporcionado. Inicie sesión de nuevo.', 'alert-error');
+        return;
+    }
+
+    // Asegurar persistencia del user_id en localStorage
+    localStorage.setItem('user_id', String(userId));
+
+    // 3. PRECARGA INMEDIATA DE CAMPOS EN EL FORMULARIO
+    const setVal = (id, val) => {
+        const el = document.getElementById(id) || document.querySelector(`[name="${id}"]`);
+        if (el) el.value = (val !== undefined && val !== null) ? val : '';
+    };
+
+    setVal('nombre', uData.user_nombre || uData.nombre);
+    setVal('user_nombre', uData.user_nombre || uData.nombre);
+
+    setVal('cedula', uData.user_ci || uData.cedula);
+    setVal('user_ci', uData.user_ci || uData.cedula);
+
+    setVal('telefono', uData.user_telefono || uData.telefono);
+    setVal('user_telefono', uData.user_telefono || uData.telefono);
+
+    setVal('direccion', uData.user_direccion || uData.direccion);
+    setVal('user_direccion', uData.user_direccion || uData.direccion);
 
     // Precargar Cargo
-    const cargoSelect = document.getElementById('cargo');
-    if (cargoSelect && userSession.cargo) {
-        cargoSelect.value = userSession.cargo.toUpperCase();
+    const cargoSelect = document.getElementById('cargo') || document.getElementById('user_cargo');
+    const cargoVal = uData.user_cargo || uData.cargo;
+    if (cargoSelect && cargoVal) {
+        cargoSelect.value = cargoVal.toUpperCase();
     }
 
     // Precargar Valores y Tarifas
-    if (document.getElementById('valor_act')) document.getElementById('valor_act').value = userSession.valor_act || 0;
-    if (document.getElementById('valor_visita')) document.getElementById('valor_visita').value = userSession.valor_visita || 0;
-    if (document.getElementById('valor_pred')) document.getElementById('valor_pred').value = userSession.valor_pred || 0;
-    if (document.getElementById('valor_ac')) document.getElementById('valor_ac').value = userSession.valor_ac || 0;
-    if (document.getElementById('valor_exc')) document.getElementById('valor_exc').value = userSession.valor_exc || 0;
+    setVal('valor_act', uData.valor_act ?? uData.cuad_valor_act ?? 0);
+    setVal('valor_visita', uData.valor_visita ?? uData.cuad_valor_visita ?? 0);
+    setVal('valor_pred', uData.valor_pred ?? uData.cuad_valor_pred ?? 0);
+    setVal('valor_ac', uData.valor_ac ?? uData.cuad_valor_ac ?? 0);
+    setVal('valor_exc', uData.valor_exc ?? uData.cuad_valor_exc ?? 0);
 
-    // 2. Cargar lista de cuadrillas (con respaldo automático para local)
-    cargarCuadrillas(userSession);
+    // 4. Cargar opciones del selector de cuadrillas
+    cargarCuadrillas(uData);
 
-    // 3. EVENTO SUBMIT DEL FORMULARIO
+    // 5. EVENTO SUBMIT DEL FORMULARIO
     if (editForm) {
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -50,32 +86,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnSubmit.textContent = 'Guardando...';
             }
 
-            const selectCuadrilla = document.getElementById('cuad_id');
+            const getVal = (id) => {
+                const el = document.getElementById(id) || document.querySelector(`[name="${id}"]`);
+                return el ? el.value.trim() : '';
+            };
+
+            const selectCuadrilla = document.getElementById('cuad_id') || document.querySelector('select[name="cuad_id"]');
             const selectedOption = selectCuadrilla ? selectCuadrilla.options[selectCuadrilla.selectedIndex] : null;
             const selectedCuadrillaName = (selectedOption && selectedOption.value) 
                 ? selectedOption.text 
-                : (userSession.cuadrilla || userSession.cuad_nombre);
+                : (uData.cuadrilla || uData.cuad_nombre);
 
-            const updatedData = {
-                id: userSession.id,
-                nombre: document.getElementById('nombre').value.trim(),
-                cedula: document.getElementById('cedula').value.trim(),
-                cargo: document.getElementById('cargo') ? document.getElementById('cargo').value : userSession.cargo,
-                cuad_id: selectCuadrilla && selectCuadrilla.value ? (parseInt(selectCuadrilla.value, 10) || null) : userSession.cuad_id,
-                telefono: document.getElementById('telefono').value.trim(),
-                direccion: document.getElementById('direccion').value.trim(),
-                valor_act: parseFloat(document.getElementById('valor_act').value) || 0,
-                valor_visita: parseFloat(document.getElementById('valor_visita').value) || 0,
-                valor_pred: parseFloat(document.getElementById('valor_pred').value) || 0,
-                valor_ac: parseFloat(document.getElementById('valor_ac').value) || 0,
-                valor_exc: parseFloat(document.getElementById('valor_exc').value) || 0
+            // 🎯 Payload alineado exactamente con api/admin-usuarios.js
+            const payload = {
+                user_id: Number(userId),
+                user_nombre: getVal('nombre') || getVal('user_nombre'),
+                user_ci: getVal('cedula') || getVal('user_ci'),
+                user_usuario: uData.user_usuario || uData.usuario || getVal('nombre') || getVal('user_nombre'),
+                user_cargo: getVal('cargo') || getVal('user_cargo') || uData.user_cargo || 'TECNICO',
+                cuad_id: selectCuadrilla && selectCuadrilla.value ? (parseInt(selectCuadrilla.value, 10) || null) : uData.cuad_id,
+                user_telefono: getVal('telefono') || getVal('user_telefono'),
+                user_direccion: getVal('direccion') || getVal('user_direccion')
             };
 
+            if (!payload.user_nombre) {
+                showAlert('El nombre completo es obligatorio.', 'alert-error');
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = 'Guardar Cambios';
+                }
+                return;
+            }
+
             try {
+                // Petición a /api/admin-usuarios mediante PUT
                 const response = await fetch(API_UPDATE_URL, {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatedData)
+                    body: JSON.stringify(payload)
                 });
 
                 let data;
@@ -86,24 +134,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (response.ok && (data.status === 'success' || data.success)) {
-                    // Actualizar localStorage con los nuevos datos
-                    Object.assign(userSession, {
-                        nombre: updatedData.nombre,
-                        cedula: updatedData.cedula,
-                        cargo: updatedData.cargo,
-                        cuad_id: updatedData.cuad_id,
+                    // Actualización local de la sesión
+                    const updatedSession = {
+                        ...uData,
+                        user_id: payload.user_id,
+                        user_nombre: payload.user_nombre,
+                        nombre: payload.user_nombre,
+                        user_ci: payload.user_ci,
+                        cedula: payload.user_ci,
+                        user_cargo: payload.user_cargo,
+                        cargo: payload.user_cargo,
+                        cuad_id: payload.cuad_id,
                         cuadrilla: selectedCuadrillaName,
                         cuad_nombre: selectedCuadrillaName,
-                        telefono: updatedData.telefono,
-                        direccion: updatedData.direccion,
-                        valor_act: updatedData.valor_act,
-                        valor_visita: updatedData.valor_visita,
-                        valor_pred: updatedData.valor_pred,
-                        valor_ac: updatedData.valor_ac,
-                        valor_exc: updatedData.valor_exc
-                    });
+                        user_telefono: payload.user_telefono,
+                        telefono: payload.user_telefono,
+                        user_direccion: payload.user_direccion,
+                        direccion: payload.user_direccion
+                    };
 
-                    localStorage.setItem('usuario_sesion', JSON.stringify(userSession));
+                    localStorage.setItem('usuario_sesion', JSON.stringify(updatedSession));
+                    localStorage.setItem('user_id', String(payload.user_id));
+                    if (payload.user_cargo) localStorage.setItem('user_cargo', payload.user_cargo);
 
                     showAlert('Información actualizada correctamente.', 'alert-success');
                     setTimeout(() => {
@@ -125,9 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Función auxiliar para cargar cuadrillas con respaldo si falla el fetch
+    // Función auxiliar para cargar cuadrillas
     async function cargarCuadrillas(session) {
-        const selectCuadrilla = document.getElementById('cuad_id');
+        const selectCuadrilla = document.getElementById('cuad_id') || document.querySelector('select[name="cuad_id"]');
         if (!selectCuadrilla) return;
 
         const currentCuadId = session.cuad_id || 1;
@@ -154,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             throw new Error('Respuesta vacía');
         } catch (error) {
-            // Plan B: Si la API no está desplegada en Vercel aún, mostramos la cuadrilla actual de la sesión
             selectCuadrilla.innerHTML = '';
             const option = document.createElement('option');
             option.value = currentCuadId;
@@ -168,6 +219,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (alertDiv) {
             alertDiv.textContent = message;
             alertDiv.className = `alert ${typeClass}`;
+            alertDiv.style.display = 'block';
+        } else {
+            alert(message);
         }
     }
 });

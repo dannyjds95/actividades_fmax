@@ -1,31 +1,51 @@
 const mysql = require('mysql2/promise');
 
 module.exports = async (req, res) => {
-    // 1. Cabeceras CORS (sin conflicto entre Allow-Credentials y Origin: '*')
+    // 🎯 1. Cabeceras CORS Universales
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, PUT, OPTIONS');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+    );
 
-    // Manejo de petición preflight (CORS)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    if (req.method !== 'POST') {
+    if (req.method !== 'POST' && req.method !== 'PUT') {
         return res.status(405).json({ status: 'error', message: 'Método no permitido' });
     }
 
     let connection;
     try {
-        // 2. Garantizar el parseo del cuerpo de la petición
         const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-        const { id, nombre, cedula, telefono, direccion, valor_act, valor_visita, valor_pred, valor_ac, valor_exc } = body;
 
-        if (!id) {
+        const userId = body.user_id || body.id;
+        const nombre = body.user_nombre || body.nombre;
+        const cedula = body.user_ci || body.cedula;
+        const telefono = body.user_telefono || body.telefono;
+        const direccion = body.user_direccion || body.direccion;
+        const sector = body.user_sector || body.sector;
+        const cargo = body.user_cargo || body.cargo;
+        const cuadId = body.cuad_id;
+
+        // Tarifas y valores numéricos
+        const valorAct = body.valor_act !== undefined ? parseFloat(body.valor_act) : null;
+        const valorVisita = body.valor_visita !== undefined ? parseFloat(body.valor_visita) : null;
+        const valorPred = body.valor_pred !== undefined ? parseFloat(body.valor_pred) : null;
+        const valorAc = body.valor_ac !== undefined ? parseFloat(body.valor_ac) : null;
+        const valorExc = body.valor_exc !== undefined ? parseFloat(body.valor_exc) : null;
+
+        if (!userId) {
             return res.status(400).json({ status: 'error', message: 'ID de usuario no proporcionado' });
         }
 
-        // 3. Conexión usando variables de entorno o valores por defecto
+        if (!nombre) {
+            return res.status(400).json({ status: 'error', message: 'El nombre es obligatorio' });
+        }
+
         connection = await mysql.createConnection({
             host: process.env.DB_HOST || 'gateway01.us-east-1.prod.aws.tidbcloud.com',
             port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 4000,
@@ -35,15 +55,43 @@ module.exports = async (req, res) => {
             ssl: { rejectUnauthorized: false }
         });
 
+        // 🎯 UPDATE con todos los campos reales detectados en la tabla 'usuarios'
         await connection.execute(
             `UPDATE usuarios 
-             SET user_nombre = ?, user_ci = ?, user_telefono = ?, user_direccion = ?,
-                 valor_act = ?, valor_visita = ?, valor_pred = ?, valor_ac = ?, valor_exc = ?
+             SET user_nombre = ?, 
+                 user_ci = ?, 
+                 user_telefono = ?, 
+                 user_direccion = ?,
+                 user_sector = COALESCE(?, user_sector),
+                 user_cargo = COALESCE(?, user_cargo),
+                 cuad_id = COALESCE(?, cuad_id),
+                 valor_act = COALESCE(?, valor_act),
+                 valor_visita = COALESCE(?, valor_visita),
+                 valor_pred = COALESCE(?, valor_pred),
+                 valor_ac = COALESCE(?, valor_ac),
+                 valor_exc = COALESCE(?, valor_exc)
              WHERE user_id = ?`,
-            [nombre, cedula, telefono, direccion, valor_act, valor_visita, valor_pred, valor_ac, valor_exc, id]
+            [
+                nombre.trim(),
+                cedula ? cedula.trim() : null,
+                telefono ? telefono.trim() : null,
+                direccion ? direccion.trim() : null,
+                sector ? sector.trim() : null,
+                cargo ? cargo.trim() : null,
+                cuadId ? Number(cuadId) : null,
+                valorAct,
+                valorVisita,
+                valorPred,
+                valorAc,
+                valorExc,
+                Number(userId)
+            ]
         );
 
-        return res.status(200).json({ status: 'success', message: 'Perfil actualizado correctamente' });
+        return res.status(200).json({ 
+            status: 'success', 
+            message: 'Perfil actualizado correctamente' 
+        });
 
     } catch (error) {
         console.error('Error DB:', error);
