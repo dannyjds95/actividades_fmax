@@ -64,8 +64,7 @@ module.exports = async (req, res) => {
                 COALESCE(SUM(act_excedente_valor), 0) AS excedente_valor,
                 COALESCE(SUM(act_pred), 0) AS puntos_red,
                 COALESCE(SUM(act_ac), 0) AS equipos_ac,
-                COALESCE(SUM(CAST(COALESCE(act_valores_cobrados, 0) AS DECIMAL(10,2))), 0) AS valores_cobrados,
-                COALESCE(SUM(CAST(COALESCE(act_valores_cobrados, 0) AS DECIMAL(10,2))), 0) AS act_valores_cobrados
+                COALESCE(SUM(CAST(COALESCE(act_valores_cobrados, 0) AS DECIMAL(10,2))), 0) AS valores_cobrados
             FROM actividad_detalle
             ${whereClause}
         `;
@@ -110,13 +109,34 @@ module.exports = async (req, res) => {
         `;
         const [ultimosRows] = await connection.execute(queryUltimos, params);
 
+        // --- CONSULTA 5: Lista Detallada Completa (Para los Pop-ups Modal) ---
+        const queryListaDetallada = `
+            SELECT 
+                act_id AS id,
+                act_fecha AS fecha,
+                act_cliente AS cliente,
+                act_tipo AS tipo,
+                COALESCE(act_tipo, 'INSTALACION') AS tipo_instalacion,
+                COALESCE(act_cantidad, 1) AS cantidad,
+                COALESCE(act_total, act_valor, 0) AS total,
+                COALESCE(act_excedente, 0) AS excedente,
+                COALESCE(act_pred, 0) AS puntos_red,
+                COALESCE(act_ac, 0) AS ac,
+                COALESCE(CAST(COALESCE(act_valores_cobrados, 0) AS DECIMAL(10,2)), 0) AS valores_cobrados
+            FROM actividad_detalle
+            ${whereClause}
+            ORDER BY act_fecha DESC, act_id DESC
+        `;
+        const [listaDetalladaRows] = await connection.execute(queryListaDetallada, params);
+
         // Respuesta unificada
         return res.status(200).json({
             status: 'success',
             metricas: metricasRows[0] || {},
             cuadrilla: cuadrillaRows[0] || { total_trabajos: 0, total_monto: 0 },
             actividades: actividadesRows,
-            ultimos: ultimosRows
+            ultimos: ultimosRows,
+            lista_detallada: listaDetalladaRows
         });
 
     } catch (err) {
