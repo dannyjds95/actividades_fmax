@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isVercel = window.location.hostname.includes('vercel.app');
     
     const API_UPDATE_URL = isVercel ? '/api/actualizar-perfil' : `${BASE_VERCEL_URL}/api/actualizar-perfil`;
-    const API_CUADRILLAS_URL = isVercel ? '/api/obtener-cuadrillas' : `${BASE_VERCEL_URL}/api/obtener-cuadrillas`;
+    const API_CUADRILLAS_URL = isVercel ? '/api/cuadrillas' : `${BASE_VERCEL_URL}/api/cuadrillas`;
 
     // Obtener la sesión actual guardada
     const userSession = JSON.parse(localStorage.getItem('usuario_sesion'));
