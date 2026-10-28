@@ -88,7 +88,7 @@ function inicializarModalGlobal() {
 function vincularEventosTarjetas() {
     const cards = document.querySelectorAll('.card, .metric-card, [class*="card"]');
 
-    // 1. Total Actividades (Cliente y act_cantidad)
+    // 1. Total Actividades
     const cardTotal = document.getElementById('card_total_actividades') || cards[0];
     if (cardTotal) {
         cardTotal.classList.add('cursor-pointer');
@@ -103,7 +103,7 @@ function vincularEventosTarjetas() {
         };
     }
 
-    // 2. Monto Facturado (Cliente y act_total)
+    // 2. Monto Facturado
     const cardMonto = document.getElementById('card_monto_facturado') || cards[1];
     if (cardMonto) {
         cardMonto.classList.add('cursor-pointer');
@@ -117,7 +117,7 @@ function vincularEventosTarjetas() {
         };
     }
 
-    // 3. Excedente (Cliente y excedente de actividades con excedente > 0)
+    // 3. Excedente
     const cardExcedente = document.getElementById('card_excedente_fibra') || cards[2];
     if (cardExcedente) {
         cardExcedente.classList.add('cursor-pointer');
@@ -132,7 +132,7 @@ function vincularEventosTarjetas() {
         };
     }
 
-    // 4. Puntos de Red / AC
+    // 4. Puntos Red / AC
     const cardPredAc = document.getElementById('card_puntos_red_ac') || cards[3];
     if (cardPredAc) {
         cardPredAc.classList.add('cursor-pointer');
@@ -148,17 +148,20 @@ function vincularEventosTarjetas() {
         };
     }
 
-    // 5. Valores Cobrados
+    // 🎯 5. Valores Cobrados (FILTRADO: Solo valores mayores a 0)
     const cardValores = document.getElementById('card_valores_cobrados') || cards[4];
     if (cardValores) {
         cardValores.classList.add('cursor-pointer');
         cardValores.onclick = () => {
+            // Filtrar únicamente los registros donde el valor cobrado sea estrictamente mayor a 0
+            const filtrados = listaDetalladaGlobal.filter(a => parseFloat(a.valores_cobrados || a.act_valores_cobrados || 0) > 0);
+            
             const cabeceras = ['Cliente', 'Valor Cobrado ($)'];
-            const filas = listaDetalladaGlobal.map(a => [
+            const filas = filtrados.map(a => [
                 a.cliente || a.act_cliente || 'Sin Nombre',
                 `$${parseFloat(a.valores_cobrados || a.act_valores_cobrados || 0).toFixed(2)}`
             ]);
-            abrirModal('Valores Cobrados', 'Detalle de cobros realizados', cabeceras, filas);
+            abrirModal('Valores Cobrados', `Detalle de cobros realizados (${filas.length} registros)`, cabeceras, filas);
         };
     }
 }
