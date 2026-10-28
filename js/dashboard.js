@@ -93,7 +93,7 @@ function vincularEventosTarjetas() {
     if (cardTotal) {
         cardTotal.classList.add('cursor-pointer');
         cardTotal.onclick = () => {
-            const cabeceras = ['Cliente', 'Cantidad (act_cantidad)', 'Tipo'];
+            const cabeceras = ['Cliente', 'Cantidad', 'Tipo'];
             const filas = listaDetalladaGlobal.map(a => [
                 a.cliente || a.act_cliente || 'Sin Nombre',
                 a.cantidad || a.act_cantidad || 1,
@@ -155,7 +155,7 @@ function vincularEventosTarjetas() {
         cardValores.onclick = () => {
             // Filtrar únicamente los registros donde el valor cobrado sea estrictamente mayor a 0
             const filtrados = listaDetalladaGlobal.filter(a => parseFloat(a.valores_cobrados || a.act_valores_cobrados || 0) > 0);
-            
+
             const cabeceras = ['Cliente', 'Valor Cobrado ($)'];
             const filas = filtrados.map(a => [
                 a.cliente || a.act_cliente || 'Sin Nombre',
