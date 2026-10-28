@@ -31,12 +31,19 @@ module.exports = async (req, res) => {
         const cargo = body.user_cargo || body.cargo;
         const cuadId = body.cuad_id;
 
-        // Tarifas y valores numéricos
-        const valorAct = body.valor_act !== undefined ? parseFloat(body.valor_act) : null;
-        const valorVisita = body.valor_visita !== undefined ? parseFloat(body.valor_visita) : null;
-        const valorPred = body.valor_pred !== undefined ? parseFloat(body.valor_pred) : null;
-        const valorAc = body.valor_ac !== undefined ? parseFloat(body.valor_ac) : null;
-        const valorExc = body.valor_exc !== undefined ? parseFloat(body.valor_exc) : null;
+        // 🎯 Función de limpieza numérica estricta (previene que NaN se convierta en 0)
+        const parseNum = (val) => {
+            if (val === undefined || val === null || val === '') return null;
+            const strClean = String(val).replace(/[^0-9.-]+/g, '');
+            const parsed = parseFloat(strClean);
+            return isNaN(parsed) ? null : parsed;
+        };
+
+        const valorAct = parseNum(body.valor_act);
+        const valorVisita = parseNum(body.valor_visita);
+        const valorPred = parseNum(body.valor_pred);
+        const valorAc = parseNum(body.valor_ac);
+        const valorExc = parseNum(body.valor_exc);
 
         if (!userId) {
             return res.status(400).json({ status: 'error', message: 'ID de usuario no proporcionado' });
@@ -55,7 +62,15 @@ module.exports = async (req, res) => {
             ssl: { rejectUnauthorized: false }
         });
 
-        // 🎯 UPDATE con todos los campos reales detectados en la tabla 'usuarios'
+        // 🎯 Limpieza de enteros para user_ci y user_telefono (tipos INT en la tabla usuarios)
+        const cleanInt = (val) => {
+            if (!val) return null;
+            const cleanStr = String(val).replace(/\D/g, '');
+            const parsed = parseInt(cleanStr, 10);
+            return isNaN(parsed) ? null : parsed;
+        };
+
+        // 🎯 UPDATE seguro utilizando COALESCE
         await connection.execute(
             `UPDATE usuarios 
              SET user_nombre = ?, 
@@ -73,8 +88,8 @@ module.exports = async (req, res) => {
              WHERE user_id = ?`,
             [
                 nombre.trim(),
-                cedula ? cedula.trim() : null,
-                telefono ? telefono.trim() : null,
+                cleanInt(cedula),
+                cleanInt(telefono),
                 direccion ? direccion.trim() : null,
                 sector ? sector.trim() : null,
                 cargo ? cargo.trim() : null,
